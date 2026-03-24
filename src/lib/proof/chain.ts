@@ -40,12 +40,20 @@ export interface ProofChainVerificationResult {
 /**
  * Deterministic JSON serialization — top-level keys sorted alphabetically, compact.
  *
- * IMPORTANT: Uses an array replacer which acts as a key allowlist at ALL
- * nesting levels. Nested object keys not also present at the top level are
- * silently excluded. Callers with nested objects must pre-serialize them
- * to strings (see build-governance-snapshot.ts for the established pattern).
+ * Only flat objects (primitives at every top-level value) are supported.
+ * Nested objects and arrays are intentionally rejected: the array replacer used by
+ * JSON.stringify acts as a key allowlist at ALL nesting levels, so nested keys not
+ * present at the top level are silently dropped, corrupting the hash preimage.
+ * Callers must pre-serialize nested values to strings before calling stableJSON.
  */
 export function stableJSON(obj: Record<string, unknown>): string {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== null && typeof v === "object") {
+      throw new Error(
+        `stableJSON: value for key "${k}" is a ${Array.isArray(v) ? "array" : "object"} — nested objects and arrays are unsupported and must be pre-serialized to a string before hashing`
+      );
+    }
+  }
   return JSON.stringify(obj, Object.keys(obj).sort());
 }
 

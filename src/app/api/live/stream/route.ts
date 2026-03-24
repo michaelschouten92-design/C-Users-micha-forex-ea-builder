@@ -24,12 +24,12 @@ export async function GET(request: Request): Promise<Response> {
   const encoder = new TextEncoder();
   let lastCheck = new Date();
 
-  // Pre-load instance IDs for efficient index-based filtering in poll queries
+  // Pre-load instance IDs for the first poll cycle; refreshed on every subsequent tick
   const userInstances = await prisma.liveEAInstance.findMany({
     where: { userId, deletedAt: null },
     select: { id: true },
   });
-  const instanceIds = userInstances.map((i) => i.id);
+  let instanceIds = userInstances.map((i) => i.id);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -55,6 +55,10 @@ export async function GET(request: Request): Promise<Response> {
             totalTrades: true,
             totalProfit: true,
             exportJobId: true,
+            lifecycleState: true,
+            operatorHold: true,
+            monitoringSuppressedUntil: true,
+            strategyStatus: true,
             heartbeats: {
               orderBy: { createdAt: "desc" },
               take: 20,
@@ -80,6 +84,7 @@ export async function GET(request: Request): Promise<Response> {
             },
             terminalDeployments: {
               select: {
+                baselineStatus: true,
                 strategyVersion: {
                   select: {
                     backtestBaseline: {
@@ -94,6 +99,17 @@ export async function GET(request: Request): Promise<Response> {
                   },
                 },
               },
+            },
+            incidents: {
+              where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
+              orderBy: { openedAt: "desc" },
+              select: { reasonCodes: true },
+              take: 1,
+            },
+            healthSnapshots: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { driftDetected: true, driftSeverity: true, status: true },
             },
           },
         });
@@ -116,6 +132,17 @@ export async function GET(request: Request): Promise<Response> {
           totalTrades: inst.totalTrades,
           totalProfit: inst.totalProfit,
           isExternal: inst.exportJobId === null,
+          lifecycleState: inst.lifecycleState,
+          operatorHold: inst.operatorHold,
+          monitoringSuppressedUntil: inst.monitoringSuppressedUntil?.toISOString() ?? null,
+          strategyStatus: inst.strategyStatus,
+          relinkRequired: inst.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
+          monitoringReasons: inst.incidents[0] ? (inst.incidents[0].reasonCodes as string[]) : [],
+          healthSnapshots: (inst.healthSnapshots ?? []).map((hs) => ({
+            driftDetected: hs.driftDetected,
+            driftSeverity: hs.driftSeverity,
+            status: hs.status,
+          })),
           baseline: (() => {
             const depBaseline = inst.terminalDeployments?.find(
               (d) => d.strategyVersion?.backtestBaseline
@@ -143,6 +170,9 @@ export async function GET(request: Request): Promise<Response> {
 
         controller.enqueue(encoder.encode(`event: init\ndata: ${JSON.stringify(initData)}\n\n`));
       } catch {
+        controller.enqueue(
+          encoder.encode(`retry: 15000\nevent: stream_error\ndata: ${JSON.stringify({ reason: "init_failed" })}\n\n`)
+        );
         controller.close();
         return;
       }
@@ -157,6 +187,13 @@ export async function GET(request: Request): Promise<Response> {
 
           const since = lastCheck;
           lastCheck = new Date();
+
+          // Refresh instance list each tick to pick up instances registered mid-session
+          const freshInstances = await prisma.liveEAInstance.findMany({
+            where: { userId, deletedAt: null },
+            select: { id: true },
+          });
+          instanceIds = freshInstances.map((i) => i.id);
 
           if (instanceIds.length === 0) return;
 

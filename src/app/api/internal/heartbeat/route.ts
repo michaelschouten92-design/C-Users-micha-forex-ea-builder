@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { z } from "zod";
 import { timingSafeEqual } from "@/lib/csrf";
 import { logger } from "@/lib/logger";
@@ -152,14 +153,15 @@ export async function POST(request: NextRequest) {
         strategyId,
         rawDecision.action,
         rawDecision.reasonCode,
-        governanceSnapshot
+        governanceSnapshot,
+        now
       ).catch(() => {});
     } else if (decision.reasonCode === "AUTHORITY_UNINITIALIZED") {
       log.info(
         { strategyId, action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED", authorityReasons },
         "heartbeat authority block"
       );
-      logAuthorityBlockEvent(strategyId, authorityReasons).catch(() => {});
+      logAuthorityBlockEvent(strategyId, authorityReasons, now).catch(() => {});
     } else {
       // Structured log — safe fields only (no accountId/instanceTag)
       log.info(
@@ -173,7 +175,8 @@ export async function POST(request: NextRequest) {
       strategyId,
       decision.action,
       decision.reasonCode,
-      governanceSnapshot
+      governanceSnapshot,
+      now
     ).catch(() => {});
 
     return NextResponse.json(
@@ -206,13 +209,17 @@ async function logHeartbeatProofEvent(
   strategyId: string,
   action: string,
   reasonCode: string,
-  governanceSnapshot: string
+  governanceSnapshot: string,
+  now: Date
 ): Promise<void> {
   try {
     const { appendProofEvent } = await import("@/lib/proof/events");
+    const recordId = createHash("sha256")
+      .update(`HEARTBEAT_DECISION_MADE:${strategyId}:${action}:${reasonCode}:${now.toISOString()}`)
+      .digest("hex");
     await appendProofEvent(strategyId, "HEARTBEAT_DECISION_MADE", {
       eventType: "HEARTBEAT_DECISION_MADE",
-      recordId: crypto.randomUUID(),
+      recordId,
       strategyId,
       action,
       reasonCode,
@@ -228,13 +235,19 @@ async function logControlInconsistencyEvent(
   strategyId: string,
   originalAction: string,
   originalReasonCode: string,
-  governanceSnapshot: string
+  governanceSnapshot: string,
+  now: Date
 ): Promise<void> {
   try {
     const { appendProofEvent } = await import("@/lib/proof/events");
+    const recordId = createHash("sha256")
+      .update(
+        `HEARTBEAT_CONTROL_INCONSISTENCY:${strategyId}:${originalAction}:${originalReasonCode}:${now.toISOString()}`
+      )
+      .digest("hex");
     await appendProofEvent(strategyId, "HEARTBEAT_CONTROL_INCONSISTENCY", {
       eventType: "HEARTBEAT_CONTROL_INCONSISTENCY",
-      recordId: crypto.randomUUID(),
+      recordId,
       strategyId,
       originalAction,
       originalReasonCode,
@@ -248,16 +261,23 @@ async function logControlInconsistencyEvent(
   }
 }
 
-async function logAuthorityBlockEvent(strategyId: string, reasons: string[]): Promise<void> {
+async function logAuthorityBlockEvent(
+  strategyId: string,
+  reasons: string[],
+  now: Date
+): Promise<void> {
   try {
     const { appendProofEvent } = await import("@/lib/proof/events");
+    const recordId = createHash("sha256")
+      .update(`AUTHORITY_BLOCK:${strategyId}:PAUSE:AUTHORITY_UNINITIALIZED:${now.toISOString()}`)
+      .digest("hex");
     await appendProofEvent(strategyId, "AUTHORITY_BLOCK", {
       eventType: "AUTHORITY_BLOCK",
-      recordId: crypto.randomUUID(),
+      recordId,
       strategyId,
       action: "PAUSE",
       reasonCode: "AUTHORITY_UNINITIALIZED",
-      reasons,
+      reasons: JSON.stringify(reasons),
       timestamp: new Date().toISOString(),
     });
   } catch {

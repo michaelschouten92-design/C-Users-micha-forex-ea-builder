@@ -126,15 +126,7 @@ export async function POST(request: NextRequest) {
   }
 
   const now = new Date();
-  if (now > overrideRequest.expiresAt) {
-    await prisma.overrideRequest.update({
-      where: { id: overrideRequestId },
-      data: { status: "EXPIRED", expiredAt: now },
-    });
-    return NextResponse.json(apiError(ErrorCode.OVERRIDE_EXPIRED, "Override request has expired"), {
-      status: 400,
-    });
-  }
+  const isExpired = now > overrideRequest.expiresAt;
 
   const { config } = await loadActiveConfigWithFallback();
   const suppressionMinutes = config.monitoringThresholds?.overrideSuppressionMinutes ?? 10;
@@ -143,6 +135,23 @@ export async function POST(request: NextRequest) {
   try {
     await prisma.$transaction(
       async (tx) => {
+        // 0a. Handle expiry atomically — proof event + status write in same tx
+        if (isExpired) {
+          await appendProofEventInTx(tx, strategyId, "OVERRIDE_EXPIRED", {
+            eventType: "OVERRIDE_EXPIRED",
+            recordId: overrideRequestId,
+            strategyId,
+            overrideRequestId,
+            expiredAt: now.toISOString(),
+            timestamp: now.toISOString(),
+          });
+          await tx.overrideRequest.update({
+            where: { id: overrideRequestId },
+            data: { status: "EXPIRED", expiredAt: now },
+          });
+          throw Object.assign(new Error("OVERRIDE_EXPIRED"), { code: "OVERRIDE_EXPIRED" as const });
+        }
+
         // 0. Read incident first (need incidentId for proof payload)
         const openIncident = await tx.incident.findFirst({
           where: { strategyId, status: { not: "CLOSED" } },
@@ -244,6 +253,11 @@ export async function POST(request: NextRequest) {
       operatorHold: "NONE",
     });
   } catch (err) {
+    if ((err as { code?: string }).code === "OVERRIDE_EXPIRED") {
+      return NextResponse.json(apiError(ErrorCode.OVERRIDE_EXPIRED, "Override request has expired"), {
+        status: 400,
+      });
+    }
     log.error({ err, strategyId, overrideRequestId }, "Failed to apply override");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
       status: 500,
