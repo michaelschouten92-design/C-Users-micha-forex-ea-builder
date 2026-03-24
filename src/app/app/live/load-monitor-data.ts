@@ -249,6 +249,9 @@ function queryEaInstances(userId: string) {
         where: { ignoredAt: null },
         select: {
           baselineStatus: true,
+          symbol: true,
+          magicNumber: true,
+          materialFingerprint: true,
         },
       },
     },
