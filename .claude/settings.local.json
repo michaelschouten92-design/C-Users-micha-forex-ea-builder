@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull:*)",
+      "Bash(git config:*)",
+      "Bash(grep -r \"revalidatePath\\\\|revalidateTag\\\\|cache\" /c/Dev/Test/C-Users-micha-forex-ea-builder/src/app/api/live/[instanceId]/link-baseline/route.ts)",
+      "Bash(xargs grep:*)",
+      "Bash(npm run:*)",
+      "Bash(cmd.exe /c \"where npm\")",
+      "Bash(cmd.exe /c \"where npm 2>&1 && echo done\")",
+      "Bash(powershell.exe -Command \"Get-Command npm -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(cmd.exe /c \"cd /d c:\\\\Dev\\\\Test\\\\C-Users-micha-forex-ea-builder && npm run dev 2>&1\")"
+    ]
+  }
+}
