@@ -3582,6 +3582,7 @@ export function LiveDashboardClient({
                                 baseline,
                                 relinkRequired: false,
                                 lifecycleState: "LIVE_MONITORING",
+                                isAutoDiscovered: false,
                               }
                             : ea
                         )
