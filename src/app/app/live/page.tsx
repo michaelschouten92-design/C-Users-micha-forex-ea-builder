@@ -96,6 +96,7 @@ function renderDashboard(
       (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
     ),
     monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
+    monitoringSuppressedUntil: ea.monitoringSuppressedUntil?.toISOString() ?? null,
     baseline: (() => {
       const bl = ea.strategyVersion?.backtestBaseline as
         | {

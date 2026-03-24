@@ -77,6 +77,7 @@ export interface LiveInstanceDTO {
   healthStatus?: string | null;
   isExternal?: boolean;
   isAutoDiscovered?: boolean;
+  monitoringSuppressedUntil?: string | null;
   baseline?: LiveInstanceBaseline | null;
   relinkRequired?: boolean;
   monitoringReasons?: string[];

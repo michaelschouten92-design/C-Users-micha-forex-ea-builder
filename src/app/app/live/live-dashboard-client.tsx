@@ -241,6 +241,7 @@ function StatusBadge({
 function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -248,11 +249,20 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
-      if (!cancelled && res.ok) {
-        const json = await res.json();
-        setTrades(json.data);
-        setTotalPages(json.pagination.totalPages);
+      setError(null);
+      try {
+        const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
+        if (!cancelled) {
+          if (res.ok) {
+            const json = await res.json();
+            setTrades(json.data);
+            setTotalPages(json.pagination.totalPages);
+          } else {
+            setError("Failed to load trades. Please try again.");
+          }
+        }
+      } catch {
+        if (!cancelled) setError("Network error loading trades.");
       }
       if (!cancelled) setLoading(false);
     })();
@@ -347,6 +357,8 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
 
       {loading ? (
         <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading trades...</div>
+      ) : error ? (
+        <div className="text-xs text-[#EF4444] py-4 text-center">{error}</div>
       ) : trades.length === 0 ? (
         <div className="text-xs text-[#7C8DB0] py-4 text-center">No trades recorded yet</div>
       ) : (
@@ -457,25 +469,31 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
   const [data, setData] = useState<TrackRecordVerification | null>(null);
   const [metrics, setMetrics] = useState<TrackRecordMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const [verifyRes, metricsRes] = await Promise.all([
           fetch(`/api/track-record/verify?instanceId=${instanceId}`),
           fetch(`/api/track-record/metrics/${instanceId}`),
         ]);
-        if (!cancelled && verifyRes.ok) {
-          setData(await verifyRes.json());
-        }
-        if (!cancelled && metricsRes.ok) {
-          setMetrics(await metricsRes.json());
+        if (!cancelled) {
+          if (verifyRes.ok) {
+            setData(await verifyRes.json());
+          } else {
+            setError("Failed to load track record.");
+          }
+          if (metricsRes.ok) {
+            setMetrics(await metricsRes.json());
+          }
         }
       } catch {
-        // Silently fail
+        if (!cancelled) setError("Network error loading track record.");
       }
       if (!cancelled) setLoading(false);
     })();
@@ -513,6 +531,14 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
           <div className="w-3 h-3 border-2 border-[#7C8DB0] border-t-transparent rounded-full animate-spin" />
           Loading track record...
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+        <p className="text-xs text-[#EF4444]">{error}</p>
       </div>
     );
   }
@@ -1041,6 +1067,15 @@ function InvestigationPanel({
             Hold: <span className="text-[#F59E0B]">{instance.operatorHold}</span>
           </span>
         )}
+        {instance.monitoringSuppressedUntil &&
+          new Date(instance.monitoringSuppressedUntil) > new Date() && (
+            <span>
+              Monitoring suppressed until:{" "}
+              <span className="text-[#F59E0B]">
+                {formatDateTime(instance.monitoringSuppressedUntil)}
+              </span>
+            </span>
+          )}
       </div>
     </div>
   );
@@ -1056,6 +1091,7 @@ function AccountCard({
   onTogglePause,
   onDelete,
   onLinkBaseline,
+  onUnlinkBaseline,
   forceExpandId,
 }: {
   account: AccountGroup;
@@ -1063,6 +1099,7 @@ function AccountCard({
   onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
   onDelete: (instanceId: string) => void;
   onLinkBaseline: (instanceId: string) => void;
+  onUnlinkBaseline: (instanceId: string) => void;
   forceExpandId?: string | null;
 }) {
   const { primary, instances } = account;
@@ -1221,26 +1258,6 @@ function AccountCard({
     setDeleteLoading(true);
     for (const ea of instances) {
       await onDelete(ea.id);
-    }
-  }
-
-  async function handleUnlinkBaseline(instanceId: string, deploymentId: string) {
-    try {
-      const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ deploymentId }),
-      });
-      if (res.ok) {
-        showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
-        // Reload to reflect changes
-        window.location.reload();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showError("Failed to unlink", data.message ?? "Something went wrong");
-      }
-    } catch {
-      showError("Failed to unlink", "Network error");
     }
   }
 
@@ -1778,7 +1795,18 @@ function AccountCard({
                                 ? "Relink required"
                                 : "Missing"}
                           </p>
-                          {!isLinked && sg.instanceId && (
+                          {sg.instanceId && (isLinked ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUnlinkBaseline(sg.instanceId!);
+                              }}
+                              className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
+                            >
+                              Unlink
+                            </button>
+                          ) : (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1789,7 +1817,7 @@ function AccountCard({
                             >
                               {relinkRequired ? "Relink" : "Link"}
                             </button>
-                          )}
+                          ))}
                         </div>
                       </div>
                       {isExpanded && owningInstance && (
@@ -3143,6 +3171,25 @@ export function LiveDashboardClient({
     }
   }
 
+  async function handleUnlinkBaseline(instanceId: string): Promise<void> {
+    const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      body: JSON.stringify({}),
+    });
+    if (res.ok) {
+      setEaInstances((prev) =>
+        prev.map((ea) =>
+          ea.id === instanceId ? { ...ea, baseline: null, relinkRequired: false } : ea
+        )
+      );
+      showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      showError("Failed to unlink", (data as { message?: string }).message ?? "Something went wrong");
+    }
+  }
+
   async function handleSaveGlobalDrawdown(): Promise<void> {
     const threshold = parseFloat(globalDrawdownThreshold);
     if (isNaN(threshold) || threshold <= 0 || threshold > 100) {
@@ -3847,6 +3894,7 @@ export function LiveDashboardClient({
                 onTogglePause={handleTogglePause}
                 onDelete={handleDelete}
                 onLinkBaseline={setLinkBaselineInstanceId}
+                onUnlinkBaseline={handleUnlinkBaseline}
                 forceExpandId={scrollExpandId}
               />
             ))}
