@@ -142,9 +142,9 @@ export async function POST(
       );
     }
 
-    // 8. Create canonical chain in a transaction
+    // 8. Create canonical chain in a transaction, including deployment status update
     const result = await prisma.$transaction(async (tx) => {
-      return linkExternalBaseline(tx, instanceId, {
+      const linkResult = await linkExternalBaseline(tx, instanceId, {
         id: backtestRun.id,
         totalTrades: backtestRun.totalTrades,
         winRate: backtestRun.winRate,
@@ -155,15 +155,14 @@ export async function POST(
         totalNetProfit: backtestRun.totalNetProfit,
         period: backtestRun.period,
       });
-    });
-
-    // 9a. Post-commit: propagate baseline to deployment level (if applicable)
-    await prisma.terminalDeployment.updateMany({
-      where: { instanceId },
-      data: {
-        baselineStatus: "LINKED",
-        strategyVersionId: result.strategyVersionId,
-      },
+      await tx.terminalDeployment.updateMany({
+        where: { instanceId },
+        data: {
+          baselineStatus: "LINKED",
+          strategyVersionId: linkResult.strategyVersionId,
+        },
+      });
+      return linkResult;
     });
 
     // 9. Post-commit: bind identity (deterministic hashes, same as export flow)
