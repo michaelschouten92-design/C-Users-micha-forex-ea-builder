@@ -863,6 +863,7 @@ model BacktestBaseline {
   volatility           Float?
   initialDeposit       Float
   backtestDurationDays Int
+  baselineHash         String
   rawMetrics           Json
   createdAt            DateTime @default(now())
 

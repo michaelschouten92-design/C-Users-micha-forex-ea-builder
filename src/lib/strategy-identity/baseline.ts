@@ -133,6 +133,7 @@ export async function createBaselineFromBacktest(
       volatility: metrics.volatility ?? null,
       initialDeposit: raw.initialDeposit,
       backtestDurationDays: raw.backtestDurationDays,
+      baselineHash,
       rawMetrics: raw as unknown as Prisma.InputJsonValue,
     },
   });
