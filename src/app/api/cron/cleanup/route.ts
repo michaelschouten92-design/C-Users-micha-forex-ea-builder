@@ -107,9 +107,6 @@ async function handleCleanup(request: NextRequest) {
       }),
     ]);
 
-    // NOTE: Legacy EAAlertRule/EAAlert evaluation has been removed.
-    // Alert processing now uses only the EAAlertConfig system (via @/lib/alerts),
-    // which is triggered in real-time during heartbeat and trade processing.
     // See prisma/schema.prisma for deprecated model annotations.
 
     // Send renewal reminder emails for subscriptions expiring within 3 days.

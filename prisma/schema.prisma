@@ -147,7 +147,6 @@ model User {
   exports        ExportJob[]
   templates      UserTemplate[]
   liveEAs        LiveEAInstance[]
-  alertRules     EAAlertRule[]
   alertConfigs   EAAlertConfig[]
   templateRatings TemplateRating[]
   tradeJournals      TradeJournal[]
@@ -438,7 +437,6 @@ model LiveEAInstance {
   heartbeats     EAHeartbeat[]
   trades         EATrade[]
   errors         EAError[]
-  alerts         EAAlert[]
   alertConfigs   EAAlertConfig[]
   tradeJournals  TradeJournal[]
   trackRecordEvents      TrackRecordEvent[]
@@ -590,43 +588,6 @@ model EAAlertConfig {
   @@index([instanceId])
 }
 
-// ============================================
-// EA ALERT RULES & ALERTS (DEPRECATED)
-// These models are superseded by EAAlertConfig above.
-// Kept for migration compatibility only — do NOT use in new code.
-// Runtime code has been removed; see heartbeat/route.ts.
-// TODO: Remove these models in a future migration once data is migrated.
-// ============================================
-
-model EAAlertRule {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // DRAWDOWN_EXCEEDED, CONSECUTIVE_LOSSES, OFFLINE_DURATION, EQUITY_DROP
-  threshold Float
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  alerts    EAAlert[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([enabled, type])
-}
-
-model EAAlert {
-  id           String         @id @default(cuid())
-  ruleId       String
-  instanceId   String
-  message      String         @db.Text
-  acknowledged Boolean        @default(false)
-  createdAt    DateTime       @default(now())
-  rule         EAAlertRule    @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-
-  @@index([acknowledged, createdAt])
-  @@index([instanceId, acknowledged, createdAt])
-  @@index([ruleId])
-}
 
 // ============================================
 // TEMPLATE RATINGS

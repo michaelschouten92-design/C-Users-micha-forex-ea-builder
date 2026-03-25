@@ -21,9 +21,6 @@ import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/mat
 import { createHash } from "crypto";
 import { z } from "zod";
 
-// NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
-// The legacy EAAlertRule/EAAlert system has been removed from runtime code.
-// See prisma/schema.prisma for deprecated model annotations.
 
 /** Strict hex hash: 64 chars (SHA-256 output). */
 const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
