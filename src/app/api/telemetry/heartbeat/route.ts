@@ -123,8 +123,7 @@ export async function POST(request: NextRequest) {
         : auth.instanceId;
     const isManifestContext = effectiveInstanceId !== auth.instanceId;
 
-    // TODO: remove after manifest instanceId validation
-    log.info(
+    log.debug(
       {
         baseInstanceId: auth.instanceId,
         fingerprint: data.deployment?.materialFingerprint ?? null,
@@ -321,8 +320,7 @@ export async function POST(request: NextRequest) {
         })
       : { action: "PAUSE" as const, reasonCode: "NO_INSTANCE" as const };
 
-    // TODO: remove after manifest instanceId validation
-    log.info(
+    log.debug(
       { responseInstanceId: effectiveInstanceId, action: decision.action },
       "heartbeat:response"
     );
