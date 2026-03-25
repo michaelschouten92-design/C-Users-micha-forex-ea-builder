@@ -40,6 +40,7 @@ interface UploadResult {
   }>;
   parseWarnings: string[];
   dealCount: number;
+  symbolSource?: "html_report" | "file_name" | "unknown";
 }
 
 interface BacktestListItem {
@@ -346,6 +347,17 @@ export default function EvaluatePage() {
                   </div>
                   <h2 className="text-xl font-bold text-white mb-1">
                     {result.metadata.eaName || "Strategy"} — {result.metadata.symbol}
+                    {result.symbolSource && result.symbolSource !== "html_report" && (
+                      <span
+                        className="ml-2 text-[10px] font-medium px-2 py-0.5 rounded-full align-middle"
+                        style={{
+                          color: result.symbolSource === "file_name" ? "#F59E0B" : "#71717A",
+                          background: result.symbolSource === "file_name" ? "rgba(245,158,11,0.15)" : "rgba(113,113,122,0.15)",
+                        }}
+                      >
+                        {result.symbolSource === "file_name" ? "detected from filename" : "symbol unknown"}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-sm text-[#71717A]">
                     {result.metadata.timeframe} | {result.metadata.period} |{" "}

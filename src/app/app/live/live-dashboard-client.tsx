@@ -1165,17 +1165,20 @@ function AccountCard({
         instanceId: string | null;
       }
     >();
+    // Normalize broker suffixes: "EURUSD.r" → "EURUSD", "EURUSDm" → "EURUSD"
+    const normSym = (s: string) => s.replace(/[.\-_].*$/, "").toUpperCase();
     for (const t of allTrades) {
       const key = `${t.symbol}|${t.magicNumber ?? "none"}`;
       const existing = map.get(key);
       if (existing) {
         existing.trades.push(t);
       } else {
-        // Match trade to owning instance
+        // Match trade to owning instance (with broker-suffix normalization)
+        const tradeSym = normSym(t.symbol ?? "");
         const inst = instances.find(
           (ea) =>
-            ea.symbol?.toUpperCase() === (t.symbol ?? "").toUpperCase() ||
-            ea.deployments?.some((d) => d.symbol.toUpperCase() === (t.symbol ?? "").toUpperCase())
+            (ea.symbol && normSym(ea.symbol) === tradeSym) ||
+            ea.deployments?.some((d) => normSym(d.symbol) === tradeSym)
         );
         map.set(key, {
           symbol: t.symbol ?? "UNKNOWN",
@@ -1193,7 +1196,7 @@ function AccountCard({
       const key = `ctx:${ctx.id}`;
       if (!map.has(key)) {
         const dep = ctx.deployments?.find(
-          (d) => d.symbol.toUpperCase() === ctx.symbol!.toUpperCase()
+          (d) => normSym(d.symbol) === normSym(ctx.symbol!)
         );
         map.set(key, {
           symbol: ctx.symbol,
@@ -1209,10 +1212,11 @@ function AccountCard({
         const matchInstance = (k: string): EAInstanceData | undefined => {
           if (k.startsWith("ctx:")) return instances.find((ea) => ea.id === k.slice(4));
           const [sym] = k.split("|");
+          const normKey = normSym(sym ?? "");
           return instances.find(
             (ea) =>
-              ea.symbol?.toUpperCase() === sym?.toUpperCase() ||
-              ea.deployments?.some((d) => d.symbol.toUpperCase() === sym?.toUpperCase())
+              (ea.symbol && normSym(ea.symbol) === normKey) ||
+              ea.deployments?.some((d) => normSym(d.symbol) === normKey)
           );
         };
         const instA = matchInstance(keyA);
@@ -1457,6 +1461,29 @@ function AccountCard({
                 Discovered
               </span>
             )}
+            {/* Show baseline link CTA when any instance is missing a baseline */}
+            {(() => {
+              const unlinkable = instances.find(
+                (ea) => !ea.baseline && !ea.relinkRequired && ea.isExternal
+              );
+              if (!unlinkable) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLinkBaseline(unlinkable.id);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-medium rounded border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/10 transition-colors"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                  </svg>
+                  Link Baseline
+                </button>
+              );
+            })()}
           </div>
         </div>
 
@@ -1749,10 +1776,14 @@ function AccountCard({
                 </div>
                 {/* Strategy rows */}
                 {strategyGroups.map((sg) => {
-                  // Resolve health badge from owning instance
+                  // Resolve health badge from owning instance.
+                  // Fallback: if trade→instance match failed, pick the first
+                  // linkable non-container instance in this account card so the
+                  // "Link" button still renders.
                   const owningInstance = sg.instanceId
                     ? instances.find((ea) => ea.id === sg.instanceId)
-                    : undefined;
+                    : instances.find((ea) => ea.id !== primary.id && !isAccountContainer(ea));
+                  const resolvedInstanceId = sg.instanceId ?? owningInstance?.id ?? null;
                   // Derive baseline status from instance-level truth (deployments not serialized to client)
                   const relinkRequired = owningInstance?.relinkRequired ?? false;
                   const isLinked = !relinkRequired && !!owningInstance?.baseline;
@@ -1761,7 +1792,7 @@ function AccountCard({
                   const baselineTrades = owningInstance?.baseline?.totalTrades;
                   const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
                   const isExpanded = expandedStrategyKey === rowKey;
-                  const isHighlighted = forceExpandId != null && sg.instanceId === forceExpandId;
+                  const isHighlighted = forceExpandId != null && resolvedInstanceId === forceExpandId;
                   return (
                     <div key={rowKey}>
                       <div
@@ -1795,12 +1826,12 @@ function AccountCard({
                                 ? "Relink required"
                                 : "Missing"}
                           </p>
-                          {sg.instanceId && (isLinked ? (
+                          {resolvedInstanceId && (isLinked ? (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onUnlinkBaseline(sg.instanceId!);
+                                onUnlinkBaseline(resolvedInstanceId);
                               }}
                               className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
                             >
@@ -1811,7 +1842,7 @@ function AccountCard({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onLinkBaseline(sg.instanceId!);
+                                onLinkBaseline(resolvedInstanceId);
                               }}
                               className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
                             >
