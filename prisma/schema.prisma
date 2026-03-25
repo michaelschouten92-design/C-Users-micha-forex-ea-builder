@@ -1210,6 +1210,7 @@ model TradeFact {
   @@index([strategyId, executedAt])
   @@index([strategyId, source])
   @@index([instanceId, source])
+  @@index([instanceId, executedAt])
   @@index([sourceRunId])
 }
 
@@ -1280,6 +1281,7 @@ model ControlLayerAlert {
 
   @@index([userId, acknowledgedAt, createdAt])
   @@index([instanceId])
+  @@index([instanceId, acknowledgedAt])
 }
 
 // ============================================

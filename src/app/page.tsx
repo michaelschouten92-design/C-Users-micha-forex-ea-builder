@@ -621,14 +621,9 @@ export default async function HomePage() {
                 </div>
               </div>
               <div className="mt-5">
-                {/* TODO: Replace with actual published track record token URL */}
-                <Link
-                  href="/track-record/example"
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
-                >
-                  View Track Record
-                  <span aria-hidden="true">↗</span>
-                </Link>
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#475569]">
+                  Verified Track Record
+                </span>
               </div>
             </div>
           </div>

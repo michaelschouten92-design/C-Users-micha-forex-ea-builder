@@ -5,6 +5,15 @@ import { getPostBySlug, getAllPosts, getRelatedPosts } from "@/lib/blog/posts";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
+/** Strip script tags and event handlers from HTML before rendering */
+function sanitizeBlogHtml(html: string): string {
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
+    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/javascript\s*:/gi, "removed:");
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -149,7 +158,7 @@ export default async function BlogPostPage({ params }: Props) {
             [&_ol]:text-[#A1A1AA] [&_ol]:space-y-2 [&_ol]:mb-4 [&_ol]:pl-6 [&_ol]:list-decimal
             [&_li]:leading-relaxed
             [&_a]:text-[#6366F1] [&_a]:underline"
-          dangerouslySetInnerHTML={{ __html: post.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
         />
 
         {/* Related Posts */}
