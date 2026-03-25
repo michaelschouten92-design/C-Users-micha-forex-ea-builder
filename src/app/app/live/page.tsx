@@ -82,6 +82,7 @@ function renderDashboard(
     openTrades: ea.openTrades,
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
+    sortOrder: ea.sortOrder ?? 0,
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),

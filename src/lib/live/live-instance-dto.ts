@@ -68,6 +68,7 @@ export interface LiveInstanceDTO {
   openTrades: number;
   totalTrades: number;
   totalProfit: number;
+  sortOrder?: number;
   parentInstanceId?: string | null;
   lifecycleState?: string | null;
   strategyStatus?: string | null;

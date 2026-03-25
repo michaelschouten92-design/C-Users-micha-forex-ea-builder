@@ -190,6 +190,7 @@ function queryEaInstances(userId: string) {
       openTrades: true,
       totalTrades: true,
       totalProfit: true,
+      sortOrder: true,
       strategyStatus: true,
       mode: true,
       parentInstanceId: true,

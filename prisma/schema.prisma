@@ -399,6 +399,7 @@ model LiveEAInstance {
   openTrades    Int       @default(0)
   totalTrades   Int       @default(0)
   totalProfit   Float     @default(0)
+  sortOrder     Int       @default(0)   // User-defined account card display order (0 = auto by createdAt)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Soft delete

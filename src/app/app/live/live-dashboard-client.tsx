@@ -895,8 +895,16 @@ function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
     group.instances.sort(compareInstances);
   }
 
-  // Stable account order: oldest first by createdAt
+  // Stable account order: user-defined sortOrder first, then createdAt fallback
   return groups.sort((a, b) => {
+    const sa = a.primary.sortOrder ?? 0;
+    const sb = b.primary.sortOrder ?? 0;
+    // Both have explicit sort order → use it
+    if (sa !== 0 && sb !== 0) return sa - sb;
+    // One has sort order, the other doesn't → sorted one comes first
+    if (sa !== 0) return -1;
+    if (sb !== 0) return 1;
+    // Neither has sort order → fall back to createdAt
     const ta = new Date(a.primary.createdAt).getTime();
     const tb = new Date(b.primary.createdAt).getTime();
     return ta - tb;
@@ -3007,6 +3015,8 @@ export function LiveDashboardClient({
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [scrollExpandId, setScrollExpandId] = useState<string | null>(null);
+  const [draggedAccountKey, setDraggedAccountKey] = useState<string | null>(null);
+  const [dragOverAccountKey, setDragOverAccountKey] = useState<string | null>(null);
   const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(() => {
     // Auto-open LinkBaselineDialog from ?relink= query param
     if (initialRelinkInstanceId && initialData.some((ea) => ea.id === initialRelinkInstanceId)) {
@@ -3202,6 +3212,54 @@ export function LiveDashboardClient({
     } else {
       showError("Failed to delete EA", "Please try again.");
     }
+  }
+
+  function handleDragStart(accountKey: string) {
+    setDraggedAccountKey(accountKey);
+  }
+
+  function handleDragOver(e: React.DragEvent, accountKey: string) {
+    e.preventDefault();
+    if (accountKey !== draggedAccountKey) {
+      setDragOverAccountKey(accountKey);
+    }
+  }
+
+  function handleDragEnd() {
+    setDraggedAccountKey(null);
+    setDragOverAccountKey(null);
+  }
+
+  async function handleDrop(targetKey: string) {
+    if (!draggedAccountKey || draggedAccountKey === targetKey) {
+      handleDragEnd();
+      return;
+    }
+    const sorted = sortByPriority(groupByAccount(eaInstances));
+    const fromIdx = sorted.findIndex((g) => g.key === draggedAccountKey);
+    const toIdx = sorted.findIndex((g) => g.key === targetKey);
+    if (fromIdx < 0 || toIdx < 0) { handleDragEnd(); return; }
+
+    const reordered = [...sorted];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+
+    // Optimistic local update: set sortOrder on primary instances
+    const newOrder = reordered.map((g) => g.primary.id);
+    setEaInstances((prev) =>
+      prev.map((ea) => {
+        const idx = newOrder.indexOf(ea.id);
+        return idx >= 0 ? { ...ea, sortOrder: idx + 1 } : ea;
+      })
+    );
+    handleDragEnd();
+
+    // Persist to server
+    await fetch("/api/live/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      body: JSON.stringify({ order: newOrder }),
+    });
   }
 
   async function handleUnlinkBaseline(instanceId: string): Promise<void> {
@@ -3920,16 +3978,26 @@ export function LiveDashboardClient({
                   : eaInstances.filter((ea) => ea.mode === modeFilter)
               )
             ).map((account) => (
-              <AccountCard
+              <div
                 key={account.key}
-                account={account}
-                changedIds={changedIds}
-                onTogglePause={handleTogglePause}
-                onDelete={handleDelete}
-                onLinkBaseline={setLinkBaselineInstanceId}
-                onUnlinkBaseline={handleUnlinkBaseline}
-                forceExpandId={scrollExpandId}
-              />
+                draggable
+                onDragStart={() => handleDragStart(account.key)}
+                onDragOver={(e) => handleDragOver(e, account.key)}
+                onDragEnd={handleDragEnd}
+                onDrop={() => handleDrop(account.key)}
+                className={`transition-all ${draggedAccountKey === account.key ? "opacity-40" : ""} ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-xl" : ""}`}
+                style={{ cursor: "grab" }}
+              >
+                <AccountCard
+                  account={account}
+                  changedIds={changedIds}
+                  onTogglePause={handleTogglePause}
+                  onDelete={handleDelete}
+                  onLinkBaseline={setLinkBaselineInstanceId}
+                  onUnlinkBaseline={handleUnlinkBaseline}
+                  forceExpandId={scrollExpandId}
+                />
+              </div>
             ))}
           </div>
         </div>
