@@ -1759,9 +1759,11 @@ function AccountCard({
                   <div>
                     <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
                     <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-                      Your Monitor EA is connected and listening for trades. Once your EA opens and
-                      closes a trade, the strategy will appear here automatically. You can then link
-                      a baseline to activate edge monitoring.
+                      Your Monitor EA is connected and listening. Strategies will appear here
+                      automatically once a trade is detected — this typically takes under 60
+                      seconds after your EA opens or closes its first position. If no strategy
+                      appears after several minutes, verify that your EA is using a non-zero
+                      Magic Number.
                     </p>
                   </div>
                 </div>

@@ -195,6 +195,7 @@ StrategyContext g_contexts[];
 int    g_contextCount = 0;
 bool   g_manifestMode = false;
 datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
+datetime g_lastIncrementalDiscovery = 0; // Rate-limit incremental re-discovery scans
 bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
 datetime g_lastSyncAttempt  = 0;         // Rate-limit chain sync retries
 bool     g_queueDirty       = false;     // True when queue was mutated but not yet flushed to disk
@@ -404,6 +405,15 @@ void OnTimer()
       if(g_manifestMode)
          Print("AlgoStudio Monitor: Late discovery activated — ",
                g_contextCount, " context(s) found.");
+   }
+
+   // Incremental re-discovery: scan for NEW strategies even when manifest mode
+   // is already active. Runs every 60s. Does NOT reset existing contexts.
+   if(g_manifestMode && g_contextCount > 0 && g_contextCount < MAX_MANIFEST_CONTEXTS
+      && InpStrategyMagic <= 0 && now - g_lastIncrementalDiscovery >= 60)
+   {
+      g_lastIncrementalDiscovery = now;
+      IncrementalRediscovery();
    }
 
    // Retry chain sync if initial sync failed — max once per 60 seconds.
@@ -892,6 +902,70 @@ void AutoDiscoverContexts()
       Print("AlgoStudio Monitor: Auto-discovery: all candidates filtered by noise filter. "
             "Falling back to single-strategy mode.");
    }
+}
+
+//+------------------------------------------------------------------+
+//| Incremental re-discovery: find NEW strategies without resetting  |
+//| existing contexts. Only appends up to MAX_MANIFEST_CONTEXTS.     |
+//+------------------------------------------------------------------+
+void IncrementalRediscovery()
+{
+   DiscoveryCandidate candidates[];
+   int unattributed = 0;
+   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+   if(found == 0) return;
+
+   int added = 0;
+   for(int i = 0; i < found; i++)
+   {
+      if(g_contextCount >= MAX_MANIFEST_CONTEXTS) break;
+
+      // Noise filter (same as AutoDiscoverContexts)
+      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
+         continue;
+
+      // Build fingerprint to check for duplicates against existing contexts
+      string fpSymbol = candidates[i].symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber);
+      string fp = SHA256(canonical);
+
+      bool duplicate = false;
+      for(int j = 0; j < g_contextCount; j++)
+      {
+         if(g_contexts[j].fingerprint == fp) { duplicate = true; break; }
+      }
+      if(duplicate) continue;
+
+      // New context — append
+      StrategyContext ctx;
+      ctx.magicNumber   = candidates[i].magicNumber;
+      ctx.symbol        = candidates[i].symbol;
+      ctx.timeframe     = "";
+      ctx.eaName        = StringLen(candidates[i].eaHint) > 0
+                          ? candidates[i].eaHint
+                          : "Magic " + IntegerToString((int)candidates[i].magicNumber);
+      ctx.instanceId    = "";
+      ctx.govAction     = "RUN";
+      ctx.govReason     = "";
+      ctx.govReceivedAt = 0;
+      ctx.seqNo         = 0;
+      ctx.lastHash      = GENESIS_HASH;
+      ctx.sessionStartSent = false;
+      ctx.fingerprint   = fp;
+
+      ArrayResize(g_contexts, g_contextCount + 1);
+      g_contexts[g_contextCount++] = ctx;
+      added++;
+
+      Print("AlgoStudio Monitor: Incremental discovery [", g_contextCount - 1, "] ",
+            ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName,
+            " fp=", StringSubstr(fp, 0, 16), "...");
+   }
+
+   if(added > 0)
+      Print("AlgoStudio Monitor: Incremental discovery added ", added,
+            " new context(s). Total: ", g_contextCount);
 }
 
 //+------------------------------------------------------------------+
