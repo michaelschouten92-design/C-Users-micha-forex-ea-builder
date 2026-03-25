@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "vercel-build": "prisma generate && node -e \"if(process.env.VERCEL_ENV==='production'){try{require('child_process').execSync('npx prisma migrate resolve --applied 20260325130000_add_query_indexes',{stdio:'inherit'})}catch(e){};require('child_process').execSync('npx prisma migrate deploy',{stdio:'inherit'})}else{console.log('Skipping migrations for preview deploy')}\" && next build",
+    "vercel-build": "prisma generate && node -e \"if(process.env.VERCEL_ENV==='production'){require('child_process').execSync('npx prisma migrate deploy',{stdio:'inherit'})}else{console.log('Skipping migrations for preview deploy')}\" && next build",
     "dev": "next dev",
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
