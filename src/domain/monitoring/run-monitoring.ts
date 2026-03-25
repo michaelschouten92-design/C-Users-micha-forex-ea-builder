@@ -682,7 +682,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
     if (err instanceof Error && (err as { code?: string }).code === "BASELINE_GONE") {
       log.warn({ instanceId, strategyId, runId: run.id }, "Baseline unlinked during monitoring run — aborting cleanly");
       await failRun(run.id, recordId, strategyId, instanceId, "NO_VERIFIED_BASELINE", err.message);
-      return { runId: run.id, recordId, verdict: "HEALTHY" as const, reasons: ["NO_VERIFIED_BASELINE"], tradeSnapshotHash: snapshot.snapshotHash, liveFactCount: snapshot.factCount };
+      return { runId: run.id, recordId, verdict: "HEALTHY" as const, reasons: ["NO_VERIFIED_BASELINE"], tradeSnapshotHash: "", liveFactCount: 0 };
     }
 
     // Any uncaught error — mark run as FAILED
