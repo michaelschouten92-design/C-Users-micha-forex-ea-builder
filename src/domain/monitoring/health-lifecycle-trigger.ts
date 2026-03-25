@@ -53,46 +53,46 @@ export async function evaluateHealthLifecycleTrigger(instanceId: string): Promis
     return; // Not eligible — no-op
   }
 
-  // 2. Load the most recent N snapshots
-  const snapshots = await prisma.healthSnapshot.findMany({
-    where: { instanceId },
-    orderBy: { createdAt: "desc" },
-    take: CONSECUTIVE_DEGRADED_REQUIRED,
-    select: { status: true, driftDetected: true, tradesSampled: true },
-  });
-
-  // Need exactly N snapshots to evaluate
-  if (snapshots.length < CONSECUTIVE_DEGRADED_REQUIRED) {
-    return;
-  }
-
-  // 3. All N snapshots must be DEGRADED + drift detected + sufficient trades
-  const allQualify = snapshots.every(
-    (s) =>
-      s.status === "DEGRADED" &&
-      s.driftDetected === true &&
-      s.tradesSampled >= MIN_TRADES_FOR_TRIGGER
-  );
-
-  if (!allQualify) {
-    return;
-  }
-
-  // 4. All conditions met — perform lifecycle transition
-  log.info(
-    {
-      instanceId,
-      consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
-      latestTradesSampled: snapshots[0].tradesSampled,
-    },
-    "Health lifecycle trigger: LIVE_MONITORING → EDGE_AT_RISK"
-  );
-
   const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
 
   try {
     await prisma.$transaction(
       async (tx) => {
+        // 2. Load the most recent N snapshots — inside tx so the read is
+        //    consistent with the lifecycle transition that follows.
+        const snapshots = await tx.healthSnapshot.findMany({
+          where: { instanceId },
+          orderBy: { createdAt: "desc" },
+          take: CONSECUTIVE_DEGRADED_REQUIRED,
+          select: { status: true, driftDetected: true, tradesSampled: true },
+        });
+
+        if (snapshots.length < CONSECUTIVE_DEGRADED_REQUIRED) {
+          return; // Not enough snapshots — no-op (tx commits empty)
+        }
+
+        // 3. All N snapshots must be DEGRADED + drift detected + sufficient trades
+        const allQualify = snapshots.every(
+          (s) =>
+            s.status === "DEGRADED" &&
+            s.driftDetected === true &&
+            s.tradesSampled >= MIN_TRADES_FOR_TRIGGER
+        );
+
+        if (!allQualify) {
+          return; // Conditions not met — no-op
+        }
+
+        // 4. All conditions met — perform lifecycle transition
+        log.info(
+          {
+            instanceId,
+            consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
+            latestTradesSampled: snapshots[0].tradesSampled,
+          },
+          "Health lifecycle trigger: LIVE_MONITORING → EDGE_AT_RISK"
+        );
+
         if (strategyId) {
           await appendProofEventInTx(tx, strategyId, "LIFECYCLE_EDGE_AT_RISK", {
             eventType: "LIFECYCLE_EDGE_AT_RISK",

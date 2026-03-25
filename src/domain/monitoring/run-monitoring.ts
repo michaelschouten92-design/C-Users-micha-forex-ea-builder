@@ -355,7 +355,17 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           },
         });
 
-        // b. Load instance lifecycle state — use the known instanceId directly,
+        // b. Re-verify baseline is still linked (guards against concurrent unlink
+        // between Phase 1c read and this atomic commit).
+        const baselineCheck = await tx.liveEAInstance.findUnique({
+          where: { id: instanceId },
+          select: { strategyVersionId: true },
+        });
+        if (!baselineCheck?.strategyVersionId) {
+          throw Object.assign(new Error("Baseline unlinked during monitoring run"), { code: "BASELINE_GONE" });
+        }
+
+        // c. Load instance lifecycle state — use the known instanceId directly,
         // not findFirst through strategyId (which could pick a wrong instance).
         const instanceRow = await tx.liveEAInstance.findUnique({
           where: { id: instanceId },
@@ -668,6 +678,13 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
       transition: atomicResult.transition,
     };
   } catch (err) {
+    // Controlled exit: baseline was unlinked during the monitoring run
+    if (err instanceof Error && (err as { code?: string }).code === "BASELINE_GONE") {
+      log.warn({ instanceId, strategyId, runId: run.id }, "Baseline unlinked during monitoring run — aborting cleanly");
+      await failRun(run.id, recordId, strategyId, instanceId, "NO_VERIFIED_BASELINE", err.message);
+      return { runId: run.id, recordId, verdict: "HEALTHY" as const, reasons: ["NO_VERIFIED_BASELINE"], tradeSnapshotHash: snapshot.snapshotHash, liveFactCount: snapshot.factCount };
+    }
+
     // Any uncaught error — mark run as FAILED
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
     log.error({ err, instanceId, strategyId, runId: run.id, recordId }, "Monitoring run failed");

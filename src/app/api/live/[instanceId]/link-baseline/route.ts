@@ -6,6 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
 import { linkExternalBaseline } from "@/lib/strategy-identity/external-baseline";
 import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
+import { apiRateLimiter, checkRateLimit, createRateLimitHeaders, formatRateLimitError } from "@/lib/rate-limit";
 
 const log = logger.child({ route: "link-baseline" });
 
@@ -32,6 +33,15 @@ export async function POST(
       return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
         status: 403,
       });
+    }
+
+    // Rate limit baseline operations
+    const rl = await checkRateLimit(apiRateLimiter, `baseline-link:${session.user.id}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rl)),
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
     }
 
     const { instanceId } = await params;

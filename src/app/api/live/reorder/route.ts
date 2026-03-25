@@ -43,14 +43,17 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Update sortOrder for each instance in a transaction
+    // Update sortOrder for each instance in a serializable transaction
     await prisma.$transaction(
-      validOrder.map((id, index) =>
-        prisma.liveEAInstance.update({
-          where: { id },
-          data: { sortOrder: index + 1 },
-        })
-      )
+      async (tx) => {
+        for (let i = 0; i < validOrder.length; i++) {
+          await tx.liveEAInstance.update({
+            where: { id: validOrder[i] },
+            data: { sortOrder: i + 1 },
+          });
+        }
+      },
+      { isolationLevel: "Serializable" }
     );
 
     return NextResponse.json({ success: true });

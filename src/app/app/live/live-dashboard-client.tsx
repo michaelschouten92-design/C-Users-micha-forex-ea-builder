@@ -3042,11 +3042,10 @@ export function LiveDashboardClient({
     }
   }, [initialRelinkInstanceId]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
-  const [showRestoreGuide] = useState(() =>
-    typeof window !== "undefined"
-      ? localStorage.getItem("algostudio:onboarding-dismissed") === "1"
-      : false
-  );
+  const [showRestoreGuide] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("algostudio:onboarding-dismissed") === "1"; } catch { return false; }
+  });
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -3201,16 +3200,20 @@ export function LiveDashboardClient({
 
   async function handleDelete(instanceId: string): Promise<void> {
     const ea = eaInstances.find((e) => e.id === instanceId);
-    const res = await fetch(`/api/live/${instanceId}`, {
-      method: "DELETE",
-      headers: getCsrfHeaders(),
-    });
+    try {
+      const res = await fetch(`/api/live/${instanceId}`, {
+        method: "DELETE",
+        headers: getCsrfHeaders(),
+      });
 
-    if (res.ok) {
-      setEaInstances((prev) => prev.filter((e) => e.id !== instanceId));
-      showSuccess(`${ea?.eaName ?? "EA"} deleted`);
-    } else {
-      showError("Failed to delete EA", "Please try again.");
+      if (res.ok) {
+        setEaInstances((prev) => prev.filter((e) => e.id !== instanceId));
+        showSuccess(`${ea?.eaName ?? "EA"} deleted`);
+      } else {
+        showError("Failed to delete EA", "Please try again.");
+      }
+    } catch {
+      showError("Failed to delete EA", "Network error. Please try again.");
     }
   }
 
@@ -3246,6 +3249,7 @@ export function LiveDashboardClient({
 
     // Optimistic local update: set sortOrder on primary instances
     const newOrder = reordered.map((g) => g.primary.id);
+    const previousInstances = eaInstances;
     setEaInstances((prev) =>
       prev.map((ea) => {
         const idx = newOrder.indexOf(ea.id);
@@ -3254,12 +3258,21 @@ export function LiveDashboardClient({
     );
     handleDragEnd();
 
-    // Persist to server
-    await fetch("/api/live/reorder", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({ order: newOrder }),
-    });
+    // Persist to server — rollback on failure
+    try {
+      const res = await fetch("/api/live/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ order: newOrder }),
+      });
+      if (!res.ok) {
+        setEaInstances(previousInstances);
+        showError("Failed to save order", "Your changes were reverted.");
+      }
+    } catch {
+      setEaInstances(previousInstances);
+      showError("Failed to save order", "Your changes were reverted.");
+    }
   }
 
   async function handleUnlinkBaseline(instanceId: string): Promise<void> {
@@ -4052,7 +4065,7 @@ export function LiveDashboardClient({
       {eaInstances.length > 0 && showRestoreGuide && (
         <button
           onClick={() => {
-            localStorage.removeItem("algostudio:onboarding-dismissed");
+            try { localStorage.removeItem("algostudio:onboarding-dismissed"); } catch { /* private browsing */ }
             window.location.reload();
           }}
           className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"

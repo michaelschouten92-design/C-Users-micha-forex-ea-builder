@@ -63,7 +63,7 @@ export function evaluateProfitFactorDegradation(
 
   const minAcceptable = baselineProfitFactor * profitFactorMinRatio;
 
-  if (liveProfitFactor < minAcceptable) {
+  if (liveProfitFactor <= minAcceptable) {
     return {
       ruleId: RULE_ID,
       status: "AT_RISK",

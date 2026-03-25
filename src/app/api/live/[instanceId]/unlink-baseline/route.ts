@@ -6,6 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
 import { appendProofEventInTx } from "@/lib/proof/events";
 import { randomUUID } from "crypto";
+import { apiRateLimiter, checkRateLimit, createRateLimitHeaders, formatRateLimitError } from "@/lib/rate-limit";
 
 const log = logger.child({ route: "unlink-baseline" });
 
@@ -29,6 +30,15 @@ export async function POST(
       return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
         status: 403,
       });
+    }
+
+    // Rate limit baseline operations
+    const rl = await checkRateLimit(apiRateLimiter, `baseline-unlink:${session.user.id}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rl)),
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
     }
 
     const { instanceId } = await params;
