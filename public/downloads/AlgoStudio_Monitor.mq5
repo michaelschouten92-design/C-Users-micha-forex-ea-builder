@@ -169,6 +169,11 @@ string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
 
+// Heartbeat ordering (monotone per EA session, reset on restart)
+int      g_heartbeatSeqNo   = 0;
+string   g_heartbeatSessionId = "";
+long     g_heartbeatSessionStartedAt = 0;  // Unix epoch seconds when this session started
+
 // Panel / overlay state
 datetime g_lastSuccessfulHb = 0;
 string   g_panelError       = "";
@@ -218,6 +223,14 @@ int OnInit()
       Print("AlgoStudio Monitor: Heartbeat interval must be 10-3600 seconds");
       return INIT_PARAMETERS_INCORRECT;
    }
+
+   // Generate unique session ID + timestamp for heartbeat ordering
+   g_heartbeatSeqNo = 0;
+   g_heartbeatSessionStartedAt = (long)TimeCurrent();
+   g_heartbeatSessionId = StringSubstr(SHA256(
+      IntegerToString(GetTickCount()) + IntegerToString(TimeCurrent()) +
+      DoubleToString(MathRand(), 0) + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))
+   ), 0, 16);
 
    // Single-instance lock
    g_lockGV = LOCK_GV_PREFIX + StringSubstr(InpApiKey, 0, 8);
@@ -1987,9 +2000,14 @@ void SendHeartbeat()
 
    string monitorModeStr = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
 
+   g_heartbeatSeqNo++;
+
    string json = "{"
       + JStr("mode", accMode) + ","
       + JStr("monitorMode", monitorModeStr) + ","
+      + JStr("heartbeatSessionId", g_heartbeatSessionId) + ","
+      + JInt("heartbeatSessionStartedAt", (int)g_heartbeatSessionStartedAt) + ","
+      + JInt("heartbeatSeqNo", g_heartbeatSeqNo) + ","
       + (StringLen(symbol) > 0 ? JStr("symbol", symbol) + "," : "")
       + (StringLen(tf) > 0 ? JStr("timeframe", tf) + "," : "")
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
@@ -2114,9 +2132,14 @@ void SendContextHeartbeat(StrategyContext &ctx)
 
    string ctxMonitorMode = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
 
+   g_heartbeatSeqNo++;
+
    string json = "{"
       + JStr("mode", accMode) + ","
       + JStr("monitorMode", ctxMonitorMode) + ","
+      + JStr("heartbeatSessionId", g_heartbeatSessionId) + ","
+      + JInt("heartbeatSessionStartedAt", (int)g_heartbeatSessionStartedAt) + ","
+      + JInt("heartbeatSeqNo", g_heartbeatSeqNo) + ","
       + JStr("symbol", ctx.symbol) + ","
       + JStr("timeframe", ctx.timeframe) + ","
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","

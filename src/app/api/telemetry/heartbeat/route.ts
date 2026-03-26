@@ -61,6 +61,9 @@ const heartbeatSchema = z.object({
   // sends aggregated trade metrics to the base instance. Older EAs omit this
   // field; the default preserves existing ACCOUNT_WIDE behaviour.
   monitorMode: z.enum(["SYMBOL_ONLY", "ACCOUNT_WIDE"]).optional(),
+  heartbeatSessionId: z.string().min(1).max(64).optional(),
+  heartbeatSessionStartedAt: z.number().int().min(0).optional(),
+  heartbeatSeqNo: z.number().int().min(1).optional(),
   deployment: deploymentSchema.optional(),
   // Account-wide deployment discovery
   discoveredDeployments: z.array(discoveredDeploymentSchema).max(50).optional(),
@@ -130,9 +133,10 @@ export async function POST(request: NextRequest) {
       "heartbeat:instance-resolution"
     );
 
-    // Fetch instance state before the update for status change detection
+    // Fetch instance state before the update for status change detection.
+    // TR3: Skip soft-deleted instances — no state mutations for deleted EAs.
     const previousState = await prisma.liveEAInstance.findUnique({
-      where: { id: effectiveInstanceId },
+      where: { id: effectiveInstanceId, deletedAt: null },
       select: {
         status: true,
         tradingState: true,
@@ -147,28 +151,72 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (!previousState) {
+      // Instance not found or soft-deleted — skip heartbeat silently
+      return NextResponse.json({ success: true, action: "PAUSE", reasonCode: "NO_INSTANCE" });
+    }
+
     // Atomically update instance + insert heartbeat record.
+    // TR1: Only update if this heartbeat is newer than the last one (stale-safe).
     // In manifest mode, also pulse the base instance so the terminal doesn't go OFFLINE.
     const now = new Date();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const txOps: any[] = [
-      prisma.liveEAInstance.update({
-        where: { id: effectiveInstanceId },
-        data: {
-          status: "ONLINE",
-          lastHeartbeat: now,
-          symbol: data.symbol ?? undefined,
-          timeframe: data.timeframe ?? undefined,
-          broker: data.broker ?? undefined,
-          accountNumber: data.accountNumber ?? undefined,
-          mode: data.mode === "PAPER" ? "PAPER" : undefined,
-          balance: data.balance,
-          equity: data.equity,
-          openTrades: data.openTrades,
-          totalTrades: data.totalTrades,
-          totalProfit: data.totalProfit,
-        },
-      }),
+      // TR1: Stale heartbeat guard via orderable session timestamp + seqNo.
+      // Accepts if: no prior session (NULL) OR newer session (startedAt >) OR
+      // same session + higher seqNo. Rejects stale heartbeats from old sessions.
+      // Legacy EA (missing fields): unconditional Prisma update (backward compat).
+      ...(data.heartbeatSessionId != null && data.heartbeatSessionStartedAt != null && data.heartbeatSeqNo != null
+        ? [
+            prisma.$queryRaw`
+              UPDATE "LiveEAInstance"
+              SET status = 'ONLINE',
+                  "lastHeartbeat" = ${now},
+                  "heartbeatSessionId" = ${data.heartbeatSessionId},
+                  "heartbeatSessionStartedAt" = ${data.heartbeatSessionStartedAt},
+                  "heartbeatSeqNo" = ${data.heartbeatSeqNo},
+                  symbol = COALESCE(${data.symbol ?? null}, symbol),
+                  timeframe = COALESCE(${data.timeframe ?? null}, timeframe),
+                  broker = COALESCE(${data.broker ?? null}, broker),
+                  "accountNumber" = COALESCE(${data.accountNumber ?? null}, "accountNumber"),
+                  mode = CASE WHEN ${data.mode === "PAPER"} THEN 'PAPER' ELSE mode END,
+                  balance = ${data.balance},
+                  equity = ${data.equity},
+                  "openTrades" = ${data.openTrades},
+                  "totalTrades" = ${data.totalTrades},
+                  "totalProfit" = ${data.totalProfit}
+              WHERE id = ${effectiveInstanceId}
+                AND "deletedAt" IS NULL
+                AND (
+                  "heartbeatSessionStartedAt" IS NULL
+                  OR "heartbeatSessionStartedAt" < ${data.heartbeatSessionStartedAt}
+                  OR (
+                    "heartbeatSessionStartedAt" = ${data.heartbeatSessionStartedAt}
+                    AND "heartbeatSessionId" = ${data.heartbeatSessionId}
+                    AND ("heartbeatSeqNo" IS NULL OR "heartbeatSeqNo" < ${data.heartbeatSeqNo})
+                  )
+                )
+            `,
+          ]
+        : [
+            prisma.liveEAInstance.update({
+              where: { id: effectiveInstanceId },
+              data: {
+                status: "ONLINE",
+                lastHeartbeat: now,
+                symbol: data.symbol ?? undefined,
+                timeframe: data.timeframe ?? undefined,
+                broker: data.broker ?? undefined,
+                accountNumber: data.accountNumber ?? undefined,
+                mode: data.mode === "PAPER" ? "PAPER" : undefined,
+                balance: data.balance,
+                equity: data.equity,
+                openTrades: data.openTrades,
+                totalTrades: data.totalTrades,
+                totalProfit: data.totalProfit,
+              },
+            }),
+          ]),
       prisma.eAHeartbeat.create({
         data: {
           instanceId: effectiveInstanceId,

@@ -96,9 +96,17 @@ export async function POST(request: NextRequest) {
   // Resolve per-context instanceId when strategy context identity is present.
   // Read-only lookup — heartbeat is responsible for creating context instances.
   // Falls back to base instance if context not yet created or not provided.
+  // TR4: Returns empty string if context instance was deleted — reject, don't misroute.
   const effectiveInstanceId = validation.data.context
     ? await resolveContextInstanceForIngest(baseInstanceId, validation.data.context)
     : baseInstanceId;
+
+  if (!effectiveInstanceId) {
+    return NextResponse.json(
+      apiError(ErrorCode.NOT_FOUND, "Context instance has been deleted"),
+      { status: 410 }
+    );
+  }
 
   // Per-event-type payload validation
   const payloadError = validatePayload(eventType, payload);
@@ -431,10 +439,24 @@ async function resolveContextInstanceForIngest(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${context.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.findUnique({
-    where: { apiKeyHash: syntheticKeyHash },
+  const ctx = await prisma.liveEAInstance.findFirst({
+    where: { apiKeyHash: syntheticKeyHash, deletedAt: null },
     select: { id: true },
   });
 
-  return ctx?.id ?? baseInstanceId;
+  // TR4: If context instance is deleted, do NOT fall back to base instance.
+  // Only fall back if context instance was never created (ctx === null AND no deleted match).
+  if (!ctx) {
+    // Check if a deleted instance exists — if so, reject rather than misroute
+    const deleted = await prisma.liveEAInstance.findUnique({
+      where: { apiKeyHash: syntheticKeyHash },
+      select: { id: true, deletedAt: true },
+    });
+    if (deleted?.deletedAt) {
+      return ""; // Signal: instance was deleted, caller should reject
+    }
+    return baseInstanceId; // Context instance not yet created — safe fallback
+  }
+
+  return ctx.id;
 }

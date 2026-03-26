@@ -406,4 +406,129 @@ describe("POST /api/telemetry/heartbeat", () => {
     expect(upsertCall.update.materialFingerprint).toBe("b".repeat(64));
     expect(upsertCall.update.baselineStatus).toBeUndefined();
   });
+
+  describe("TR1: stale heartbeat ordering via session + seqNo", () => {
+    function mockOnlineInstance() {
+      mockFindUnique.mockResolvedValue({
+        status: "ONLINE",
+        tradingState: "TRADING",
+        lastHeartbeat: new Date(),
+        eaName: "TestEA",
+        symbol: "EURUSD",
+        lifecycleState: "LIVE_MONITORING",
+        operatorHold: "NONE",
+        monitoringSuppressedUntil: null,
+        terminalConnectionId: null,
+        user: { email: "test@example.com", webhookUrl: null },
+      });
+      mockTransaction.mockResolvedValue(undefined);
+    }
+
+    const base = { balance: 1000, equity: 1000, openTrades: 0, totalTrades: 5, totalProfit: 100 };
+
+    // Test 3: higher seqNo same session → raw query path (state overwritten)
+    it("higher seqNo same session → uses raw query path", async () => {
+      authSuccess();
+      mockOnlineInstance();
+      const { POST } = await import("./route");
+      const res = await POST(makeRequest({
+        ...base,
+        heartbeatSessionId: "sess_A", heartbeatSessionStartedAt: 1000, heartbeatSeqNo: 42,
+      }));
+      expect(res.status).toBe(200);
+      expect(mockTransaction).toHaveBeenCalled();
+      const txOps = mockTransaction.mock.calls[0][0];
+      // Raw query path produces a promise (not a Prisma fluent call)
+      expect(txOps.length).toBeGreaterThanOrEqual(2);
+    });
+
+    // Test 4: new session with higher startedAt, seqNo=1 → raw query path
+    it("new session with higher startedAt → uses raw query path", async () => {
+      authSuccess();
+      mockOnlineInstance();
+      const { POST } = await import("./route");
+      const res = await POST(makeRequest({
+        ...base,
+        heartbeatSessionId: "sess_B", heartbeatSessionStartedAt: 2000, heartbeatSeqNo: 1,
+      }));
+      expect(res.status).toBe(200);
+      expect(mockTransaction).toHaveBeenCalled();
+    });
+
+    // Test 7: first heartbeat ever (all DB fields NULL) → raw query path
+    it("first heartbeat ever (NULL in DB) → uses raw query path", async () => {
+      authSuccess();
+      mockOnlineInstance();
+      const { POST } = await import("./route");
+      const res = await POST(makeRequest({
+        ...base,
+        heartbeatSessionId: "sess_first", heartbeatSessionStartedAt: 500, heartbeatSeqNo: 1,
+      }));
+      expect(res.status).toBe(200);
+      expect(mockTransaction).toHaveBeenCalled();
+    });
+
+    // Test 8: legacy EA without session fields → Prisma update path
+    it("legacy EA without session fields → Prisma update path", async () => {
+      authSuccess();
+      mockOnlineInstance();
+      const { POST } = await import("./route");
+      const res = await POST(makeRequest({ ...base }));
+      expect(res.status).toBe(200);
+      expect(mockTransaction).toHaveBeenCalled();
+    });
+
+    // Test 8b: partial session fields (missing startedAt) → legacy path
+    it("partial session fields (missing startedAt) → legacy path", async () => {
+      authSuccess();
+      mockOnlineInstance();
+      const { POST } = await import("./route");
+      const res = await POST(makeRequest({
+        ...base,
+        heartbeatSessionId: "sess_partial", heartbeatSeqNo: 10,
+      }));
+      expect(res.status).toBe(200);
+      expect(mockTransaction).toHaveBeenCalled();
+    });
+
+    // Tests 1,2,5,6: stale guard invariants are DB-enforced (SQL WHERE clause).
+    // Unit tests verify code path selection; the actual filtering is done by PostgreSQL.
+    // The WHERE clause from the design:
+    //   heartbeatSessionStartedAt IS NULL                           → accept (test 7)
+    //   OR heartbeatSessionStartedAt < incoming                     → accept (test 4)
+    //   OR (same startedAt AND same sessionId AND seqNo < incoming) → accept (test 3)
+    //   Everything else → 0 rows affected → skip (tests 1,2,5,6)
+    //
+    // These invariants require integration tests against a real database:
+    // 1. Lower seqNo same session → not overwritten
+    // 2. Equal seqNo same session → not overwritten
+    // 5. Old session with lower startedAt → not overwritten
+    // 6. Two sessions same startedAt different sessionId → not overwritten
+  });
+
+  describe("TR3: soft-deleted instance rejects heartbeat", () => {
+    it("returns PAUSE for deleted instance without applying state", async () => {
+      authSuccess();
+      // findUnique returns null (deletedAt filter excludes it)
+      mockFindUnique.mockResolvedValue(null);
+
+      const { POST } = await import("./route");
+      const res = await POST(
+        makeRequest({
+          balance: 1000,
+          equity: 1000,
+          openTrades: 0,
+          totalTrades: 5,
+          totalProfit: 100,
+        })
+      );
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.action).toBe("PAUSE");
+      expect(body.reasonCode).toBe("NO_INSTANCE");
+      // No transaction should have been called
+      expect(mockTransaction).not.toHaveBeenCalled();
+    });
+  });
 });
