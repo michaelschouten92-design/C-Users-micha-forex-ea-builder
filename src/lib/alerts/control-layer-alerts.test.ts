@@ -4,14 +4,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockAlertCreate = vi.fn();
 const mockAlertUpdate = vi.fn().mockResolvedValue({});
+const mockUserFindUnique = vi.fn();
+const mockInstanceFindUnique = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     controlLayerAlert: {
       create: (...args: unknown[]) => mockAlertCreate(...args),
       update: (...args: unknown[]) => mockAlertUpdate(...args),
     },
-    user: { findUnique: vi.fn() },
-    liveEAInstance: { findUnique: vi.fn() },
+    user: { findUnique: (...args: unknown[]) => mockUserFindUnique(...args) },
+    liveEAInstance: { findUnique: (...args: unknown[]) => mockInstanceFindUnique(...args) },
   },
 }));
 
@@ -42,16 +44,15 @@ vi.mock("@/lib/logger", () => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-async function setupUserAndInstance() {
-  const { prisma } = await import("@/lib/prisma");
-  prisma.user.findUnique.mockResolvedValue({
+function setupUserAndInstance() {
+  mockUserFindUnique.mockResolvedValue({
     email: "trader@example.com",
     webhookUrl: null,
     telegramBotToken: null,
     telegramChatId: null,
     slackWebhookUrl: null,
   });
-  prisma.liveEAInstance.findUnique.mockResolvedValue({
+  mockInstanceFindUnique.mockResolvedValue({
     eaName: "TestEA",
     symbol: "EURUSD",
   });
@@ -62,7 +63,7 @@ async function setupUserAndInstance() {
 describe("emitControlLayerAlert — delivery visibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    await setupUserAndInstance();
+    setupUserAndInstance();
   });
 
   it("enqueue failure is caught and logged by emitControlLayerAlert (AD1)", async () => {
