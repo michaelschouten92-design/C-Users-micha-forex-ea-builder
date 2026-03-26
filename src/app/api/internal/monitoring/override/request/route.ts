@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
 
   const instance = await prisma.liveEAInstance.findFirst({
     where: {
+      deletedAt: null,
       strategyVersion: {
         strategyIdentity: { strategyId },
       },

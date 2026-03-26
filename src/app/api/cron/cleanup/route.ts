@@ -100,6 +100,7 @@ async function handleCleanup(request: NextRequest) {
       batchDelete(prisma.eAError, { createdAt: { lt: thirtyDaysAgo } }),
       prisma.liveEAInstance.updateMany({
         where: {
+          deletedAt: null,
           status: { in: ["ONLINE", "ERROR"] },
           lastHeartbeat: { lt: fifteenMinutesAgo },
         },
