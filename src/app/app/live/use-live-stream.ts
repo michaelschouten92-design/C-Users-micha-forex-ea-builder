@@ -36,6 +36,8 @@ export function useLiveStream(options: UseLiveStreamOptions): LiveStreamState {
   });
 
   const sseAttempted = useRef(false);
+  /** Timer to retry SSE after a transient failure that fell back to polling */
+  const sseRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let eventSource: EventSource | null = null;
@@ -79,6 +81,20 @@ export function useLiveStream(options: UseLiveStreamOptions): LiveStreamState {
         }
       });
 
+      eventSource.addEventListener("stream_error", (e) => {
+        if (cancelled) return;
+        // Server sent a structured init-failure event before closing the stream.
+        // The connection close will follow; fall back to polling via onerror.
+        if (e instanceof MessageEvent) {
+          try {
+            const data = JSON.parse(e.data);
+            optionsRef.current.onError(data);
+          } catch {
+            /* ignore */
+          }
+        }
+      });
+
       eventSource.addEventListener("error", (e) => {
         if (cancelled) return;
         // Check if this is a data event or a connection error
@@ -91,17 +107,43 @@ export function useLiveStream(options: UseLiveStreamOptions): LiveStreamState {
           }
           return;
         }
-        // Connection error -- fall back to polling
+        // Connection error -- fall back to polling and schedule SSE retry in 2 min
         eventSource?.close();
         eventSource = null;
-        if (!cancelled) startPolling();
+        if (!cancelled) {
+          startPolling();
+          if (sseRetryTimer.current) clearTimeout(sseRetryTimer.current);
+          sseRetryTimer.current = setTimeout(() => {
+            if (!cancelled && pollTimer) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+            }
+            if (!cancelled) {
+              sseAttempted.current = false;
+              startSSE();
+            }
+          }, 120_000);
+        }
       });
 
       eventSource.onerror = () => {
         if (cancelled) return;
         eventSource?.close();
         eventSource = null;
-        if (!cancelled) startPolling();
+        if (!cancelled) {
+          startPolling();
+          if (sseRetryTimer.current) clearTimeout(sseRetryTimer.current);
+          sseRetryTimer.current = setTimeout(() => {
+            if (!cancelled && pollTimer) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+            }
+            if (!cancelled) {
+              sseAttempted.current = false;
+              startSSE();
+            }
+          }, 120_000);
+        }
       };
     }
 
@@ -141,6 +183,7 @@ export function useLiveStream(options: UseLiveStreamOptions): LiveStreamState {
       cancelled = true;
       eventSource?.close();
       if (pollTimer) clearInterval(pollTimer);
+      if (sseRetryTimer.current) clearTimeout(sseRetryTimer.current);
     };
   }, [pollingInterval, pollingUrl]);
 

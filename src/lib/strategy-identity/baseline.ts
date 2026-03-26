@@ -7,10 +7,7 @@
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { logger } from "@/lib/logger";
-import {
-  extractBaselineMetrics,
-  estimateBacktestDuration,
-} from "@/lib/strategy-health/baseline-extractor";
+import { extractBaselineMetrics } from "@/lib/strategy-health/baseline-extractor";
 import { appendProofEventInTx } from "@/lib/proof/events";
 import { computeBaselineHash } from "@/lib/proof/identity-hashing";
 
@@ -22,9 +19,15 @@ type TransactionClient = Omit<
 >;
 
 /**
- * Parse a BacktestRun period string (e.g. "2020.01.01 - 2024.12.31") into duration in days.
- * Returns null if the format is unrecognizable.
+ * Normalize a period string before parsing.
+ * Canonicalizes Unicode dash variants (en-dash U+2013, em-dash U+2014) to ASCII hyphen.
+ * The parsePeriodDays regex already handles variable whitespace around the separator,
+ * so only dash canonicalization is required here.
  */
+function normalizePeriod(period: string): string {
+  return period.replace(/[\u2013\u2014]/g, "-");
+}
+
 export function parsePeriodDays(period: string): number | null {
   const match = period.match(
     /(\d{4})[.\-/](\d{2})[.\-/](\d{2})\s*[-\u2013]\s*(\d{4})[.\-/](\d{2})[.\-/](\d{2})/
@@ -85,8 +88,12 @@ export async function createBaselineFromBacktest(
     finalBalance: backtestRun.initialDeposit + backtestRun.totalNetProfit,
   };
 
-  const periodDays = parsePeriodDays(backtestRun.period);
-  const backtestDurationDays = periodDays ?? estimateBacktestDuration(backtestResult);
+  // Normalize dash variants before parsing to ensure consistent results across
+  // broker-specific period string formats. If the period is still unparseable
+  // after normalization, use 0 as a deterministic sentinel rather than an
+  // estimate derived from totalTrades (which would corrupt the baseline hash).
+  const periodDays = parsePeriodDays(normalizePeriod(backtestRun.period));
+  const backtestDurationDays = periodDays ?? 0;
 
   const { metrics, raw } = extractBaselineMetrics(backtestResult, backtestDurationDays);
 
@@ -126,6 +133,7 @@ export async function createBaselineFromBacktest(
       volatility: metrics.volatility ?? null,
       initialDeposit: raw.initialDeposit,
       backtestDurationDays: raw.backtestDurationDays,
+      baselineHash,
       rawMetrics: raw as unknown as Prisma.InputJsonValue,
     },
   });

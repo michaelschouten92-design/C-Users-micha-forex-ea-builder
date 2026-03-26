@@ -114,9 +114,30 @@ export async function POST(request: NextRequest, { params }: Props) {
       );
     }
 
+    const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
+    if (!strategyId) {
+      return NextResponse.json(
+        apiError(ErrorCode.INTERNAL_ERROR, "Instance has no linked strategy identity"),
+        { status: 500 }
+      );
+    }
+
+    const recordId = randomUUID();
+    const now = new Date();
+
     try {
       await prisma.$transaction(
         async (tx) => {
+          await appendProofEventInTx(tx, strategyId, "STRATEGY_ACTIVATED", {
+            eventType: "STRATEGY_ACTIVATED",
+            recordId,
+            strategyId,
+            instanceId,
+            from: "DRAFT",
+            to: "LIVE_MONITORING",
+            reason: "auto-discovery activation",
+            timestamp: now.toISOString(),
+          });
           await performLifecycleTransitionInTx(
             tx,
             instanceId,

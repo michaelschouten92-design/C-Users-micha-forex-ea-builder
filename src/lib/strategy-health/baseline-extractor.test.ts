@@ -118,3 +118,41 @@ describe("estimateBacktestDuration", () => {
     expect(duration).toBe(30);
   });
 });
+
+describe("initialDeposit edge cases (BD4)", () => {
+  const baseInput = {
+    totalTrades: 100,
+    winRate: 50,
+    profitFactor: 1.2,
+    maxDrawdown: 500,
+    maxDrawdownPercent: 5,
+    netProfit: 1000,
+    sharpeRatio: 0.8,
+    finalBalance: 11000,
+  };
+
+  it("undefined initialDeposit falls back to 10000", () => {
+    const { raw } = extractBaselineMetrics(
+      { ...baseInput, initialDeposit: undefined as unknown as number },
+      90
+    );
+    expect(raw.initialDeposit).toBe(10000);
+  });
+
+  it("initialDeposit = 0 clamps to 1", () => {
+    const { raw } = extractBaselineMetrics({ ...baseInput, initialDeposit: 0 }, 90);
+    expect(raw.initialDeposit).toBe(1);
+    expect(Number.isFinite(raw.netReturnPct)).toBe(true);
+  });
+
+  it("negative initialDeposit clamps to 1", () => {
+    const { raw } = extractBaselineMetrics({ ...baseInput, initialDeposit: -5000 }, 90);
+    expect(raw.initialDeposit).toBe(1);
+    expect(Number.isFinite(raw.netReturnPct)).toBe(true);
+  });
+
+  it("positive initialDeposit is preserved", () => {
+    const { raw } = extractBaselineMetrics({ ...baseInput, initialDeposit: 25000 }, 90);
+    expect(raw.initialDeposit).toBe(25000);
+  });
+});

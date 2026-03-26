@@ -67,6 +67,7 @@ function renderDashboard(
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
     id: ea.id,
+    createdAt: ea.createdAt.toISOString(),
     eaName: ea.eaName,
     symbol: ea.symbol,
     timeframe: ea.timeframe,
@@ -81,6 +82,7 @@ function renderDashboard(
     openTrades: ea.openTrades,
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
+    sortOrder: ea.sortOrder ?? 0,
     strategyStatus: ea.strategyStatus as string,
     operatorHold: (ea.operatorHold ?? "NONE") as string,
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
@@ -95,6 +97,7 @@ function renderDashboard(
       (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
     ),
     monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
+    monitoringSuppressedUntil: ea.monitoringSuppressedUntil?.toISOString() ?? null,
     baseline: (() => {
       const bl = ea.strategyVersion?.backtestBaseline as
         | {
@@ -156,10 +159,38 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── System Status strip ── */}
-        {eaInstances.length > 0 && (
-          <SystemStatusStrip instances={eaInstances} authority={authority} />
-        )}
+        {/* ── System Command Board ── */}
+        <div className="mt-5 mb-4">
+          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-5">
+            {/* Title row */}
+            <div className="flex items-baseline justify-between gap-4">
+              <div className="flex items-baseline gap-3">
+                <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
+                {eaInstances.length > 0 && (
+                  <span className="text-xs text-[#64748B] font-medium tabular-nums">
+                    {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}{" "}
+                    monitored
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <p className="text-[12px] text-[#475569] max-w-xl mt-1.5 mb-5">
+              Monitor live trading strategies and detect edge drift, instability and risk anomalies
+              before they damage performance.
+            </p>
+
+            {/* System State Board */}
+            {eaInstances.length > 0 && (
+              <div className="rounded-lg bg-[rgba(10,1,24,0.5)] border border-[#1E293B]/40 px-4 py-4">
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
+                  System State
+                </p>
+                <SystemStatusStrip instances={eaInstances} authority={authority} />
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* ══════════════════════════════════════════════════════
             ONBOARDING — Activation checklist (auto-hides)
@@ -184,31 +215,38 @@ function renderDashboard(
               : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
 
             return (
-              <section className="mt-4 space-y-2">
+              <section className="mb-4 space-y-2">
                 {showAuthority && (
                   <div
-                    className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg"
-                    style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg"
+                    style={{
+                      backgroundColor: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                    }}
                   >
                     <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: colors.dot }}
                     />
+                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
+                      Governance
+                    </span>
                     <span className="text-sm font-bold" style={{ color: colors.text }}>
                       {action}
                     </span>
                     {isSetupRequired && (
-                      <span className="text-xs font-medium text-[#F59E0B]">Setup required</span>
+                      <span className="text-xs font-semibold text-[#F59E0B]">Setup required</span>
                     )}
-                    <span className="text-xs text-[#94A3B8]">{explanation}</span>
+                    <span className="text-xs text-[#94A3B8] leading-relaxed">{explanation}</span>
                   </div>
                 )}
                 {showHalted && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#EF4444]" />
-                    <span className="text-sm font-medium text-[#EF4444]">
-                      {halted.length} halted
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
+                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
+                      Operator Hold
                     </span>
+                    <span className="text-sm font-bold text-[#EF4444]">{halted.length} halted</span>
                     <span className="text-xs text-[#94A3B8]">
                       {halted
                         .slice(0, 3)
@@ -223,7 +261,7 @@ function renderDashboard(
           })()}
 
         {/* ── Strategies, Terminals, Journal ── */}
-        <section className="mt-6">
+        <section>
           <MonitorTabs>
             <LiveDashboardClient
               initialData={serializedInstances}
@@ -347,15 +385,33 @@ function SystemStatusStrip({
   ];
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.12)]">
-      {items.map((item) => (
-        <span key={item.label} className="text-xs text-[#7C8DB0]">
-          {item.label}:{" "}
-          <span className="font-mono font-medium" style={{ color: item.color ?? "#CBD5E1" }}>
-            {item.value}
-          </span>
-        </span>
-      ))}
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {items.map((item) => {
+        const hasActiveColor = item.color && item.color !== "#CBD5E1";
+        return (
+          <div
+            key={item.label}
+            className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden"
+            style={hasActiveColor ? { boxShadow: `0 0 16px ${item.color}10` } : undefined}
+          >
+            {hasActiveColor && (
+              <div
+                className="absolute top-0 left-0 right-0 h-[2px]"
+                style={{ backgroundColor: item.color, opacity: 0.5 }}
+              />
+            )}
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
+              {item.label}
+            </p>
+            <p
+              className="text-2xl font-bold font-mono tabular-nums leading-none"
+              style={{ color: item.color ?? "#CBD5E1" }}
+            >
+              {item.value}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }

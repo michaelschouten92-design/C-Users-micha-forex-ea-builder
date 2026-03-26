@@ -241,6 +241,7 @@ function StatusBadge({
 function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -248,11 +249,20 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
-      if (!cancelled && res.ok) {
-        const json = await res.json();
-        setTrades(json.data);
-        setTotalPages(json.pagination.totalPages);
+      setError(null);
+      try {
+        const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
+        if (!cancelled) {
+          if (res.ok) {
+            const json = await res.json();
+            setTrades(json.data);
+            setTotalPages(json.pagination.totalPages);
+          } else {
+            setError("Failed to load trades. Please try again.");
+          }
+        }
+      } catch {
+        if (!cancelled) setError("Network error loading trades.");
       }
       if (!cancelled) setLoading(false);
     })();
@@ -347,6 +357,8 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
 
       {loading ? (
         <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading trades...</div>
+      ) : error ? (
+        <div className="text-xs text-[#EF4444] py-4 text-center">{error}</div>
       ) : trades.length === 0 ? (
         <div className="text-xs text-[#7C8DB0] py-4 text-center">No trades recorded yet</div>
       ) : (
@@ -457,25 +469,31 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
   const [data, setData] = useState<TrackRecordVerification | null>(null);
   const [metrics, setMetrics] = useState<TrackRecordMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
       try {
         const [verifyRes, metricsRes] = await Promise.all([
           fetch(`/api/track-record/verify?instanceId=${instanceId}`),
           fetch(`/api/track-record/metrics/${instanceId}`),
         ]);
-        if (!cancelled && verifyRes.ok) {
-          setData(await verifyRes.json());
-        }
-        if (!cancelled && metricsRes.ok) {
-          setMetrics(await metricsRes.json());
+        if (!cancelled) {
+          if (verifyRes.ok) {
+            setData(await verifyRes.json());
+          } else {
+            setError("Failed to load track record.");
+          }
+          if (metricsRes.ok) {
+            setMetrics(await metricsRes.json());
+          }
         }
       } catch {
-        // Silently fail
+        if (!cancelled) setError("Network error loading track record.");
       }
       if (!cancelled) setLoading(false);
     })();
@@ -513,6 +531,14 @@ function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: 
           <div className="w-3 h-3 border-2 border-[#7C8DB0] border-t-transparent rounded-full animate-spin" />
           Loading track record...
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+        <p className="text-xs text-[#EF4444]">{error}</p>
       </div>
     );
   }
@@ -695,7 +721,7 @@ function resolveInstanceAttention(
       color: "#71717A",
     };
   }
-  if (ea.strategyStatus === "EDGE_DEGRADED") {
+  if (ea.lifecycleState === "EDGE_AT_RISK" || ea.strategyStatus === "EDGE_DEGRADED") {
     return {
       statusLabel: "Edge at risk",
       reason: ea.monitoringReasons?.length
@@ -859,21 +885,29 @@ function compareInstances(a: EAInstanceData, b: EAInstanceData): number {
 }
 
 /**
- * Sort account groups by the highest-priority instance within each group.
+ * Sort account groups by firstSeen (createdAt of the primary instance) ascending.
+ * Oldest accounts stay at the top — operators rely on spatial memory.
  * Also sorts instances within each group by priority.
  */
 function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
-  // Sort instances within each group
+  // Sort instances within each group (strategies inside an account)
   for (const group of groups) {
     group.instances.sort(compareInstances);
   }
 
-  // Sort groups by their highest-priority (first) instance
+  // Stable account order: user-defined sortOrder first, then createdAt fallback
   return groups.sort((a, b) => {
-    const bestA = a.instances[0];
-    const bestB = b.instances[0];
-    if (!bestA || !bestB) return 0;
-    return compareInstances(bestA, bestB);
+    const sa = a.primary.sortOrder ?? 0;
+    const sb = b.primary.sortOrder ?? 0;
+    // Both have explicit sort order → use it
+    if (sa !== 0 && sb !== 0) return sa - sb;
+    // One has sort order, the other doesn't → sorted one comes first
+    if (sa !== 0) return -1;
+    if (sb !== 0) return 1;
+    // Neither has sort order → fall back to createdAt
+    const ta = new Date(a.primary.createdAt).getTime();
+    const tb = new Date(b.primary.createdAt).getTime();
+    return ta - tb;
   });
 }
 
@@ -927,7 +961,7 @@ function deriveSignalSummary(
   snap: (EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never) | undefined,
   isLinked: boolean
 ): string {
-  if (!isLinked) return "Baseline not linked — health monitoring inactive";
+  if (!isLinked) return "No baseline linked — monitoring inactive";
   if (!snap) return "Awaiting first monitoring evaluation";
   switch (health) {
     case "Healthy":
@@ -1041,6 +1075,15 @@ function InvestigationPanel({
             Hold: <span className="text-[#F59E0B]">{instance.operatorHold}</span>
           </span>
         )}
+        {instance.monitoringSuppressedUntil &&
+          new Date(instance.monitoringSuppressedUntil) > new Date() && (
+            <span>
+              Monitoring suppressed until:{" "}
+              <span className="text-[#F59E0B]">
+                {formatDateTime(instance.monitoringSuppressedUntil)}
+              </span>
+            </span>
+          )}
       </div>
     </div>
   );
@@ -1056,6 +1099,7 @@ function AccountCard({
   onTogglePause,
   onDelete,
   onLinkBaseline,
+  onUnlinkBaseline,
   forceExpandId,
 }: {
   account: AccountGroup;
@@ -1063,6 +1107,7 @@ function AccountCard({
   onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
   onDelete: (instanceId: string) => void;
   onLinkBaseline: (instanceId: string) => void;
+  onUnlinkBaseline: (instanceId: string) => void;
   forceExpandId?: string | null;
 }) {
   const { primary, instances } = account;
@@ -1128,17 +1173,20 @@ function AccountCard({
         instanceId: string | null;
       }
     >();
+    // Normalize broker suffixes: "EURUSD.r" → "EURUSD", "EURUSDm" → "EURUSD"
+    const normSym = (s: string) => s.replace(/[.\-_].*$/, "").toUpperCase();
     for (const t of allTrades) {
       const key = `${t.symbol}|${t.magicNumber ?? "none"}`;
       const existing = map.get(key);
       if (existing) {
         existing.trades.push(t);
       } else {
-        // Match trade to owning instance
+        // Match trade to owning instance (with broker-suffix normalization)
+        const tradeSym = normSym(t.symbol ?? "");
         const inst = instances.find(
           (ea) =>
-            ea.symbol?.toUpperCase() === (t.symbol ?? "").toUpperCase() ||
-            ea.deployments?.some((d) => d.symbol.toUpperCase() === (t.symbol ?? "").toUpperCase())
+            (ea.symbol && normSym(ea.symbol) === tradeSym) ||
+            ea.deployments?.some((d) => normSym(d.symbol) === tradeSym)
         );
         map.set(key, {
           symbol: t.symbol ?? "UNKNOWN",
@@ -1156,7 +1204,7 @@ function AccountCard({
       const key = `ctx:${ctx.id}`;
       if (!map.has(key)) {
         const dep = ctx.deployments?.find(
-          (d) => d.symbol.toUpperCase() === ctx.symbol!.toUpperCase()
+          (d) => normSym(d.symbol) === normSym(ctx.symbol!)
         );
         map.set(key, {
           symbol: ctx.symbol,
@@ -1172,10 +1220,11 @@ function AccountCard({
         const matchInstance = (k: string): EAInstanceData | undefined => {
           if (k.startsWith("ctx:")) return instances.find((ea) => ea.id === k.slice(4));
           const [sym] = k.split("|");
+          const normKey = normSym(sym ?? "");
           return instances.find(
             (ea) =>
-              ea.symbol?.toUpperCase() === sym?.toUpperCase() ||
-              ea.deployments?.some((d) => d.symbol.toUpperCase() === sym?.toUpperCase())
+              (ea.symbol && normSym(ea.symbol) === normKey) ||
+              ea.deployments?.some((d) => normSym(d.symbol) === normKey)
           );
         };
         const instA = matchInstance(keyA);
@@ -1221,26 +1270,6 @@ function AccountCard({
     setDeleteLoading(true);
     for (const ea of instances) {
       await onDelete(ea.id);
-    }
-  }
-
-  async function handleUnlinkBaseline(instanceId: string, deploymentId: string) {
-    try {
-      const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ deploymentId }),
-      });
-      if (res.ok) {
-        showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
-        // Reload to reflect changes
-        window.location.reload();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showError("Failed to unlink", data.message ?? "Something went wrong");
-      }
-    } catch {
-      showError("Failed to unlink", "Network error");
     }
   }
 
@@ -1336,224 +1365,262 @@ function AccountCard({
   return (
     <div
       id={`account-card-${primary.id}`}
-      className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
-        statusChanged
-          ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
-          : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
+      className={`bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${
+        healthCounts["Edge at Risk"] > 0
+          ? "border-l-2 border-l-[#EF4444]/60 border-[#1E293B]"
+          : statusChanged
+            ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
+            : "border-[#1E293B]/80 hover:border-[#334155]"
       }`}
     >
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white truncate">{primary.eaName}</h3>
-          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
-            {account.broker && <span>{account.broker}</span>}
-            {account.accountNumber && (
-              <>
-                {account.broker && <span className="text-[rgba(79,70,229,0.4)]">•</span>}
-                <span>Account #{account.accountNumber}</span>
-              </>
-            )}
-            <>
-              {(account.broker || account.accountNumber) && (
-                <span className="text-[rgba(79,70,229,0.4)]">•</span>
-              )}
-              <span className="text-[#7C8DB0]/70 italic">Portfolio mode</span>
-            </>
-          </div>
-          {healthSummaryParts.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-              {healthSummaryParts.map((label) => {
-                const hs = HEALTH_STYLES[label];
+      {/* Header zone */}
+      <div className="px-5 pt-4 pb-3">
+        <div className="flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <StatusBadge status={accountStatus} animate={statusChanged} />
+              <h3 className="font-semibold text-white truncate text-[15px]">{primary.eaName}</h3>
+              {(() => {
+                const overridePending = instances.some(
+                  (ea) => (ea.operatorHold ?? "NONE") === "OVERRIDE_PENDING"
+                );
+                const execState = overridePending
+                  ? "OVERRIDE_PENDING"
+                  : anyHalted
+                    ? "HALTED"
+                    : allPaused
+                      ? "PAUSED"
+                      : "RUN";
+                if (execState === "RUN") return null;
+                const execColor =
+                  execState === "HALTED" || execState === "OVERRIDE_PENDING"
+                    ? "#EF4444"
+                    : "#F59E0B";
+                const execLabel =
+                  execState === "OVERRIDE_PENDING" ? "OVERRIDE PENDING" : execState;
                 return (
                   <span
-                    key={label}
-                    className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-medium rounded"
+                    style={{
+                      backgroundColor: `${execColor}15`,
+                      color: execColor,
+                    }}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                    {healthCounts[label]} {label}
+                    {execLabel}
                   </span>
                 );
-              })}
+              })()}
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status={accountStatus} animate={statusChanged} />
-          {(() => {
-            const execState = anyHalted ? "HALTED" : allPaused ? "PAUSED" : "RUN";
-            const execColor =
-              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
-            return (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-medium rounded-full"
-                style={{
-                  backgroundColor: `${execColor}20`,
-                  color: execColor,
-                  border: `1px solid ${execColor}4D`,
-                }}
-              >
-                {execState}
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-[#525B6B]">
+              {account.broker && <span>{account.broker}</span>}
+              {account.accountNumber && (
+                <>
+                  {account.broker && <span className="text-[#334155]">·</span>}
+                  <span>#{account.accountNumber}</span>
+                </>
+              )}
+              {(account.broker || account.accountNumber) && (
+                <span className="text-[#334155]">·</span>
+              )}
+              <span>Portfolio</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {instances.some((ea) => ea.mode === "PAPER") && (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/10 text-[#F59E0B]/80">
+                PAPER
               </span>
-            );
-          })()}
-          {instances.some((ea) => ea.mode === "PAPER") && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-              Paper
-            </span>
-          )}
-          {/* Edge monitoring status badge */}
-          {(() => {
-            const latestSnapshot = instances
-              .map((ea) => ea.healthSnapshots?.[0])
-              .filter(Boolean)[0];
-            if (!latestSnapshot) return null;
-            const { driftDetected, driftSeverity, status } = latestSnapshot;
-            if (driftDetected) {
-              return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-pulse" />
-                  Drift detected
-                </span>
-              );
-            }
-            if (driftSeverity > 0.3 || status === "WARNING") {
-              return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" />
-                  Monitoring: Warning
-                </span>
-              );
-            }
-            if (status === "DEGRADED") {
-              return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
-                  Monitoring: Edge at Risk
-                </span>
-              );
-            }
-            return (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-                Monitoring: OK
+            )}
+            {/* Edge monitoring status badge — only show non-healthy states */}
+            {(() => {
+              const latestSnapshot = instances
+                .map((ea) => ea.healthSnapshots?.[0])
+                .filter(Boolean)[0];
+              if (!latestSnapshot) return null;
+              const { driftDetected, driftSeverity, status } = latestSnapshot;
+              if (driftDetected) {
+                return (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/10 text-[#EF4444]">
+                    <span className="w-1 h-1 rounded-full bg-[#EF4444] animate-pulse" />
+                    Drift
+                  </span>
+                );
+              }
+              if (driftSeverity > 0.3 || status === "WARNING") {
+                return (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/10 text-[#F59E0B]">
+                    <span className="w-1 h-1 rounded-full bg-[#F59E0B]" />
+                    Warning
+                  </span>
+                );
+              }
+              if (status === "DEGRADED") {
+                return (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/10 text-[#EF4444]">
+                    <span className="w-1 h-1 rounded-full bg-[#EF4444]" />
+                    Edge at Risk
+                  </span>
+                );
+              }
+              return null; // Healthy state — no badge needed, reduces noise
+            })()}
+            {instances.some((ea) => ea.isAutoDiscovered) && (
+              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#8B5CF6]/10 text-[#A78BFA]/80">
+                Discovered
               </span>
-            );
-          })()}
-          {/* Auto-discovered strategy badge */}
-          {instances.some((ea) => ea.isAutoDiscovered) && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30">
-              Discovered
-            </span>
-          )}
+            )}
+            {/* Show baseline link CTA when any instance is missing a baseline */}
+            {(() => {
+              const unlinkable = instances.find(
+                (ea) => !ea.baseline && !ea.relinkRequired && ea.isExternal
+              );
+              if (!unlinkable) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLinkBaseline(unlinkable.id);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-medium rounded border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/10 transition-colors"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                  </svg>
+                  Link Baseline
+                </button>
+              );
+            })()}
+          </div>
         </div>
+
+        {/* Strategy health strip */}
+        {healthSummaryParts.length > 0 && (
+          <div className="flex items-center gap-3 mt-2.5">
+            {healthSummaryParts.map((label) => {
+              const hs = HEALTH_STYLES[label];
+              return (
+                <span
+                  key={label}
+                  className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                  {healthCounts[label]} {label}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Financial metrics */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* Financial metrics — primary row */}
+      <div className="grid grid-cols-3 gap-3 px-5 py-3 border-y border-[#1E293B]/40">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Balance</p>
-          <p className="text-lg font-semibold text-white">{formatCurrency(balance)}</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Balance</p>
+          <p className="text-base font-semibold text-white tabular-nums">
+            {formatCurrency(balance)}
+          </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Equity</p>
-          <p className="text-lg font-semibold text-white">{formatCurrency(equity)}</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Equity</p>
+          <p className="text-base font-semibold text-white tabular-nums">
+            {formatCurrency(equity)}
+          </p>
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit</p>
+          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Profit</p>
           <p
-            className={`text-lg font-semibold ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+            className={`text-base font-semibold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
             {formatCurrency(totalProfit)}
           </p>
         </div>
       </div>
 
-      {/* Mini equity chart */}
-      <div className="mb-4 bg-[#0A0118] rounded-lg p-2">
-        <MiniEquityChart heartbeats={allHeartbeats} />
-      </div>
-
-      {/* Performance metrics */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Trades</p>
-          <p className="text-sm font-semibold text-white">{totalTrades}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Win Rate</p>
-          <p className="text-sm font-semibold text-white">{winRate.toFixed(1)}%</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Profit Factor</p>
-          <p className="text-sm font-semibold text-white">
-            {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Edge at Risk</p>
-          <p
-            className={`text-sm font-semibold ${edgeAtRiskCount > 0 ? "text-[#EF4444]" : "text-white"}`}
-          >
-            {edgeAtRiskCount} {edgeAtRiskCount === 1 ? "strategy" : "strategies"}
-          </p>
-          <p className="text-[9px] text-[#64748B]">
-            {edgeAtRiskCount > 0 ? "Investigation recommended" : "All strategies healthy"}
-          </p>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2 mb-2">
-        <button
-          onClick={handleAccountPause}
-          disabled={pauseLoading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            allPaused
-              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-              : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
-          }`}
-        >
-          {allPaused ? "▶ Resume All" : "⏸ Pause All"}
-        </button>
-
-        {showDeleteConfirm ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[#EF4444]">Delete all instances?</span>
-            <button
-              onClick={handleAccountDelete}
-              disabled={deleteLoading}
-              className="px-2 py-1 text-xs font-medium text-white bg-[#EF4444] rounded-lg hover:bg-[#DC2626]"
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-2 py-1 text-xs font-medium text-[#94A3B8] hover:text-white"
-            >
-              Cancel
-            </button>
+      {/* Performance metrics + actions */}
+      <div className="px-5 pt-3 pb-4">
+        {/* Secondary metrics */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-3">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-white tabular-nums">{totalTrades}</span>
+            <span className="text-[10px] text-[#475569]">trades</span>
           </div>
-        ) : (
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#94A3B8] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-all duration-200"
-          >
-            🗑 Delete
-          </button>
-        )}
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-white tabular-nums">
+              {winRate.toFixed(1)}%
+            </span>
+            <span className="text-[10px] text-[#475569]">win rate</span>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-semibold text-white tabular-nums">
+              {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-[#475569]">PF</span>
+          </div>
+          {edgeAtRiskCount > 0 && (
+            <div className="flex items-baseline gap-1 ml-auto">
+              <span className="text-sm font-semibold text-[#EF4444] tabular-nums">
+                {edgeAtRiskCount}
+              </span>
+              <span className="text-[10px] text-[#EF4444]/70">at risk</span>
+            </div>
+          )}
+        </div>
 
-        <span className="ml-auto text-[10px] text-[#64748B]">
-          Last heartbeat: {formatRelativeTime(lastHeartbeat ?? null)}
-        </span>
+        {/* Action buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleAccountPause}
+            disabled={pauseLoading}
+            className={`px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
+              allPaused
+                ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20"
+                : "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
+            }`}
+          >
+            {allPaused ? "Resume All" : "Pause All"}
+          </button>
+
+          {showDeleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-[#EF4444]">Delete all?</span>
+              <button
+                onClick={handleAccountDelete}
+                disabled={deleteLoading}
+                className="px-2 py-0.5 text-[10px] font-medium text-white bg-[#EF4444] rounded-md hover:bg-[#DC2626]"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-2 py-0.5 text-[10px] font-medium text-[#64748B] hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-colors"
+            >
+              Delete
+            </button>
+          )}
+
+          <span className="ml-auto text-[9px] text-[#475569]">
+            Heartbeat {formatRelativeTime(lastHeartbeat ?? null).toLowerCase()}
+          </span>
+        </div>
       </div>
+      {/* close px-5 pt-3 pb-4 wrapper */}
 
       {/* API Key management — only for root/parent instances (not child/discovered) */}
       {!primary.parentInstanceId && (
-        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">API Key</p>
+              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">API Key</p>
               {rotatedKey ? (
                 <div className="flex items-center gap-2">
                   <code className="text-xs font-mono text-[#10B981] truncate max-w-[280px]">
@@ -1561,13 +1628,13 @@ function AccountCard({
                   </code>
                   <button
                     onClick={handleCopyKey}
-                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors shrink-0"
+                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors shrink-0"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
                   <button
                     onClick={() => setRotatedKey(null)}
-                    className="text-[10px] text-[#64748B] hover:text-white transition-colors shrink-0"
+                    className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors shrink-0"
                   >
                     Dismiss
                   </button>
@@ -1586,13 +1653,13 @@ function AccountCard({
                     <button
                       onClick={handleRotateKey}
                       disabled={rotateLoading}
-                      className="px-2 py-1 text-[10px] font-medium text-white bg-[#F59E0B] rounded hover:bg-[#D97706] disabled:opacity-50"
+                      className="px-2 py-0.5 text-[10px] font-medium text-white bg-[#F59E0B] rounded-md hover:bg-[#D97706] disabled:opacity-50"
                     >
                       {rotateLoading ? "..." : "Confirm"}
                     </button>
                     <button
                       onClick={() => setShowRotateConfirm(false)}
-                      className="px-2 py-1 text-[10px] text-[#94A3B8] hover:text-white"
+                      className="px-2 py-0.5 text-[10px] text-[#64748B] hover:text-white"
                     >
                       Cancel
                     </button>
@@ -1600,7 +1667,7 @@ function AccountCard({
                 ) : (
                   <button
                     onClick={() => setShowRotateConfirm(true)}
-                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors"
                   >
                     Regenerate
                   </button>
@@ -1613,10 +1680,10 @@ function AccountCard({
 
       {/* Public Track Record share — only for root instances */}
       {!primary.parentInstanceId && (
-        <div className="mb-4 px-3 py-2.5 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">
                 Public Track Record
               </p>
               {trackRecordToken ? (
@@ -1634,13 +1701,13 @@ function AccountCard({
                     href={`/track-record/${trackRecordToken}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors"
+                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors"
                   >
                     View Track Record ↗
                   </a>
                   <button
                     onClick={handleCopyTrackRecordUrl}
-                    className="text-[10px] text-[#818CF8] hover:text-white transition-colors"
+                    className="text-[10px] text-[#94A3B8] hover:text-white transition-colors"
                   >
                     {trackRecordCopied ? "✓ Copied" : "Copy link"}
                   </button>
@@ -1648,14 +1715,14 @@ function AccountCard({
                     href={`https://x.com/intent/tweet?text=${encodeURIComponent("Verified live account track record monitored by AlgoStudio.")}&url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/track-record/${trackRecordToken}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] text-[#818CF8] hover:text-white transition-colors"
+                    className="text-[10px] text-[#94A3B8] hover:text-white transition-colors"
                   >
                     Share on X
                   </a>
                   <button
                     onClick={() => handleTrackRecordAction("unpublish")}
                     disabled={trackRecordLoading}
-                    className="text-[10px] text-[#64748B] hover:text-[#EF4444] transition-colors disabled:opacity-50"
+                    className="text-[10px] text-[#475569] hover:text-[#EF4444] transition-colors disabled:opacity-50"
                   >
                     Unpublish
                   </button>
@@ -1664,7 +1731,7 @@ function AccountCard({
                 <button
                   onClick={() => handleTrackRecordAction("publish")}
                   disabled={trackRecordLoading}
-                  className="text-[10px] font-medium text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
+                  className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors disabled:opacity-50"
                 >
                   {trackRecordLoading ? "Sharing..." : "Share Track Record"}
                 </button>
@@ -1675,10 +1742,10 @@ function AccountCard({
       )}
 
       {/* Expand strategies toggle */}
-      <div className="mt-4 border-t border-[rgba(79,70,229,0.1)] pt-4">
+      <div className="mx-5 mb-4 mt-1 border-t border-[#1E293B]/40 pt-3">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 text-xs font-medium text-[#A78BFA] hover:text-white transition-colors"
+          className="flex items-center gap-2 text-[11px] font-medium text-[#64748B] hover:text-[#94A3B8] transition-colors"
         >
           <svg
             className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
@@ -1700,9 +1767,11 @@ function AccountCard({
                   <div>
                     <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
                     <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-                      Your Monitor EA is connected and listening for trades. Once your EA opens and
-                      closes a trade, the strategy will appear here automatically. You can then link
-                      a baseline to activate edge monitoring.
+                      Your Monitor EA is connected and listening. Strategies will appear here
+                      automatically once a trade is detected — this typically takes under 60
+                      seconds after your EA opens or closes its first position. If no strategy
+                      appears after several minutes, verify that your EA is using a non-zero
+                      Magic Number.
                     </p>
                   </div>
                 </div>
@@ -1717,10 +1786,14 @@ function AccountCard({
                 </div>
                 {/* Strategy rows */}
                 {strategyGroups.map((sg) => {
-                  // Resolve health badge from owning instance
+                  // Resolve health badge from owning instance.
+                  // Fallback: if trade→instance match failed, pick the first
+                  // linkable non-container instance in this account card so the
+                  // "Link" button still renders.
                   const owningInstance = sg.instanceId
                     ? instances.find((ea) => ea.id === sg.instanceId)
-                    : undefined;
+                    : instances.find((ea) => ea.id !== primary.id && !isAccountContainer(ea));
+                  const resolvedInstanceId = sg.instanceId ?? owningInstance?.id ?? null;
                   // Derive baseline status from instance-level truth (deployments not serialized to client)
                   const relinkRequired = owningInstance?.relinkRequired ?? false;
                   const isLinked = !relinkRequired && !!owningInstance?.baseline;
@@ -1729,17 +1802,17 @@ function AccountCard({
                   const baselineTrades = owningInstance?.baseline?.totalTrades;
                   const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
                   const isExpanded = expandedStrategyKey === rowKey;
-                  const isHighlighted = forceExpandId != null && sg.instanceId === forceExpandId;
+                  const isHighlighted = forceExpandId != null && resolvedInstanceId === forceExpandId;
                   return (
                     <div key={rowKey}>
                       <div
                         onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
-                        className={`grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-lg bg-[#0A0118]/50 border cursor-pointer transition-colors ${
+                        className={`grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
                           isHighlighted
-                            ? "border-[#F59E0B]/50 bg-[#F59E0B]/5 ring-1 ring-[#F59E0B]/20"
+                            ? "border-[#F59E0B]/40 bg-[#F59E0B]/5"
                             : isExpanded
-                              ? "border-[rgba(79,70,229,0.4)] bg-[#0A0118]/80"
-                              : "border-[rgba(79,70,229,0.08)] hover:border-[rgba(79,70,229,0.2)]"
+                              ? "border-[#334155] bg-[#0F0A1A]"
+                              : "border-[#1E293B] hover:border-[#334155]"
                         }`}
                       >
                         <p className="text-xs font-semibold text-[#CBD5E1] truncate self-center">
@@ -1753,15 +1826,40 @@ function AccountCard({
                             {health}
                           </span>
                         </div>
-                        <p
-                          className={`text-xs self-center ${isLinked ? "text-[#10B981] font-medium" : relinkRequired ? "text-[#F59E0B] font-medium" : "text-[#64748B]"}`}
-                        >
-                          {isLinked
-                            ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
-                            : relinkRequired
-                              ? "Relink required"
-                              : "Missing"}
-                        </p>
+                        <div className="self-center flex items-center gap-2">
+                          <p
+                            className={`text-xs ${isLinked ? "text-[#10B981] font-medium" : relinkRequired ? "text-[#F59E0B] font-medium" : "text-[#64748B]"}`}
+                          >
+                            {isLinked
+                              ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
+                              : relinkRequired
+                                ? "Relink required"
+                                : "Missing"}
+                          </p>
+                          {resolvedInstanceId && (isLinked ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUnlinkBaseline(resolvedInstanceId);
+                              }}
+                              className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
+                            >
+                              Unlink
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onLinkBaseline(resolvedInstanceId);
+                              }}
+                              className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
+                            >
+                              {relinkRequired ? "Relink" : "Link"}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       {isExpanded && owningInstance && (
                         <InvestigationPanel
@@ -1875,13 +1973,13 @@ function EACard({
             {ea.timeframe && <span>{ea.timeframe}</span>}
             {ea.broker && (
               <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span className="text-[#334155]">|</span>
                 <span>{ea.broker}</span>
               </>
             )}
             {ea.accountNumber && (
               <>
-                <span className="text-[rgba(79,70,229,0.4)]">|</span>
+                <span className="text-[#334155]">|</span>
                 <span>#{ea.accountNumber}</span>
               </>
             )}
@@ -2497,22 +2595,31 @@ function ConnectionIndicator({
   const config = CONNECTION_STATUS_CONFIG[connectionStatus];
 
   return (
-    <div className="flex items-center gap-2 text-xs text-[#7C8DB0]">
-      <span className="relative flex h-2.5 w-2.5">
+    <div
+      className="flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs"
+      style={{
+        borderColor: `${config.color}20`,
+        backgroundColor: `${config.color}08`,
+        color: config.color,
+      }}
+    >
+      <span className="relative flex h-2 w-2">
         {config.ping && (
           <span
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
             style={{ backgroundColor: config.color }}
           />
         )}
         <span
-          className="relative inline-flex rounded-full h-2.5 w-2.5"
+          className="relative inline-flex rounded-full h-2 w-2"
           style={{ backgroundColor: config.color }}
         />
       </span>
-      <span>
+      <span className="font-medium">
         {config.label}
-        {lastUpdated ? ` · ${timeSinceUpdate}` : ""}
+        {lastUpdated ? (
+          <span className="text-[#7C8DB0] font-normal"> · {timeSinceUpdate}</span>
+        ) : null}
       </span>
     </div>
   );
@@ -2533,15 +2640,26 @@ function SummaryCard({
   value: number;
   isCurrency?: boolean;
 }) {
+  const accentColor = isCurrency ? (value >= 0 ? "#10B981" : "#EF4444") : "#818CF8";
+
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-      <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">{label}</p>
+    <div
+      className="bg-[#0F0A1A] border border-[#1E293B]/60 rounded-lg px-4 py-4 relative overflow-hidden"
+      style={{ boxShadow: `0 1px 16px ${accentColor}06` }}
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ backgroundColor: accentColor, opacity: 0.3 }}
+      />
+      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
+        {label}
+      </p>
       <p
-        className={`text-lg font-semibold ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
+        className={`text-3xl font-bold tabular-nums leading-none ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
       >
         {isCurrency ? formatCurrency(value) : value}
       </p>
-      {subtitle && <p className="text-[9px] text-[#64748B] mt-0.5">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] text-[#475569] mt-1.5">{subtitle}</p>}
     </div>
   );
 }
@@ -2897,6 +3015,8 @@ export function LiveDashboardClient({
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [scrollExpandId, setScrollExpandId] = useState<string | null>(null);
+  const [draggedAccountKey, setDraggedAccountKey] = useState<string | null>(null);
+  const [dragOverAccountKey, setDragOverAccountKey] = useState<string | null>(null);
   const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(() => {
     // Auto-open LinkBaselineDialog from ?relink= query param
     if (initialRelinkInstanceId && initialData.some((ea) => ea.id === initialRelinkInstanceId)) {
@@ -2921,6 +3041,11 @@ export function LiveDashboardClient({
       }
     }
   }, [initialRelinkInstanceId]);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [showRestoreGuide] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("algostudio:onboarding-dismissed") === "1"; } catch { return false; }
+  });
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2994,13 +3119,41 @@ export function LiveDashboardClient({
       setEaInstances((prev) =>
         prev.map((ea) => (ea.id === hb.instanceId ? applyHeartbeatPatch(ea, hb) : ea))
       );
+      setChangedIds((prev) => new Set([...prev, hb.instanceId]));
+      if (changedTimeoutRef.current) clearTimeout(changedTimeoutRef.current);
+      changedTimeoutRef.current = setTimeout(() => setChangedIds(new Set()), 2000);
     },
     onTrade: (data) => {
-      const trade = data as { instanceId: string; profit: number };
+      const trade = data as {
+        instanceId: string;
+        profit: number;
+        closeTime: string | null;
+        symbol?: string | null;
+        magicNumber?: number | null;
+      };
       if (soundAlertsRef.current) {
         const ea = previousDataRef.current.get(trade.instanceId);
         showInfo(`New trade on ${ea?.eaName ?? "EA"}`, `P/L: $${trade.profit.toFixed(2)}`);
       }
+      // Prepend the new trade so AccountCard metrics stay current without a full refresh
+      setEaInstances((prev) =>
+        prev.map((ea) =>
+          ea.id === trade.instanceId
+            ? {
+                ...ea,
+                trades: [
+                  {
+                    profit: trade.profit,
+                    closeTime: trade.closeTime ?? null,
+                    symbol: trade.symbol ?? null,
+                    magicNumber: trade.magicNumber ?? null,
+                  },
+                  ...ea.trades,
+                ].slice(0, 20),
+              }
+            : ea
+        )
+      );
     },
     onError: () => {
       // SSE error events handled internally
@@ -3047,16 +3200,97 @@ export function LiveDashboardClient({
 
   async function handleDelete(instanceId: string): Promise<void> {
     const ea = eaInstances.find((e) => e.id === instanceId);
-    const res = await fetch(`/api/live/${instanceId}`, {
-      method: "DELETE",
-      headers: getCsrfHeaders(),
-    });
+    try {
+      const res = await fetch(`/api/live/${instanceId}`, {
+        method: "DELETE",
+        headers: getCsrfHeaders(),
+      });
 
+      if (res.ok) {
+        setEaInstances((prev) => prev.filter((e) => e.id !== instanceId));
+        showSuccess(`${ea?.eaName ?? "EA"} deleted`);
+      } else {
+        showError("Failed to delete EA", "Please try again.");
+      }
+    } catch {
+      showError("Failed to delete EA", "Network error. Please try again.");
+    }
+  }
+
+  function handleDragStart(accountKey: string) {
+    setDraggedAccountKey(accountKey);
+  }
+
+  function handleDragOver(e: React.DragEvent, accountKey: string) {
+    e.preventDefault();
+    if (accountKey !== draggedAccountKey) {
+      setDragOverAccountKey(accountKey);
+    }
+  }
+
+  function handleDragEnd() {
+    setDraggedAccountKey(null);
+    setDragOverAccountKey(null);
+  }
+
+  async function handleDrop(targetKey: string) {
+    if (!draggedAccountKey || draggedAccountKey === targetKey) {
+      handleDragEnd();
+      return;
+    }
+    const sorted = sortByPriority(groupByAccount(eaInstances));
+    const fromIdx = sorted.findIndex((g) => g.key === draggedAccountKey);
+    const toIdx = sorted.findIndex((g) => g.key === targetKey);
+    if (fromIdx < 0 || toIdx < 0) { handleDragEnd(); return; }
+
+    const reordered = [...sorted];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+
+    // Optimistic local update: set sortOrder on primary instances
+    const newOrder = reordered.map((g) => g.primary.id);
+    const previousInstances = eaInstances;
+    setEaInstances((prev) =>
+      prev.map((ea) => {
+        const idx = newOrder.indexOf(ea.id);
+        return idx >= 0 ? { ...ea, sortOrder: idx + 1 } : ea;
+      })
+    );
+    handleDragEnd();
+
+    // Persist to server — rollback on failure
+    try {
+      const res = await fetch("/api/live/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ order: newOrder }),
+      });
+      if (!res.ok) {
+        setEaInstances(previousInstances);
+        showError("Failed to save order", "Your changes were reverted.");
+      }
+    } catch {
+      setEaInstances(previousInstances);
+      showError("Failed to save order", "Your changes were reverted.");
+    }
+  }
+
+  async function handleUnlinkBaseline(instanceId: string): Promise<void> {
+    const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      body: JSON.stringify({}),
+    });
     if (res.ok) {
-      setEaInstances((prev) => prev.filter((e) => e.id !== instanceId));
-      showSuccess(`${ea?.eaName ?? "EA"} deleted`);
+      setEaInstances((prev) =>
+        prev.map((ea) =>
+          ea.id === instanceId ? { ...ea, baseline: null, relinkRequired: false } : ea
+        )
+      );
+      showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
     } else {
-      showError("Failed to delete EA", "Please try again.");
+      const data = await res.json().catch(() => ({}));
+      showError("Failed to unlink", (data as { message?: string }).message ?? "Something went wrong");
     }
   }
 
@@ -3105,353 +3339,94 @@ export function LiveDashboardClient({
   ).filter((label) => portfolioHealthCounts[label] > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Controls bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-white">Track Record</h2>
-          <span className="text-sm text-[#7C8DB0]">
-            {eaInstances.length} instance{eaInstances.length !== 1 ? "s" : ""}
-          </span>
+      <div className="flex flex-wrap items-center justify-end gap-2.5 px-3 py-2 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/30">
+        {/* Mode filter */}
+        <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
+          {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setModeFilter(mode)}
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                modeFilter === mode
+                  ? mode === "PAPER"
+                    ? "bg-[#F59E0B]/15 text-[#F59E0B]"
+                    : "bg-white/5 text-white"
+                  : "text-[#64748B] hover:text-[#94A3B8]"
+              }`}
+            >
+              {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
+            </button>
+          ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Mode filter */}
-          <div className="flex items-center rounded-lg border border-[rgba(79,70,229,0.2)] overflow-hidden">
-            {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setModeFilter(mode)}
-                className={`px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                  modeFilter === mode
-                    ? mode === "PAPER"
-                      ? "bg-[#F59E0B]/20 text-[#F59E0B]"
-                      : "bg-[#4F46E5]/20 text-[#A78BFA]"
-                    : "text-[#7C8DB0] hover:text-white"
-                }`}
-              >
-                {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
-              </button>
-            ))}
-          </div>
+        {/* Connection status indicator */}
+        <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
 
-          {/* Connection status indicator */}
-          <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
-
-          {/* Sound toggle */}
-          <button
-            onClick={() => setSoundAlerts(!soundAlerts)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-              soundAlerts
-                ? "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
-                : "bg-[#0A0118] text-[#7C8DB0] border-[rgba(79,70,229,0.2)] hover:text-white"
-            }`}
-            title={soundAlerts ? "Notifications on" : "Notifications off"}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {soundAlerts ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-                />
-              )}
-            </svg>
-            Notifications
-          </button>
-
-          {/* Alerts config button */}
-          <button
-            onClick={() => setShowAlertsModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-[#A78BFA] hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* Sound toggle */}
+        <button
+          onClick={() => setSoundAlerts(!soundAlerts)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors ${
+            soundAlerts
+              ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
+              : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
+          }`}
+          title={soundAlerts ? "Notifications on" : "Notifications off"}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {soundAlerts ? (
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
               />
-            </svg>
-            Alerts
-          </button>
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+              />
+            )}
+          </svg>
+          Notifications
+        </button>
 
-          {/* Connect external EA */}
-          <RegisterEADialog onSuccess={fetchUpdate} />
+        {/* Alerts config button */}
+        <button
+          onClick={() => setShowAlertsModal(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+            />
+          </svg>
+          Alerts
+        </button>
 
-          {/* Manual refresh */}
-          <button
-            onClick={fetchUpdate}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.2)] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
-          >
-            Refresh Now
-          </button>
-        </div>
+        {/* Connect external EA */}
+        <RegisterEADialog onSuccess={fetchUpdate} />
+
+        {/* Manual refresh */}
+        <button
+          onClick={fetchUpdate}
+          className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
+        >
+          Refresh Now
+        </button>
       </div>
 
-      {/* Portfolio Summary */}
-      {eaInstances.length > 0 && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <SummaryCard
-              label="Floating P&L"
-              subtitle="unrealized"
-              value={eaInstances
-                .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
-                .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-            />
-            <SummaryCard
-              label="Paper P&L"
-              subtitle="tracked total"
-              value={eaInstances
-                .filter((ea) => ea.mode === "PAPER")
-                .reduce((sum, ea) => sum + ea.totalProfit, 0)}
-            />
-            <SummaryCard
-              label="Total Trades"
-              value={eaInstances
-                .filter(isAccountContainer)
-                .reduce((sum, ea) => sum + ea.totalTrades, 0)}
-              isCurrency={false}
-            />
-            <SummaryCard
-              label="Open Trades"
-              value={eaInstances
-                .filter(isAccountContainer)
-                .reduce((sum, ea) => sum + ea.openTrades, 0)}
-              isCurrency={false}
-            />
-            {/* Strategy Health Summary */}
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Strategy Health
-              </p>
-              {portfolioHealthParts.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  {portfolioHealthParts.map((label) => {
-                    const hs = HEALTH_STYLES[label];
-                    return (
-                      <span
-                        key={label}
-                        className={`inline-flex items-center gap-1 text-sm font-semibold ${hs.text}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${hs.dot}`} />
-                        {portfolioHealthCounts[label]} {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm font-semibold text-[#64748B]">No strategies</p>
-              )}
-            </div>
-            {/* Exposure Summary */}
-            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-              <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Exposure</p>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-white">
-                  <span className="w-2 h-2 rounded-full bg-[#818CF8]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
-                  Strategies
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#CBD5E1]">
-                  <span className="w-2 h-2 rounded-full bg-[#64748B]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
-                  Strategies
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Global Floating Drawdown Alert */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
-                <svg
-                  className="w-4 h-4 text-[#F59E0B] shrink-0"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-                <p className="text-xs text-[#CBD5E1]">
-                  Floating drawdown alert (current balance-equity gap, all EAs)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[#7C8DB0]">Alert at</span>
-                <input
-                  type="number"
-                  value={globalDrawdownThreshold}
-                  onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
-                  min="0.1"
-                  max="100"
-                  step="0.1"
-                  className="w-20 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#4F46E5]"
-                />
-                <span className="text-xs text-[#7C8DB0]">% floating DD</span>
-                <button
-                  onClick={handleSaveGlobalDrawdown}
-                  className="px-3 py-1 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Per-Symbol Breakdown */}
-          {(() => {
-            const symbolMap = new Map<string, { pnl: number; count: number; openTrades: number }>();
-            const filtered = eaInstances.filter(
-              (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
-            );
-            for (const ea of filtered) {
-              const sym = ea.symbol!;
-              const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
-              existing.pnl += ea.totalProfit;
-              existing.count += 1;
-              existing.openTrades += ea.openTrades;
-              symbolMap.set(sym, existing);
-            }
-            if (symbolMap.size <= 1) return null;
-            const entries = Array.from(symbolMap.entries()).sort(
-              (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
-            );
-            return (
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
-                  Per-Symbol Breakdown
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {entries.map(([sym, data]) => (
-                    <div
-                      key={sym}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
-                    >
-                      <div>
-                        <span className="text-xs font-medium text-[#CBD5E1]">{sym}</span>
-                        <span className="text-[9px] text-[#7C8DB0] ml-1.5">
-                          {data.count} EA{data.count > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-xs font-semibold ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-                      >
-                        {formatCurrency(data.pnl)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Action Required / Edge Health Panel */}
-      {(() => {
-        const items = eaInstances
-          .map((ea) => {
-            const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!attention) return null;
-            const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-            const isBaselineAction =
-              attention.statusLabel === "Baseline suspended" ||
-              attention.statusLabel === "No baseline linked";
-            return {
-              id: ea.id,
-              identity,
-              ...attention,
-              onClick: isBaselineAction
-                ? () => setLinkBaselineInstanceId(ea.id)
-                : () => {
-                    const cardId = ea.parentInstanceId || ea.id;
-                    if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                    document
-                      .getElementById(`account-card-${cardId}`)
-                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  },
-            };
-          })
-          .filter((item): item is NonNullable<typeof item> => item !== null);
-
-        if (items.length === 0) return null;
-
-        const hasRed = items.some((i) => i.color === "#EF4444");
-        const headerColor = hasRed ? "#EF4444" : "#F59E0B";
-
-        return (
-          <div
-            className="bg-[#1A0626] border rounded-xl p-4"
-            style={{ borderColor: `${headerColor}33` }}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: headerColor }} />
-              <p className="text-xs font-semibold text-white">Action Required</p>
-              <span className="text-[10px] text-[#7C8DB0]">
-                {items.length} {items.length === 1 ? "instance requires" : "instances require"}{" "}
-                attention
-              </span>
-            </div>
-            <div className="space-y-2">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-[#CBD5E1] truncate">
-                      {item.identity}
-                    </p>
-                    <p className="text-[10px] font-medium" style={{ color: item.color }}>
-                      {item.statusLabel}
-                    </p>
-                    <p className="text-[10px] text-[#7C8DB0] truncate mt-0.5">{item.reason}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={item.onClick}
-                    disabled={linkingInstanceId === item.id || activatingInstanceId === item.id}
-                    className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      color: item.color,
-                      borderColor: `${item.color}4D`,
-                      backgroundColor: `${item.color}15`,
-                    }}
-                  >
-                    {activatingInstanceId === item.id
-                      ? "Activating..."
-                      : linkingInstanceId === item.id
-                        ? "Linking..."
-                        : item.actionLabel}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Edge Health Summary */}
+      {/* ── System Status Zone ── */}
       {eaInstances.length > 0 &&
         (() => {
           let healthy = 0;
-          let attention = 0;
+          let attentionCount = 0;
           let monitoring = 0;
           let paused = 0;
 
@@ -3466,38 +3441,504 @@ export function LiveDashboardClient({
             } else if (att.statusLabel === "Waiting for data") {
               monitoring++;
             } else {
-              attention++;
+              attentionCount++;
             }
           }
 
-          const cats = [
-            { label: "Healthy", count: healthy, color: "#10B981" },
-            { label: "Attention", count: attention, color: "#F59E0B" },
-            { label: "Collecting Data", count: monitoring, color: "#A78BFA" },
-            { label: "Paused", count: paused, color: "#64748B" },
-          ];
+          const total = healthy + attentionCount + monitoring + paused;
+          const allHealthy = attentionCount === 0 && paused === 0 && monitoring === 0;
+
+          // Build action-required items
+          const actionItems = eaInstances
+            .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
+            .map((ea) => {
+              const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+              if (!att) return null;
+              const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+              const isBaselineAction =
+                att.statusLabel === "Baseline suspended" ||
+                att.statusLabel === "No baseline linked";
+              return {
+                id: ea.id,
+                identity,
+                ...att,
+                onClick: isBaselineAction
+                  ? () => setLinkBaselineInstanceId(ea.id)
+                  : () => {
+                      const cardId = ea.parentInstanceId || ea.id;
+                      if (ea.parentInstanceId) setScrollExpandId(ea.id);
+                      document
+                        .getElementById(`account-card-${cardId}`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    },
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
+
+          // Group action items
+          const groups = new Map<
+            string,
+            {
+              statusLabel: string;
+              reason: string;
+              actionLabel: string;
+              color: string;
+              members: typeof actionItems;
+            }
+          >();
+          for (const item of actionItems) {
+            const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+            const existing = groups.get(groupKey);
+            if (existing) {
+              existing.members.push(item);
+            } else {
+              groups.set(groupKey, {
+                statusLabel: item.statusLabel,
+                reason: item.reason,
+                actionLabel: item.actionLabel,
+                color: item.color,
+                members: [item],
+              });
+            }
+          }
+
+          const ALERT_PRIORITY: Record<string, number> = {
+            "Edge at risk": 0,
+            Unstable: 1,
+            "Connection error": 2,
+            "Baseline suspended": 3,
+            "Waiting for data": 4,
+            "No baseline linked": 5,
+          };
+          const sortedGroups = [...groups.values()].sort(
+            (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+          );
+
+          const hasRed = actionItems.some((i) => i.color === "#EF4444");
+          const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
 
           return (
-            <div className="grid grid-cols-4 gap-3 mb-4">
-              {cats.map((c) => (
-                <div
-                  key={c.label}
-                  className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-3"
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                    {c.label}
-                  </p>
-                  <p
-                    className="text-lg font-semibold"
-                    style={{ color: c.count > 0 ? c.color : "#3F3F46" }}
-                  >
-                    {c.count}
+            <div className="sticky top-0 z-20 py-2.5 px-3 border-b border-[#1E293B]/40 bg-[#0A0118]/98 backdrop-blur-sm rounded-lg">
+              {/* System pulse header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    {allHealthy && (
+                      <span
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+                        style={{ backgroundColor: "#10B981" }}
+                      />
+                    )}
+                    <span
+                      className="relative inline-flex rounded-full h-2.5 w-2.5"
+                      style={{
+                        backgroundColor: allHealthy
+                          ? "#10B981"
+                          : hasRed
+                            ? "#EF4444"
+                            : attentionCount > 0
+                              ? "#F59E0B"
+                              : "#A78BFA",
+                      }}
+                    />
+                  </span>
+                  <p className="text-sm font-semibold text-[#CBD5E1]">
+                    {allHealthy
+                      ? "All systems nominal"
+                      : attentionCount > 0
+                        ? `${attentionCount} ${attentionCount === 1 ? "instance" : "instances"} need attention`
+                        : monitoring > 0
+                          ? "Collecting baseline data"
+                          : paused > 0
+                            ? "Trading paused"
+                            : "System monitoring active"}
                   </p>
                 </div>
-              ))}
+                <div className="flex items-center gap-3">
+                  {connectionStatus === "connected" && (
+                    <span className="flex items-center gap-1.5 text-[10px] text-[#10B981]/70 font-medium">
+                      <span className="relative flex h-1 w-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-50" />
+                        <span className="relative inline-flex rounded-full h-1 w-1 bg-[#10B981]" />
+                      </span>
+                      Telemetry active
+                    </span>
+                  )}
+                  <p className="text-[10px] text-[#475569]">
+                    {total} instance{total !== 1 ? "s" : ""} monitored
+                  </p>
+                </div>
+              </div>
             </div>
           );
         })()}
+
+      {/* ── Two-Column Control Zone ── */}
+      {eaInstances.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {/* LEFT: Operations */}
+          <div className="lg:col-span-3 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+              Operations
+            </p>
+            {/* Primary readings */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <SummaryCard
+                label="Floating P&L"
+                subtitle="unrealized"
+                value={eaInstances
+                  .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
+                  .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
+              />
+              <SummaryCard
+                label="Total Trades"
+                value={eaInstances
+                  .filter(isAccountContainer)
+                  .reduce((sum, ea) => sum + ea.totalTrades, 0)}
+                isCurrency={false}
+              />
+              <SummaryCard
+                label="Open Trades"
+                value={eaInstances
+                  .filter(isAccountContainer)
+                  .reduce((sum, ea) => sum + ea.openTrades, 0)}
+                isCurrency={false}
+              />
+            </div>
+            {/* Secondary reading: Paper P&L (only when paper instances exist) */}
+            {eaInstances.some((ea) => ea.mode === "PAPER") && (
+              <div className="flex items-baseline gap-2 px-1">
+                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                  Paper P&L
+                </span>
+                <span
+                  className={`text-xs font-semibold tabular-nums ${
+                    eaInstances
+                      .filter((ea) => ea.mode === "PAPER")
+                      .reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0
+                      ? "text-[#10B981]"
+                      : "text-[#EF4444]"
+                  }`}
+                >
+                  {formatCurrency(
+                    eaInstances
+                      .filter((ea) => ea.mode === "PAPER")
+                      .reduce((sum, ea) => sum + ea.totalProfit, 0)
+                  )}
+                </span>
+                <span className="text-[9px] text-[#475569]">tracked total</span>
+              </div>
+            )}
+
+            {/* Secondary: health + exposure */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
+              {/* Strategy Health */}
+              {portfolioHealthParts.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                    Health
+                  </span>
+                  {portfolioHealthParts.map((label) => {
+                    const hs = HEALTH_STYLES[label];
+                    return (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1 text-xs font-medium ${hs.text}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                        {portfolioHealthCounts[label]} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Exposure */}
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                  Exposure
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
+                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
+                </span>
+              </div>
+            </div>
+
+            {/* Per-Symbol Breakdown */}
+            {(() => {
+              const symbolMap = new Map<
+                string,
+                { pnl: number; count: number; openTrades: number }
+              >();
+              const filtered = eaInstances.filter(
+                (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
+              );
+              for (const ea of filtered) {
+                const sym = ea.symbol!;
+                const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
+                existing.pnl += ea.totalProfit;
+                existing.count += 1;
+                existing.openTrades += ea.openTrades;
+                symbolMap.set(sym, existing);
+              }
+              if (symbolMap.size <= 1) return null;
+              const entries = Array.from(symbolMap.entries()).sort(
+                (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
+              );
+              return (
+                <div className="px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
+                    Symbols
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {entries.map(([sym, data]) => (
+                      <span
+                        key={sym}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-mono"
+                      >
+                        <span className="font-medium text-[#94A3B8]">{sym}</span>
+                        <span
+                          className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                        >
+                          {formatCurrency(data.pnl)}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* RIGHT: Monitoring */}
+          <div className="lg:col-span-2 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+              Monitoring
+            </p>
+            {(() => {
+              const actionItems = eaInstances
+                .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
+                .map((ea) => {
+                  const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+                  if (!att) return null;
+                  const identity =
+                    [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+                  const isBaselineAction =
+                    att.statusLabel === "Baseline suspended" ||
+                    att.statusLabel === "No baseline linked";
+                  return {
+                    id: ea.id,
+                    identity,
+                    ...att,
+                    onClick: isBaselineAction
+                      ? () => setLinkBaselineInstanceId(ea.id)
+                      : () => {
+                          const cardId = ea.parentInstanceId || ea.id;
+                          if (ea.parentInstanceId) setScrollExpandId(ea.id);
+                          document
+                            .getElementById(`account-card-${cardId}`)
+                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        },
+                  };
+                })
+                .filter((item): item is NonNullable<typeof item> => item !== null);
+
+              if (actionItems.length === 0) return null;
+
+              // Group action items
+              const groups = new Map<
+                string,
+                {
+                  statusLabel: string;
+                  reason: string;
+                  actionLabel: string;
+                  color: string;
+                  members: typeof actionItems;
+                }
+              >();
+              for (const item of actionItems) {
+                const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+                const existing = groups.get(groupKey);
+                if (existing) {
+                  existing.members.push(item);
+                } else {
+                  groups.set(groupKey, {
+                    statusLabel: item.statusLabel,
+                    reason: item.reason,
+                    actionLabel: item.actionLabel,
+                    color: item.color,
+                    members: [item],
+                  });
+                }
+              }
+
+              const ALERT_PRIORITY: Record<string, number> = {
+                "Edge at risk": 0,
+                Unstable: 1,
+                "Connection error": 2,
+                "Baseline suspended": 3,
+                "Waiting for data": 4,
+                "No baseline linked": 5,
+              };
+              const sortedGroups = [...groups.values()].sort(
+                (a, b) =>
+                  (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+              );
+
+              const hasRed = actionItems.some((i) => i.color === "#EF4444");
+              const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
+
+              return (
+                <div
+                  className="rounded-md px-3 py-3"
+                  style={{
+                    borderColor: `${alertBorderColor}20`,
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    backgroundColor: `${alertBorderColor}05`,
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="relative flex h-2 w-2">
+                      <span
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+                        style={{ backgroundColor: alertBorderColor }}
+                      />
+                      <span
+                        className="relative inline-flex rounded-full h-2 w-2"
+                        style={{ backgroundColor: alertBorderColor }}
+                      />
+                    </span>
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+                      Alerts
+                    </p>
+                    <span
+                      className="text-[10px] font-semibold tabular-nums"
+                      style={{ color: alertBorderColor }}
+                    >
+                      {actionItems.length}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {sortedGroups.map((group) => (
+                      <div
+                        key={group.statusLabel}
+                        className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 bg-white/[0.02]"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-semibold" style={{ color: group.color }}>
+                              {group.statusLabel}
+                            </p>
+                            <span className="text-[10px] text-[#475569]">
+                              ({group.members.length})
+                            </span>
+                            <span className="text-[10px] text-[#475569]">—</span>
+                            <span className="text-[10px] text-[#64748B] truncate">
+                              {group.reason}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {group.members.map((m) => (
+                              <span
+                                key={m.id}
+                                className="inline-flex items-center gap-1.5 text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
+                              >
+                                {m.identity}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    m.onClick();
+                                  }}
+                                  disabled={linkingInstanceId === m.id || activatingInstanceId === m.id}
+                                  className="text-[9px] font-medium transition-colors hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                  style={{ color: group.color }}
+                                >
+                                  {activatingInstanceId === m.id
+                                    ? "Activating..."
+                                    : linkingInstanceId === m.id
+                                      ? "Linking..."
+                                      : group.actionLabel}
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDismissedAlerts(
+                                (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
+                              )
+                            }
+                            className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors p-0.5"
+                            title="Dismiss"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {(() => {
+              let healthy = 0;
+              let attentionCount = 0;
+              let monitoring = 0;
+              let paused = 0;
+              for (const ea of eaInstances) {
+                if (ea.tradingState === "PAUSED") {
+                  paused++;
+                  continue;
+                }
+                const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+                if (!att) {
+                  healthy++;
+                } else if (att.statusLabel === "Waiting for data") {
+                  monitoring++;
+                } else {
+                  attentionCount++;
+                }
+              }
+              return (
+                <div className="rounded-md border border-[#1E293B]/25 bg-white/[0.015] px-3 py-2.5">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
+                    Health
+                  </p>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: "Healthy", count: healthy, color: "#10B981" },
+                      { label: "Attention", count: attentionCount, color: "#F59E0B" },
+                      { label: "Collecting", count: monitoring, color: "#A78BFA" },
+                      { label: "Paused", count: paused, color: "#64748B" },
+                    ].map((c) => (
+                      <div key={c.label} className="text-center">
+                        <p
+                          className="text-lg font-bold font-mono tabular-nums leading-none"
+                          style={{ color: c.count > 0 ? c.color : "#27272A" }}
+                        >
+                          {c.count}
+                        </p>
+                        <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1">
+                          {c.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Baseline linked success banner */}
       {linkedSuccessBanner && (
@@ -3509,8 +3950,8 @@ export function LiveDashboardClient({
 
       {/* EA Cards Grid */}
       {eaInstances.length === 0 ? (
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center opacity-60">
+        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1E293B] flex items-center justify-center">
             <svg
               className="w-8 h-8 text-white"
               fill="none"
@@ -3532,31 +3973,105 @@ export function LiveDashboardClient({
           </p>
           <Link
             href="/app"
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-md hover:bg-[#4338CA] transition-colors"
           >
             Go to Dashboard
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {sortByPriority(
-            groupByAccount(
-              modeFilter === "ALL"
-                ? eaInstances
-                : eaInstances.filter((ea) => ea.mode === modeFilter)
-            )
-          ).map((account) => (
-            <AccountCard
-              key={account.key}
-              account={account}
-              changedIds={changedIds}
-              onTogglePause={handleTogglePause}
-              onDelete={handleDelete}
-              onLinkBaseline={setLinkBaselineInstanceId}
-              forceExpandId={scrollExpandId}
-            />
-          ))}
+        <div className="rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
+          <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-4">
+            Strategy Monitor
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {sortByPriority(
+              groupByAccount(
+                modeFilter === "ALL"
+                  ? eaInstances
+                  : eaInstances.filter((ea) => ea.mode === modeFilter)
+              )
+            ).map((account) => (
+              <div
+                key={account.key}
+                draggable
+                onDragStart={() => handleDragStart(account.key)}
+                onDragOver={(e) => handleDragOver(e, account.key)}
+                onDragEnd={handleDragEnd}
+                onDrop={() => handleDrop(account.key)}
+                className={`transition-all ${draggedAccountKey === account.key ? "opacity-40" : ""} ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-xl" : ""}`}
+                style={{ cursor: "grab" }}
+              >
+                <AccountCard
+                  account={account}
+                  changedIds={changedIds}
+                  onTogglePause={handleTogglePause}
+                  onDelete={handleDelete}
+                  onLinkBaseline={setLinkBaselineInstanceId}
+                  onUnlinkBaseline={handleUnlinkBaseline}
+                  forceExpandId={scrollExpandId}
+                />
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {/* Settings — drawdown alert (secondary, below accounts) */}
+      {eaInstances.length > 0 && (
+        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <svg
+                className="w-4 h-4 text-[#F59E0B] shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <p className="text-xs text-[#CBD5E1]">
+                Floating drawdown alert (current balance-equity gap, all EAs)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#7C8DB0]">Alert at</span>
+              <input
+                type="number"
+                value={globalDrawdownThreshold}
+                onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
+                min="0.1"
+                max="100"
+                step="0.1"
+                className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
+              />
+              <span className="text-xs text-[#7C8DB0]">% floating DD</span>
+              <button
+                onClick={handleSaveGlobalDrawdown}
+                className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restore onboarding guide */}
+      {eaInstances.length > 0 && showRestoreGuide && (
+        <button
+          onClick={() => {
+            try { localStorage.removeItem("algostudio:onboarding-dismissed"); } catch { /* private browsing */ }
+            window.location.reload();
+          }}
+          className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"
+        >
+          Show setup guide again
+        </button>
       )}
 
       {/* Alerts Modal */}
@@ -3592,7 +4107,7 @@ export function LiveDashboardClient({
                   try {
                     const res = await fetch(`/api/live/${instanceId}/lifecycle`, {
                       method: "POST",
-                      headers: { "Content-Type": "application/json" },
+                      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
                       body: JSON.stringify({ action: "activate" }),
                     });
                     if (res.ok) {

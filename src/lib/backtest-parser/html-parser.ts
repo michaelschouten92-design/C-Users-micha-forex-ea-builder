@@ -56,6 +56,34 @@ export function parseMT5Report(html: string): ParsedReport {
   const deals = extractDeals(tables, locale, warnings);
 
   // ========================================
+  // 4b. Derive symbol from deals if still unknown
+  // ========================================
+  if (metadata.symbol === "UNKNOWN" && deals.length > 0) {
+    const tradingDeals = deals.filter((d) => d.type !== "balance" && d.symbol);
+    if (tradingDeals.length > 0) {
+      // Use the most common symbol across all deals
+      const counts = new Map<string, number>();
+      for (const d of tradingDeals) {
+        const s = d.symbol!.replace(/[._].*$/, "").toUpperCase();
+        counts.set(s, (counts.get(s) ?? 0) + 1);
+      }
+      let best = "";
+      let bestCount = 0;
+      for (const [s, c] of counts) {
+        if (c > bestCount) { best = s; bestCount = c; }
+      }
+      if (best) {
+        metadata.symbol = best;
+        // Remove the "could not detect" warning
+        const idx = warnings.findIndex((w) => w.includes("Could not detect symbol"));
+        if (idx >= 0) {
+          warnings[idx] = `Symbol "${best}" derived from deal rows (not found in report metadata)`;
+        }
+      }
+    }
+  }
+
+  // ========================================
   // 5. Derive win rate if not parsed directly
   // ========================================
   if (metrics.winRate === 0 && metrics.totalTrades > 0 && deals.length > 0) {
@@ -69,6 +97,23 @@ export function parseMT5Report(html: string): ParsedReport {
         "Win rate derived from deal exit rows (not from metrics table). " +
           "May be inaccurate for strategies with partial closes."
       );
+    }
+  }
+
+  // ========================================
+  // 6. Cross-validate net profit against deal sum
+  // ========================================
+  if (deals.length > 0 && metrics.totalNetProfit !== 0) {
+    const dealSum = deals
+      .filter((d) => d.type !== "balance")
+      .reduce((sum, d) => sum + d.profit, 0);
+    // Only warn when discrepancy exceeds 1% of the reported value
+    if (dealSum !== 0 && Math.abs(metrics.totalNetProfit - dealSum) > Math.abs(metrics.totalNetProfit) * 0.01) {
+      warnings.push(
+        `Net profit discrepancy: metrics table reports ${metrics.totalNetProfit.toFixed(2)} ` +
+          `but deal sum is ${dealSum.toFixed(2)}. Deal-derived value used.`
+      );
+      metrics.totalNetProfit = dealSum;
     }
   }
 
@@ -154,7 +199,11 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       cellText === "símbolo" ||
       cellText === "symbole"
     ) {
-      metadata.symbol = nextText;
+      // Strip broker suffixes: "EURUSD.r" → "EURUSD", "GBPJPYm" → "GBPJPY", "XAUUSD.ecn" → "XAUUSD"
+      metadata.symbol = nextText
+        .replace(/[._](r|m|i|raw|ecn|pro|std|micro|mini|c|e|sb|z)\b/i, "")
+        .replace(/([A-Z]{6})([a-z]{1,3})$/, "$1")  // trailing lowercase suffix like "EURUSDm"
+        .trim();
     } else if (
       cellText === "period" ||
       cellText === "zeitraum" ||
@@ -206,6 +255,17 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       if (text && text.length > 2 && text.length < 200 && !text.includes("<")) {
         metadata.eaName = text;
         break;
+      }
+    }
+  }
+
+  // Fallback: extract symbol and timeframe from title — e.g. "Strategy Tester: EA (EURUSD,H1)"
+  if (metadata.symbol === "UNKNOWN" && title) {
+    const titleMatch = title.text.trim().match(/\(([A-Za-z0-9._]+)\s*,\s*([A-Za-z0-9]+)\)/);
+    if (titleMatch) {
+      metadata.symbol = titleMatch[1].replace(/[._].*$/, "").toUpperCase();
+      if (metadata.timeframe === "UNKNOWN") {
+        metadata.timeframe = titleMatch[2].toUpperCase();
       }
     }
   }
@@ -469,6 +529,10 @@ function extractDeals(
         h.includes("прибыль") ||
         h.includes("bénéfice")
     );
+    const symbolIdx = headerTexts.findIndex(
+      (h) =>
+        h === "symbol" || h === "символ" || h === "símbolo" || h === "symbole"
+    );
     const commentIdx = headerTexts.findIndex(
       (h) =>
         h.includes("comment") ||
@@ -508,6 +572,7 @@ function extractDeals(
       const volume = volumeIdx >= 0 ? parseLocalizedNumber(cellTexts[volumeIdx], locale) || 0 : 0;
       const price = priceIdx >= 0 ? parseLocalizedNumber(cellTexts[priceIdx], locale) || 0 : 0;
       const profit = profitIdx >= 0 ? parseLocalizedNumber(cellTexts[profitIdx], locale) || 0 : 0;
+      const dealSymbol = symbolIdx >= 0 ? cellTexts[symbolIdx] || undefined : undefined;
       const comment = commentIdx >= 0 ? cellTexts[commentIdx] : undefined;
 
       // Determine deal type
@@ -529,6 +594,7 @@ function extractDeals(
         volume,
         price,
         profit,
+        symbol: dealSymbol,
         comment: comment || undefined,
       });
     }

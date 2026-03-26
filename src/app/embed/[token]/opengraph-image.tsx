@@ -10,7 +10,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
 
   let data: Record<string, unknown> | null = null;
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
     const res = await fetch(`${baseUrl}/api/embed/${token}`, {
       next: { revalidate: 300 },
     });

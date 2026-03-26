@@ -52,6 +52,7 @@ export interface LiveInstanceDeployment {
 
 export interface LiveInstanceDTO {
   id: string;
+  createdAt: string;
   eaName: string;
   symbol: string | null;
   timeframe: string | null;
@@ -67,6 +68,7 @@ export interface LiveInstanceDTO {
   openTrades: number;
   totalTrades: number;
   totalProfit: number;
+  sortOrder?: number;
   parentInstanceId?: string | null;
   lifecycleState?: string | null;
   strategyStatus?: string | null;
@@ -76,6 +78,7 @@ export interface LiveInstanceDTO {
   healthStatus?: string | null;
   isExternal?: boolean;
   isAutoDiscovered?: boolean;
+  monitoringSuppressedUntil?: string | null;
   baseline?: LiveInstanceBaseline | null;
   relinkRequired?: boolean;
   monitoringReasons?: string[];
@@ -99,6 +102,7 @@ export interface LiveHeartbeatPatch {
   status: string;
   tradingState: string;
   lastHeartbeat: string | null;
+  lastError: string | null;
 }
 
 // ── Update helpers ───────────────────────────────────────
@@ -122,6 +126,7 @@ export function applyHeartbeatPatch<T extends LiveInstanceDTO>(
     status: patch.status as T["status"],
     tradingState: patch.tradingState as T["tradingState"],
     lastHeartbeat: patch.lastHeartbeat,
+    lastError: patch.lastError,
   };
 }
 

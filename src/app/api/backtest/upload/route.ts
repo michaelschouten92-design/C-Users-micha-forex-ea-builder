@@ -13,7 +13,7 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
-import { parseMT5Report, computeHealthScore } from "@/lib/backtest-parser";
+import { parseMT5Report, computeHealthScore, extractSymbolFromFileName } from "@/lib/backtest-parser";
 import { BACKTEST_MAX_FILE_SIZE, isLikelyMT5Report } from "@/lib/validations/backtest";
 import { createHash } from "crypto";
 
@@ -196,14 +196,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // 11. Compute health score
+    // 11. Symbol fallback: if HTML parsing didn't find a symbol, try the filename
+    let symbolSource: "html_report" | "file_name" | "unknown" = "html_report";
+    if (parsed.metadata.symbol === "UNKNOWN") {
+      const fileNameSymbol = extractSymbolFromFileName(file.name);
+      if (fileNameSymbol) {
+        parsed.metadata.symbol = fileNameSymbol;
+        symbolSource = "file_name";
+        // Replace the "could not detect" warning with a more specific one
+        const idx = parsed.parseWarnings.findIndex((w) => w.includes("Could not detect symbol"));
+        if (idx >= 0) {
+          parsed.parseWarnings[idx] = `Symbol "${fileNameSymbol}" detected from file name (not found in report HTML)`;
+        }
+      } else {
+        symbolSource = "unknown";
+      }
+    }
+
+    // 12. Compute health score
     const healthResult = computeHealthScore(parsed.metrics, parsed.metadata.initialDeposit);
 
-    // 12. Sanitize HTML before storage and sanitize filename
+    // 13. Sanitize HTML before storage and sanitize filename
     const sanitizedHtml = sanitizeHtmlForStorage(html);
     const safeName = sanitizeFileName(file.name);
 
-    // 13. Store in transaction
+    // 14. Store in transaction
     const result = await prisma.$transaction(async (tx) => {
       const upload = await tx.backtestUpload.create({
         data: {
@@ -250,7 +267,7 @@ export async function POST(request: Request) {
       return { upload, run };
     });
 
-    // 14. Return result — merge parser warnings + scorer warnings
+    // 15. Return result — merge parser warnings + scorer warnings
     const allWarnings = [...parsed.parseWarnings, ...healthResult.warnings];
     return NextResponse.json(
       {
@@ -267,6 +284,7 @@ export async function POST(request: Request) {
         parseWarnings: allWarnings,
         detectedLocale: parsed.detectedLocale,
         dealCount: parsed.deals.length,
+        symbolSource,
       },
       { status: 201 }
     );

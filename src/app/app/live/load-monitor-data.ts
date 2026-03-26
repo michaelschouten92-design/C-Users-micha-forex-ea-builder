@@ -172,9 +172,10 @@ export function extractDecisionContext(
 function queryEaInstances(userId: string) {
   return prisma.liveEAInstance.findMany({
     where: { userId, deletedAt: null },
-    orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      createdAt: true,
       eaName: true,
       symbol: true,
       timeframe: true,
@@ -189,6 +190,7 @@ function queryEaInstances(userId: string) {
       openTrades: true,
       totalTrades: true,
       totalProfit: true,
+      sortOrder: true,
       strategyStatus: true,
       mode: true,
       parentInstanceId: true,
@@ -205,12 +207,12 @@ function queryEaInstances(userId: string) {
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        take: 1000,
+        take: 50,
         select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
       },
       heartbeats: {
         orderBy: { createdAt: "desc" },
-        take: 200,
+        take: 50,
         select: { equity: true, createdAt: true },
       },
       exportJobId: true,
@@ -247,13 +249,9 @@ function queryEaInstances(userId: string) {
       terminalDeployments: {
         where: { ignoredAt: null },
         select: {
-          id: true,
+          baselineStatus: true,
           symbol: true,
           magicNumber: true,
-          eaName: true,
-          timeframe: true,
-          baselineStatus: true,
-          strategyVersionId: true,
           materialFingerprint: true,
         },
       },
@@ -369,7 +367,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
         ea.lifecycleState === "DRAFT" &&
         ea.terminalDeployments.some((d) => {
           const expected = createHash("sha256")
-            .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
+            .update(`ctx:v2:${d.symbol}:${d.magicNumber}`)
             .digest("hex");
           return d.materialFingerprint === expected;
         }),

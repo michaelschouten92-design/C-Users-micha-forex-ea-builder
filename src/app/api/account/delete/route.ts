@@ -142,7 +142,7 @@ export async function DELETE(request: NextRequest) {
         });
       }
 
-      // Delete user (cascades to Subscription, Project, BuildVersion, ExportJob, UserTemplate, EAAlertRule, LiveEAInstance)
+      // Delete user (cascades to Subscription, Project, BuildVersion, ExportJob, UserTemplate, LiveEAInstance)
       await tx.user.delete({ where: { id: userId } });
     });
 

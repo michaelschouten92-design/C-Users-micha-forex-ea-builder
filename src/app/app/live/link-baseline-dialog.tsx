@@ -198,6 +198,7 @@ export function LinkBaselineDialog({
         return;
       }
       onLinked(instanceId, json.baseline);
+      setLinking(false);
     } catch {
       setError("Connection failed — check your network and try again.");
       setLinking(false);

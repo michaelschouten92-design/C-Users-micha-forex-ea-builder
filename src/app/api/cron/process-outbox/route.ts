@@ -178,7 +178,8 @@ async function handleProcessOutbox(request: NextRequest) {
       }
 
       try {
-        const payload = entry.payload as Record<string, unknown>;
+        const payload = (entry.payload ?? {}) as Record<string, unknown>;
+        const str = (v: unknown) => (typeof v === "string" ? v : "");
         let success = false;
 
         switch (entry.channel) {
@@ -186,7 +187,7 @@ async function handleProcessOutbox(request: NextRequest) {
             const result = await sendWithRetryForOutbox({
               to: entry.destination,
               subject: entry.subject || "AlgoStudio Notification",
-              html: (payload.html as string) || "",
+              html: str(payload.html),
             });
             success = !result.error;
             break;
@@ -197,15 +198,15 @@ async function handleProcessOutbox(request: NextRequest) {
             break;
           }
           case "TELEGRAM": {
-            const botToken = payload.botToken as string;
-            const message = payload.message as string;
+            const botToken = str(payload.botToken);
+            const message = str(payload.message);
             if (botToken && message) {
               success = await sendTelegramAlert(botToken, entry.destination, message);
             }
             break;
           }
           case "SLACK": {
-            const slackText = payload.message as string;
+            const slackText = str(payload.message);
             if (slackText) {
               success = await sendSlackMessage(entry.destination, slackText);
             }
@@ -213,10 +214,10 @@ async function handleProcessOutbox(request: NextRequest) {
           }
           case "BROWSER_PUSH": {
             await sendPushNotification(entry.userId, {
-              title: (payload.title as string) || "AlgoStudio",
-              body: (payload.body as string) || "",
-              url: payload.url as string | undefined,
-              tag: payload.tag as string | undefined,
+              title: str(payload.title) || "AlgoStudio",
+              body: str(payload.body),
+              url: typeof payload.url === "string" ? payload.url : undefined,
+              tag: typeof payload.tag === "string" ? payload.tag : undefined,
             });
             success = true;
             break;
@@ -235,7 +236,7 @@ async function handleProcessOutbox(request: NextRequest) {
         }
       } catch (err) {
         const newAttempts = entry.attempts + 1;
-        const backoffMs = 30_000 * Math.pow(2, newAttempts); // 30s * 2^attempts
+        const backoffMs = 30_000 * Math.pow(2, Math.min(newAttempts, 10)); // 30s * 2^attempts, capped at ~8.5h
         const nextRetry = new Date(Date.now() + backoffMs);
         const newStatus: OutboxStatus = newAttempts >= entry.maxAttempts ? "DEAD" : "FAILED";
         const reason = newStatus === "DEAD" ? "max_attempts_exceeded" : "delivery_failure";

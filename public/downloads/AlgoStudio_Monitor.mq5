@@ -42,6 +42,9 @@ struct StrategyContext
    int      seqNo;          // Chain sequence number for this context
    string   lastHash;       // Previous event hash for this context
    bool     sessionStartSent; // Per-context SESSION_START gate
+   // Cached per-heartbeat stats (populated once per tick by PrecomputeContextStats)
+   int      cachedTotalClosed;
+   double   cachedTotalPL;
 };
 
 //+------------------------------------------------------------------+
@@ -73,6 +76,13 @@ input bool   InpExcludeManual = false;           // Exclude manual trades (magic
 
 // Deployment identity (optional — enables deployment discovery)
 input string InpTrackedEaName = "";              // Name of the EA being monitored (optional)
+
+// Strategy self-identification (single strategy — takes priority over auto-discovery)
+// Set magic > 0 to make strategy visible immediately, before any trades.
+input int    InpStrategyMagic     = 0;            // Strategy magic number (0=auto-discover)
+input string InpStrategySymbol    = "";            // Strategy symbol (empty=chart symbol)
+input string InpStrategyTimeframe = "";            // Strategy timeframe e.g. M15 (empty=chart TF)
+input string InpStrategyLabel     = "";            // Strategy label (empty=EA name or magic)
 
 // Multi-strategy manifest (Milestone B — takes priority over single-strategy inputs when non-empty)
 // Format: magic|symbol|timeframe|label  (comma-separated for multiple strategies)
@@ -154,9 +164,15 @@ bool   g_initialized = false;
 bool   g_sessionStartSent = false;
 bool   g_chainDegraded = false;    // True after event drop — chain stalled until resync
 int    g_droppedEvents = 0;        // Cumulative dropped events (persisted across restarts)
+int    g_dealSelectFailures = 0;  // Cumulative HistoryDealSelect failures (session-only, not persisted)
 string g_stateFile   = "";
 string g_lockGV      = "";
 bool   g_processingTrade = false;
+
+// Heartbeat ordering (monotone per EA session, reset on restart)
+int      g_heartbeatSeqNo   = 0;
+string   g_heartbeatSessionId = "";
+long     g_heartbeatSessionStartedAt = 0;  // Unix epoch seconds when this session started
 
 // Panel / overlay state
 datetime g_lastSuccessfulHb = 0;
@@ -183,6 +199,11 @@ string   g_deployFingerprint = "";  // SHA-256 of material config fields
 StrategyContext g_contexts[];
 int    g_contextCount = 0;
 bool   g_manifestMode = false;
+datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
+datetime g_lastIncrementalDiscovery = 0; // Rate-limit incremental re-discovery scans
+bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
+datetime g_lastSyncAttempt  = 0;         // Rate-limit chain sync retries
+bool     g_queueDirty       = false;     // True when queue was mutated but not yet flushed to disk
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -202,6 +223,14 @@ int OnInit()
       Print("AlgoStudio Monitor: Heartbeat interval must be 10-3600 seconds");
       return INIT_PARAMETERS_INCORRECT;
    }
+
+   // Generate unique session ID + timestamp for heartbeat ordering
+   g_heartbeatSeqNo = 0;
+   g_heartbeatSessionStartedAt = (long)TimeCurrent();
+   g_heartbeatSessionId = StringSubstr(SHA256(
+      IntegerToString(GetTickCount()) + IntegerToString(TimeCurrent()) +
+      DoubleToString(MathRand(), 0) + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN))
+   ), 0, 16);
 
    // Single-instance lock
    g_lockGV = LOCK_GV_PREFIX + StringSubstr(InpApiKey, 0, 8);
@@ -223,7 +252,12 @@ int OnInit()
    // Parse multi-strategy manifest — sets g_manifestMode when InpStrategyManifest is non-empty
    ParseManifest();
 
-   // Auto-discovery fallback — runs only when no manifest was provided
+   // Self-identification — creates a single context from InpStrategyMagic when set.
+   // Runs only when no manifest was provided. Skips auto-discovery.
+   if(!g_manifestMode)
+      BuildSelfIdentifiedContext();
+
+   // Auto-discovery fallback — runs only when no manifest or self-identification
    if(!g_manifestMode)
       AutoDiscoverContexts();
 
@@ -259,6 +293,12 @@ int OnInit()
       // Mark it so the guard in SendTrackRecordEvent doesn't block events.
       g_sessionStartSent = true;
    }
+   // Sync per-context chain state for contexts restored from state file
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      if(StringLen(g_contexts[i].instanceId) > 0 && g_contexts[i].seqNo > 0)
+         SyncContextChainState(i);
+   }
 
    // SESSION_START is deferred until after first heartbeat populates g_instanceId
    // (see SendHeartbeat — sends SESSION_START once g_instanceId is known)
@@ -267,10 +307,16 @@ int OnInit()
    if(InpShowPanel)
       PanelCreate();
 
+   string ctxMode = g_manifestMode
+      ? (g_contextCount > 0 && StringLen(InpStrategyManifest) > 0 ? "manifest"
+         : InpStrategyMagic > 0 ? "self-id" : "auto-discovery")
+      : "legacy";
    Print("AlgoStudio Monitor: Initialized. Mode=",
          InpMonitorMode == MODE_ACCOUNT_WIDE ? "Account-Wide" : "Symbol-Only",
+         " Context=", ctxMode, "(", g_contextCount, ")",
          " Heartbeat=", InpHeartbeatSec, "s Snapshot=", InpSnapshotSec, "s",
-         " Deployment=", g_deploymentAware ? "enabled" : "disabled");
+         " ChainSync=", g_chainSyncPending ? "PENDING" : "OK",
+         " SeqNo=", g_seqNo);
 
    return INIT_SUCCEEDED;
 }
@@ -285,11 +331,20 @@ void OnDeinit(const int reason)
    // Destroy panel
    PanelDestroy();
 
-   // Send SESSION_END
+   // Send per-context SESSION_END (before base session — contexts close first)
+   for(int i = 0; i < g_contextCount; i++)
+      SendContextSessionEnd(i);
+
+   // Send base SESSION_END
    SendSessionEnd();
 
-   // Flush offline queue
+   // Flush offline queue + persist any remaining dirty state
    FlushOfflineQueue();
+   if(g_queueDirty)
+   {
+      SaveOfflineQueue();
+      g_queueDirty = false;
+   }
 
    // Save state
    SaveState();
@@ -300,7 +355,12 @@ void OnDeinit(const int reason)
 
    EventKillTimer();
 
-   Print("AlgoStudio Monitor: Shut down. Reason=", reason);
+   Print("AlgoStudio Monitor: Shut down. Reason=", reason,
+         " SeqNo=", g_seqNo,
+         " Queue=", g_queueCount,
+         (g_droppedEvents > 0 ? " Dropped=" + IntegerToString(g_droppedEvents) : ""),
+         (g_dealSelectFailures > 0 ? " DealSelFail=" + IntegerToString(g_dealSelectFailures) : ""),
+         (g_chainDegraded ? " CHAIN_DEGRADED" : ""));
 }
 
 //+------------------------------------------------------------------+
@@ -321,7 +381,13 @@ void OnTimer()
    {
       if(g_manifestMode)
       {
-         // Manifest mode: one heartbeat per strategy context.
+         // Account-level heartbeat first — updates base instance with
+         // aggregated openTrades, totalTrades, totalProfit.
+         SendHeartbeat();
+         // Pre-compute per-context trade stats in a single history scan
+         // (replaces N individual full scans inside SendContextHeartbeat).
+         PrecomputeContextStats();
+         // Per-context heartbeats — update each strategy context instance.
          // Per-context governance is stored in each context only —
          // g_govAction is NOT modified from manifest context responses.
          for(int i = 0; i < g_contextCount; i++)
@@ -340,6 +406,42 @@ void OnTimer()
    // Flush offline queue after heartbeat (instanceId may now be known)
    if(g_queueCount > 0)
       FlushOfflineQueue();
+
+   // Late discovery: re-scan for strategies when still in legacy mode.
+   // Runs at most once per 60 seconds. Once a context is found, g_manifestMode
+   // flips to true and this block never executes again.
+   if(!g_manifestMode && g_contextCount == 0 && InpStrategyMagic <= 0
+      && now - g_lastRediscovery >= 60)
+   {
+      g_lastRediscovery = now;
+      AutoDiscoverContexts();
+      if(g_manifestMode)
+         Print("AlgoStudio Monitor: Late discovery activated — ",
+               g_contextCount, " context(s) found.");
+   }
+
+   // Incremental re-discovery: scan for NEW strategies even when manifest mode
+   // is already active. Runs every 60s. Does NOT reset existing contexts.
+   if(g_manifestMode && g_contextCount > 0 && g_contextCount < MAX_MANIFEST_CONTEXTS
+      && InpStrategyMagic <= 0 && now - g_lastIncrementalDiscovery >= 60)
+   {
+      g_lastIncrementalDiscovery = now;
+      IncrementalRediscovery();
+   }
+
+   // Retry chain sync if initial sync failed — max once per 60 seconds.
+   // Syncs both base chain and per-context chains.
+   if(g_chainSyncPending && StringLen(g_instanceId) > 0
+      && now - g_lastSyncAttempt >= 60)
+   {
+      g_lastSyncAttempt = now;
+      SyncChainState();
+      for(int i = 0; i < g_contextCount; i++)
+      {
+         if(StringLen(g_contexts[i].instanceId) > 0 && g_contexts[i].seqNo > 0)
+            SyncContextChainState(i);
+      }
+   }
 
    // Poll for new trades (backup detection in case OnTradeTransaction missed something)
    PollTradeChanges();
@@ -369,6 +471,13 @@ void OnTimer()
    // Update on-chart panel
    if(InpShowPanel)
       PanelUpdate();
+
+   // Flush dirty queue to disk (at most once per timer tick, after all mutations)
+   if(g_queueDirty)
+   {
+      SaveOfflineQueue();
+      g_queueDirty = false;
+   }
 
    // Periodic state save (every 5 minutes)
    static datetime lastSave = 0;
@@ -583,10 +692,10 @@ void ParseManifest()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Fingerprint uses same material fields as single-context EvaluateDeploymentEligibility
-      string canonical = StringFormat("%s:%s:%d:%s:%s:%s",
-         ctx.symbol, ctx.timeframe, (int)ctx.magicNumber, ctx.eaName,
-         InpCommentFilter, InpExcludeManual ? "true" : "false");
+      // Canonical fingerprint: mode-independent, based on strategy identity only
+      string fpSymbol = ctx.symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
       ctx.fingerprint = SHA256(canonical);
 
       // Guard: max context count
@@ -634,6 +743,81 @@ void ParseManifest()
 }
 
 //+------------------------------------------------------------------+
+//| STRATEGY SELF-IDENTIFICATION                                     |
+//| Builds a single context from InpStrategyMagic when set (> 0).   |
+//| Uses explicit inputs (InpStrategySymbol, InpStrategyTimeframe,   |
+//| InpStrategyLabel) with chart symbol/timeframe/EA name fallback.  |
+//| Runs after ParseManifest, before AutoDiscoverContexts.           |
+//| Sets g_manifestMode = true so auto-discovery is skipped.         |
+//+------------------------------------------------------------------+
+void BuildSelfIdentifiedContext()
+{
+   if(InpStrategyMagic <= 0) return;
+
+   // Symbol: explicit input > chart symbol (normalized: trimmed + uppercase)
+   string sym = InpStrategySymbol;
+   StringTrimLeft(sym);
+   StringTrimRight(sym);
+   if(StringLen(sym) == 0) sym = _Symbol;
+   StringToUpper(sym);
+   if(StringLen(sym) == 0)
+   {
+      Print("AlgoStudio Monitor: Self-identification skipped — no symbol available.");
+      return;
+   }
+
+   // Timeframe: explicit input > chart timeframe (normalized: trimmed + uppercase, strip PERIOD_ prefix)
+   string tf;
+   string rawInputTf = InpStrategyTimeframe;
+   StringTrimLeft(rawInputTf);
+   StringTrimRight(rawInputTf);
+   if(StringLen(rawInputTf) > 0)
+   {
+      StringToUpper(rawInputTf);
+      tf = rawInputTf;
+   }
+   else
+   {
+      string rawTf = EnumToString((ENUM_TIMEFRAMES)Period());
+      tf = (StringFind(rawTf, "PERIOD_") == 0) ? StringSubstr(rawTf, 7) : rawTf;
+   }
+
+   // Label: explicit input > EA name > magic fallback
+   string label = StringLen(InpStrategyLabel) > 0
+                  ? InpStrategyLabel
+                  : StringLen(InpTrackedEaName) > 0
+                     ? InpTrackedEaName
+                     : "Magic " + IntegerToString(InpStrategyMagic);
+
+   StrategyContext ctx;
+   ctx.magicNumber      = InpStrategyMagic;
+   ctx.symbol           = sym;
+   ctx.timeframe        = tf;
+   ctx.eaName           = label;
+   ctx.instanceId       = "";
+   ctx.govAction        = "RUN";
+   ctx.govReason        = "";
+   ctx.govReceivedAt    = 0;
+   ctx.seqNo            = 0;
+   ctx.lastHash         = GENESIS_HASH;
+   ctx.sessionStartSent = false;
+
+   // Canonical fingerprint: mode-independent, based on strategy identity only
+   string canonical = "ctx:v2:" + sym + ":" + IntegerToString(InpStrategyMagic);
+   ctx.fingerprint = SHA256(canonical);
+
+   ArrayResize(g_contexts, 1);
+   g_contexts[0]  = ctx;
+   g_contextCount = 1;
+   g_manifestMode = true;
+
+   Print("AlgoStudio Monitor: Self-identified strategy [0] ",
+         ctx.symbol, ":", ctx.timeframe,
+         " magic=", ctx.magicNumber, " label=", ctx.eaName,
+         " fingerprint=", StringSubstr(ctx.fingerprint, 0, 16), "...");
+}
+
+//+------------------------------------------------------------------+
 //| Automatic zero-config context discovery.                         |
 //| Runs only when no manifest is provided.                          |
 //| Scans full account history + open positions, applies noise       |
@@ -660,8 +844,8 @@ void AutoDiscoverContexts()
 
    for(int i = 0; i < found; i++)
    {
-      // Noise filter: suppress one-off historical signals
-      if(candidates[i].tradeCount < 2 && !candidates[i].hasOpenPosition)
+      // Noise filter: suppress candidates with zero evidence
+      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
          continue;
 
       // Cap
@@ -687,10 +871,10 @@ void AutoDiscoverContexts()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // AUTO fingerprint — intentionally different from manifest fingerprints.
-      // timeframe is excluded (unknown). Backend scopes by base instance.
-      string canonical = "AUTO:v1:" + ctx.symbol + ":"
-                         + IntegerToString((int)ctx.magicNumber);
+      // Canonical fingerprint: mode-independent, based on strategy identity only
+      string fpSymbol = ctx.symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
       ctx.fingerprint   = SHA256(canonical);
 
       // Dedup by fingerprint (same guard as ParseManifest)
@@ -731,6 +915,70 @@ void AutoDiscoverContexts()
       Print("AlgoStudio Monitor: Auto-discovery: all candidates filtered by noise filter. "
             "Falling back to single-strategy mode.");
    }
+}
+
+//+------------------------------------------------------------------+
+//| Incremental re-discovery: find NEW strategies without resetting  |
+//| existing contexts. Only appends up to MAX_MANIFEST_CONTEXTS.     |
+//+------------------------------------------------------------------+
+void IncrementalRediscovery()
+{
+   DiscoveryCandidate candidates[];
+   int unattributed = 0;
+   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+   if(found == 0) return;
+
+   int added = 0;
+   for(int i = 0; i < found; i++)
+   {
+      if(g_contextCount >= MAX_MANIFEST_CONTEXTS) break;
+
+      // Noise filter (same as AutoDiscoverContexts)
+      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
+         continue;
+
+      // Build fingerprint to check for duplicates against existing contexts
+      string fpSymbol = candidates[i].symbol;
+      StringToUpper(fpSymbol);
+      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber);
+      string fp = SHA256(canonical);
+
+      bool duplicate = false;
+      for(int j = 0; j < g_contextCount; j++)
+      {
+         if(g_contexts[j].fingerprint == fp) { duplicate = true; break; }
+      }
+      if(duplicate) continue;
+
+      // New context — append
+      StrategyContext ctx;
+      ctx.magicNumber   = candidates[i].magicNumber;
+      ctx.symbol        = candidates[i].symbol;
+      ctx.timeframe     = "";
+      ctx.eaName        = StringLen(candidates[i].eaHint) > 0
+                          ? candidates[i].eaHint
+                          : "Magic " + IntegerToString((int)candidates[i].magicNumber);
+      ctx.instanceId    = "";
+      ctx.govAction     = "RUN";
+      ctx.govReason     = "";
+      ctx.govReceivedAt = 0;
+      ctx.seqNo         = 0;
+      ctx.lastHash      = GENESIS_HASH;
+      ctx.sessionStartSent = false;
+      ctx.fingerprint   = fp;
+
+      ArrayResize(g_contexts, g_contextCount + 1);
+      g_contexts[g_contextCount++] = ctx;
+      added++;
+
+      Print("AlgoStudio Monitor: Incremental discovery [", g_contextCount - 1, "] ",
+            ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName,
+            " fp=", StringSubstr(fp, 0, 16), "...");
+   }
+
+   if(added > 0)
+      Print("AlgoStudio Monitor: Incremental discovery added ", added,
+            " new context(s). Total: ", g_contextCount);
 }
 
 //+------------------------------------------------------------------+
@@ -1253,8 +1501,8 @@ bool SendContextTrackRecordEvent(int ctxIdx, string eventType,
       return false;
    }
 
-   // Per-context governance gate
-   if(g_contexts[ctxIdx].govAction != "RUN")
+   // Per-context governance gate (SESSION_END always passes — must close cleanly)
+   if(g_contexts[ctxIdx].govAction != "RUN" && eventType != "SESSION_END")
    {
       Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
             "]: Skipping ", eventType, " — governance: ", g_contexts[ctxIdx].govAction);
@@ -1353,6 +1601,38 @@ void SendContextSessionStart(int ctxIdx)
 
    if(SendContextTrackRecordEvent(ctxIdx, "SESSION_START", payloadJson, payloadPairs))
       g_contexts[ctxIdx].sessionStartSent = true;
+}
+
+//+------------------------------------------------------------------+
+//| Per-context SESSION_END                                           |
+//| Only sent when the context had an active session (sessionStartSent|
+//| == true and instanceId is populated).                              |
+//+------------------------------------------------------------------+
+void SendContextSessionEnd(int ctxIdx)
+{
+   if(!g_contexts[ctxIdx].sessionStartSent) return;
+   if(StringLen(g_contexts[ctxIdx].instanceId) == 0) return;
+
+   double bal = AccountInfoDouble(ACCOUNT_BALANCE);
+   double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
+   int uptime = (int)(TimeCurrent() - g_sessionStart);
+   if(uptime < 0) uptime = 0;
+
+   string payloadPairs[];
+   ArrayResize(payloadPairs, 4);
+   payloadPairs[0] = JMoney("finalBalance", bal);
+   payloadPairs[1] = JMoney("finalEquity", eq);
+   payloadPairs[2] = JStr("reason", "DEINIT");
+   payloadPairs[3] = JInt("uptimeSeconds", uptime);
+
+   string payloadJson = "{"
+      + JMoney("finalBalance", bal) + ","
+      + JMoney("finalEquity", eq) + ","
+      + JStr("reason", "DEINIT") + ","
+      + JInt("uptimeSeconds", uptime)
+      + "}";
+
+   SendContextTrackRecordEvent(ctxIdx, "SESSION_END", payloadJson, payloadPairs);
 }
 
 //+------------------------------------------------------------------+
@@ -1510,7 +1790,13 @@ void SendSnapshot()
 
 bool SendTradeOpen(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
+   if(!HistoryDealSelect(dealTicket))
+   {
+      g_dealSelectFailures++;
+      Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_OPEN deal #",
+            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
+      return true; // can't select → don't retry (deal marked as known — event is lost)
+   }
 
    string symbol   = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
    double price    = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1583,7 +1869,13 @@ bool SendTradeOpen(ulong dealTicket)
 
 bool SendTradeClose(ulong dealTicket)
 {
-   if(!HistoryDealSelect(dealTicket)) return true; // can't select → don't retry
+   if(!HistoryDealSelect(dealTicket))
+   {
+      g_dealSelectFailures++;
+      Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_CLOSE deal #",
+            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
+      return true; // can't select → don't retry (deal marked as known — event is lost)
+   }
 
    string ticket    = IntegerToString(dealTicket);
    double closePrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
@@ -1706,8 +1998,16 @@ void SendHeartbeat()
    // Automatic deployment discovery (ACCOUNT_WIDE mode only)
    string discoveryJson = DiscoverDeploymentsFromActivity();
 
+   string monitorModeStr = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
+
+   g_heartbeatSeqNo++;
+
    string json = "{"
       + JStr("mode", accMode) + ","
+      + JStr("monitorMode", monitorModeStr) + ","
+      + JStr("heartbeatSessionId", g_heartbeatSessionId) + ","
+      + JInt("heartbeatSessionStartedAt", (int)g_heartbeatSessionStartedAt) + ","
+      + JInt("heartbeatSeqNo", g_heartbeatSeqNo) + ","
       + (StringLen(symbol) > 0 ? JStr("symbol", symbol) + "," : "")
       + (StringLen(tf) > 0 ? JStr("timeframe", tf) + "," : "")
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
@@ -1720,6 +2020,7 @@ void SendHeartbeat()
       + JMoney("drawdown", dd) + ","
       + JInt("spread", spread)
       + (g_droppedEvents > 0 ? "," + JInt("droppedEvents", g_droppedEvents) : "")
+      + (g_dealSelectFailures > 0 ? "," + JInt("dealSelectFailures", g_dealSelectFailures) : "")
       + (g_chainDegraded ? ",\"chainStalled\":true" : "")
       + deployJson
       + discoveryJson
@@ -1743,6 +2044,41 @@ void SendHeartbeat()
    else
    {
       Print("AlgoStudio Monitor: Heartbeat FAILED — ", g_panelError);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Pre-compute per-context closed trade stats in a single scan.    |
+//| Called once per heartbeat tick, before the context heartbeat     |
+//| loop. Populates cachedTotalClosed / cachedTotalPL on each ctx   |
+//| so SendContextHeartbeat can skip its own full history scan.     |
+//+------------------------------------------------------------------+
+void PrecomputeContextStats()
+{
+   for(int c = 0; c < g_contextCount; c++)
+   {
+      g_contexts[c].cachedTotalClosed = 0;
+      g_contexts[c].cachedTotalPL     = 0;
+   }
+
+   HistorySelect(0, TimeCurrent());
+   for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
+   {
+      ulong dTicket = HistoryDealGetTicket(i);
+      if(dTicket == 0) continue;
+      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      long   magic = (long)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
+      string sym   = HistoryDealGetString(dTicket, DEAL_SYMBOL);
+
+      for(int c = 0; c < g_contextCount; c++)
+      {
+         if(g_contexts[c].magicNumber != magic) continue;
+         if(StringLen(g_contexts[c].symbol) > 0 && g_contexts[c].symbol != sym) continue;
+         g_contexts[c].cachedTotalClosed++;
+         g_contexts[c].cachedTotalPL += HistoryDealGetDouble(dTicket, DEAL_PROFIT);
+         break; // Each deal matches at most one context
+      }
    }
 }
 
@@ -1781,21 +2117,9 @@ void SendContextHeartbeat(StrategyContext &ctx)
       myOpen++;
    }
 
-   // Per-context closed trade stats (filtered by magic + symbol)
-   HistorySelect(0, TimeCurrent());
-   int    totalClosed = 0;
-   double totalPL     = 0;
-   for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
-   {
-      ulong dTicket = HistoryDealGetTicket(i);
-      if(dTicket == 0) continue;
-      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
-      if((long)HistoryDealGetInteger(dTicket, DEAL_MAGIC) != ctx.magicNumber) continue;
-      if(StringLen(ctx.symbol) > 0 &&
-         HistoryDealGetString(dTicket, DEAL_SYMBOL) != ctx.symbol) continue;
-      totalClosed++;
-      totalPL += HistoryDealGetDouble(dTicket, DEAL_PROFIT);
-   }
+   // Per-context closed trade stats — use cached values from PrecomputeContextStats()
+   int    totalClosed = ctx.cachedTotalClosed;
+   double totalPL     = ctx.cachedTotalPL;
 
    // Strategy deployment identity for this context
    string deployJson = ",\"deployment\":{"
@@ -1806,8 +2130,16 @@ void SendContextHeartbeat(StrategyContext &ctx)
       + JStr("materialFingerprint", ctx.fingerprint)
       + "}";
 
+   string ctxMonitorMode = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
+
+   g_heartbeatSeqNo++;
+
    string json = "{"
       + JStr("mode", accMode) + ","
+      + JStr("monitorMode", ctxMonitorMode) + ","
+      + JStr("heartbeatSessionId", g_heartbeatSessionId) + ","
+      + JInt("heartbeatSessionStartedAt", (int)g_heartbeatSessionStartedAt) + ","
+      + JInt("heartbeatSeqNo", g_heartbeatSeqNo) + ","
       + JStr("symbol", ctx.symbol) + ","
       + JStr("timeframe", ctx.timeframe) + ","
       + JStr("broker", AccountInfoString(ACCOUNT_COMPANY)) + ","
@@ -2049,6 +2381,10 @@ void SyncChainState()
 {
    if(StringLen(g_instanceId) == 0) return;
 
+   // Capture pre-sync state for CHAIN_RECOVERY event
+   int preSyncSeq = g_seqNo;
+   string preSyncHash = g_lastHash;
+
    string url = InpBaseUrl + "/api/track-record/state/" + g_instanceId;
    string headers = "X-EA-Key: " + InpApiKey;
 
@@ -2059,7 +2395,12 @@ void SyncChainState()
    ResetLastError();
    int res = WebRequest("GET", url, headers, 3000, postData, resultData, resultHeaders);
 
-   if(res < 200 || res >= 300) return;
+   if(res < 200 || res >= 300)
+   {
+      g_chainSyncPending = true;
+      Print("AlgoStudio Monitor: SyncChainState failed (HTTP ", res, ") — will retry.");
+      return;
+   }
 
    string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
 
@@ -2104,8 +2445,131 @@ void SyncChainState()
    }
 
    g_chainDegraded = false;
+   g_chainSyncPending = false;
    SaveState();
    Print("AlgoStudio Monitor: Chain synced. seqNo=", g_seqNo, " hash=", StringSubstr(g_lastHash, 0, 16), "...");
+
+   // Send CHAIN_RECOVERY audit event if state actually changed
+   if(g_seqNo > preSyncSeq && g_sessionStartSent)
+   {
+      string payloadPairs[];
+      ArrayResize(payloadPairs, 5);
+      payloadPairs[0] = JInt("previousSeqNo", preSyncSeq);
+      payloadPairs[1] = JStr("previousHash", preSyncHash);
+      payloadPairs[2] = JInt("recoveredFromSeqNo", g_seqNo);
+      payloadPairs[3] = JStr("recoveredFromHash", g_lastHash);
+      payloadPairs[4] = JStr("reason", "SERVER_AHEAD");
+
+      string payloadJson = "{"
+         + JInt("previousSeqNo", preSyncSeq) + ","
+         + JStr("previousHash", preSyncHash) + ","
+         + JInt("recoveredFromSeqNo", g_seqNo) + ","
+         + JStr("recoveredFromHash", g_lastHash) + ","
+         + JStr("reason", "SERVER_AHEAD")
+         + "}";
+
+      SendTrackRecordEvent("CHAIN_RECOVERY", payloadJson, payloadPairs);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| SYNC CONTEXT CHAIN STATE FROM SERVER                             |
+//| Syncs a single context's seqNo + lastHash, analogous to          |
+//| SyncChainState for the base chain. Requires ctx.instanceId.      |
+//+------------------------------------------------------------------+
+bool SyncContextChainState(int ctxIdx)
+{
+   if(StringLen(g_contexts[ctxIdx].instanceId) == 0) return false;
+
+   // Capture pre-sync state for CHAIN_RECOVERY event
+   int preSyncSeq = g_contexts[ctxIdx].seqNo;
+   string preSyncHash = g_contexts[ctxIdx].lastHash;
+
+   string url = InpBaseUrl + "/api/track-record/state/" + g_contexts[ctxIdx].instanceId;
+   string headers = "X-EA-Key: " + InpApiKey;
+
+   uchar postData[];
+   uchar resultData[];
+   string resultHeaders;
+
+   ResetLastError();
+   int res = WebRequest("GET", url, headers, 3000, postData, resultData, resultHeaders);
+
+   if(res < 200 || res >= 300)
+   {
+      g_chainSyncPending = true;
+      Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+            "]: Context chain sync failed (HTTP ", res, ") — will retry.");
+      return false;
+   }
+
+   string response = CharArrayToString(resultData, 0, WHOLE_ARRAY, CP_UTF8);
+
+   // Parse lastSeqNo
+   int seqPos = StringFind(response, "\"lastSeqNo\":");
+   if(seqPos >= 0)
+   {
+      int valStart = seqPos + 12;
+      int valEnd = valStart;
+      while(valEnd < StringLen(response))
+      {
+         ushort ch = StringGetCharacter(response, valEnd);
+         if(ch < '0' || ch > '9') break;
+         valEnd++;
+      }
+      if(valEnd > valStart)
+      {
+         int serverSeq = (int)StringToInteger(StringSubstr(response, valStart, valEnd - valStart));
+         if(serverSeq > g_contexts[ctxIdx].seqNo)
+         {
+            Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+                  "]: Server ahead (seq=", serverSeq, " vs local=", g_contexts[ctxIdx].seqNo, "). Syncing.");
+            g_contexts[ctxIdx].seqNo = serverSeq;
+         }
+      }
+   }
+
+   // Parse lastEventHash
+   int hashPos = StringFind(response, "\"lastEventHash\":\"");
+   if(hashPos >= 0)
+   {
+      int valStart = hashPos + 17;
+      int valEnd = StringFind(response, "\"", valStart);
+      if(valEnd > valStart)
+      {
+         string serverHash = StringSubstr(response, valStart, valEnd - valStart);
+         if(StringLen(serverHash) == 64)
+            g_contexts[ctxIdx].lastHash = serverHash;
+      }
+   }
+
+   Print("AlgoStudio Monitor [", g_contexts[ctxIdx].eaName,
+         "]: Context chain synced. seqNo=", g_contexts[ctxIdx].seqNo,
+         " hash=", StringSubstr(g_contexts[ctxIdx].lastHash, 0, 16), "...");
+
+   // Send CHAIN_RECOVERY audit event if state actually changed
+   if(g_contexts[ctxIdx].seqNo > preSyncSeq && g_contexts[ctxIdx].sessionStartSent)
+   {
+      string payloadPairs[];
+      ArrayResize(payloadPairs, 5);
+      payloadPairs[0] = JInt("previousSeqNo", preSyncSeq);
+      payloadPairs[1] = JStr("previousHash", preSyncHash);
+      payloadPairs[2] = JInt("recoveredFromSeqNo", g_contexts[ctxIdx].seqNo);
+      payloadPairs[3] = JStr("recoveredFromHash", g_contexts[ctxIdx].lastHash);
+      payloadPairs[4] = JStr("reason", "SERVER_AHEAD");
+
+      string payloadJson = "{"
+         + JInt("previousSeqNo", preSyncSeq) + ","
+         + JStr("previousHash", preSyncHash) + ","
+         + JInt("recoveredFromSeqNo", g_contexts[ctxIdx].seqNo) + ","
+         + JStr("recoveredFromHash", g_contexts[ctxIdx].lastHash) + ","
+         + JStr("reason", "SERVER_AHEAD")
+         + "}";
+
+      SendContextTrackRecordEvent(ctxIdx, "CHAIN_RECOVERY", payloadJson, payloadPairs);
+   }
+
+   return true;
 }
 
 //+------------------------------------------------------------------+
@@ -2132,9 +2596,7 @@ void EnqueueEvent(string json)
    g_offlineQueue[g_queueCount] = json;
    g_queueRetryCount[g_queueCount] = 0;
    g_queueCount++;
-
-   // Persist queue to file
-   SaveOfflineQueue();
+   g_queueDirty = true;
 }
 
 void FlushOfflineQueue()
@@ -2198,20 +2660,26 @@ void FlushOfflineQueue()
       g_queueCount -= consumed;
       ArrayResize(g_offlineQueue, g_queueCount);
       ArrayResize(g_queueRetryCount, g_queueCount);
-      SaveOfflineQueue();
+      g_queueDirty = true;
    }
    else if(stopped)
    {
-      // Retry counts may have been incremented — persist without removing events
-      SaveOfflineQueue();
+      // Retry counts may have been incremented — mark dirty for periodic save
+      g_queueDirty = true;
    }
 }
 
 void SaveOfflineQueue()
 {
    string queueFile = STATE_FILE_PREFIX + StringSubstr(InpApiKey, 0, 8) + "_queue.dat";
-   int handle = FileOpen(queueFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
-   if(handle == INVALID_HANDLE) return;
+   string tmpFile = queueFile + ".tmp";
+
+   int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("AlgoStudio Monitor: WARNING — cannot open queue temp file for writing.");
+      return;
+   }
 
    FileWriteString(handle, IntegerToString(g_queueCount) + "\n");
    for(int i = 0; i < g_queueCount; i++)
@@ -2224,6 +2692,12 @@ void SaveOfflineQueue()
       FileWriteString(handle, IntegerToString(g_queueRetryCount[i]) + "|" + line + "\n");
    }
    FileClose(handle);
+
+   // Promote temp to live — preserves previous queue file on failure.
+   if(!FileCopy(tmpFile, FILE_COMMON, queueFile, FILE_COMMON | FILE_REWRITE))
+      Print("AlgoStudio Monitor: WARNING — queue file promotion failed.");
+
+   FileDelete(tmpFile, FILE_COMMON);
 }
 
 void LoadOfflineQueue()
@@ -2276,9 +2750,16 @@ void SaveState()
    GlobalVariableSet(prefix + "seqNo", (double)g_seqNo);
    // Hash stored in file (too long for GV)
 
-   // File backup (survives terminal restart)
-   int handle = FileOpen(g_stateFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
-   if(handle == INVALID_HANDLE) return;
+   // Write to temp file first, then copy over live file.
+   // Crash during temp write leaves the live file intact.
+   string tmpFile = g_stateFile + ".tmp";
+
+   int handle = FileOpen(tmpFile, FILE_WRITE | FILE_TXT | FILE_COMMON);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("AlgoStudio Monitor: WARNING — cannot open state temp file for writing.");
+      return;
+   }
 
    FileWriteString(handle, IntegerToString(g_seqNo) + "\n");
    FileWriteString(handle, g_lastHash + "\n");
@@ -2287,7 +2768,10 @@ void SaveState()
    FileWriteString(handle, (g_chainDegraded ? "1" : "0") + "\n");
 
    // Per-context chain state (Milestone C)
-   // Format: count on line 6, then one line per context: fingerprint|seqNo|lastHash|instanceId|sessionStartSent
+   // Format: count on line 6, then one line per context:
+   // fingerprint|seqNo|lastHash|instanceId|sessionStartSent|symbol|magicNumber
+   // Fields 5-6 (symbol|magic) added for fingerprint migration fallback matching.
+   // Backward compatible: LoadState handles both 5-field and 7-field lines.
    FileWriteString(handle, IntegerToString(g_contextCount) + "\n");
    for(int i = 0; i < g_contextCount; i++)
    {
@@ -2296,10 +2780,20 @@ void SaveState()
          + "|" + g_contexts[i].lastHash
          + "|" + g_contexts[i].instanceId
          + "|" + (g_contexts[i].sessionStartSent ? "1" : "0")
+         + "|" + g_contexts[i].symbol
+         + "|" + IntegerToString((int)g_contexts[i].magicNumber)
          + "\n");
    }
 
    FileClose(handle);
+
+   // Promote temp to live via FileCopy (not guaranteed atomic, but crash
+   // during temp write leaves the live file intact — significant improvement
+   // over direct truncate-on-open). If copy fails, previous state is preserved.
+   if(!FileCopy(tmpFile, FILE_COMMON, g_stateFile, FILE_COMMON | FILE_REWRITE))
+      Print("AlgoStudio Monitor: WARNING — state file promotion failed, previous state preserved.");
+
+   FileDelete(tmpFile, FILE_COMMON);
 }
 
 void LoadState()
@@ -2312,10 +2806,41 @@ void LoadState()
       g_seqNo = (int)GlobalVariableGet(prefix + "seqNo");
    }
 
-   // Load full state from file (needed for hash + instanceId)
-   if(FileIsExist(g_stateFile, FILE_COMMON))
+   // Load full state from file (needed for hash + instanceId).
+   // If the live file is missing or structurally invalid (empty, truncated,
+   // corrupt hash on line 2), try the temp file as fallback — covers the
+   // scenario where a crash occurred after temp write but before promotion,
+   // or during a FileCopy that left the live file incomplete.
+   string stateSource = g_stateFile;
+   string tmpFile = g_stateFile + ".tmp";
+   bool needFallback = !FileIsExist(g_stateFile, FILE_COMMON);
+   if(!needFallback)
    {
-      int handle = FileOpen(g_stateFile, FILE_READ | FILE_TXT | FILE_COMMON);
+      // Structural validation: line 1 = seqNo, line 2 = 64-char hash.
+      // If hash is missing or wrong length, the file is corrupt.
+      int probe = FileOpen(g_stateFile, FILE_READ | FILE_TXT | FILE_COMMON);
+      if(probe == INVALID_HANDLE)
+      {
+         needFallback = true;
+      }
+      else
+      {
+         string probeLine1 = FileIsEnding(probe) ? "" : FileReadString(probe);
+         string probeLine2 = FileIsEnding(probe) ? "" : FileReadString(probe);
+         FileClose(probe);
+         if(StringLen(probeLine2) != 64)
+            needFallback = true;
+      }
+   }
+   if(needFallback && FileIsExist(tmpFile, FILE_COMMON))
+   {
+      stateSource = tmpFile;
+      Print("AlgoStudio Monitor: Live state file missing or corrupt — recovering from temp file.");
+   }
+
+   if(FileIsExist(stateSource, FILE_COMMON))
+   {
+      int handle = FileOpen(stateSource, FILE_READ | FILE_TXT | FILE_COMMON);
       if(handle != INVALID_HANDLE)
       {
          if(!FileIsEnding(handle))
@@ -2358,23 +2883,70 @@ void LoadState()
                if(partCount < 5) continue;
 
                string fp = parts[0];
-               // Match to current context by fingerprint
+               // Match to current context by fingerprint (primary)
+               // or by (symbol, magicNumber) fallback for fingerprint migration
+               int matchIdx = -1;
                for(int j = 0; j < g_contextCount; j++)
                {
-                  if(g_contexts[j].fingerprint == fp)
+                  if(g_contexts[j].fingerprint == fp) { matchIdx = j; break; }
+               }
+               // Fallback 1: reconstruct legacy fingerprint formulas and compare.
+               // Works for old 5-field state files where symbol+magic aren't stored.
+               if(matchIdx < 0)
+               {
+                  for(int j = 0; j < g_contextCount; j++)
                   {
-                     g_contexts[j].seqNo    = (int)StringToInteger(parts[1]);
-                     if(StringLen(parts[2]) == 64)
-                        g_contexts[j].lastHash = parts[2];
-                     if(StringLen(parts[3]) > 0)
-                        g_contexts[j].instanceId = parts[3];
-                     g_contexts[j].sessionStartSent = (parts[4] == "1");
-                     Print("AlgoStudio Monitor: Restored context [", g_contexts[j].eaName,
-                           "] seqNo=", g_contexts[j].seqNo,
-                           " instanceId=", StringLen(g_contexts[j].instanceId) > 0
-                              ? g_contexts[j].instanceId : "(pending)");
-                     break;
+                     if(g_contexts[j].seqNo > 0) continue; // already restored
+                     string raw = g_contexts[j].symbol;  // raw — legacy manifest/self-id used raw symbol
+                     string upper = raw;
+                     StringToUpper(upper);
+                     string m = IntegerToString((int)g_contexts[j].magicNumber);
+                     // Legacy manifest: SYMBOL:TF:MAGIC:EANAME:COMMENTFILTER:EXCLUDEMANUAL (raw symbol)
+                     string legacyManifest = StringFormat("%s:%s:%s:%s:%s:%s",
+                        raw, g_contexts[j].timeframe, m, g_contexts[j].eaName,
+                        InpCommentFilter, InpExcludeManual ? "true" : "false");
+                     if(SHA256(legacyManifest) == fp) { matchIdx = j; break; }
+                     // Legacy self-id: SYMBOL:TF:MAGIC:COMMENTFILTER:EXCLUDEMANUAL (raw symbol)
+                     string legacySelfId = StringFormat("%s:%s:%s:%s:%s",
+                        raw, g_contexts[j].timeframe, m,
+                        InpCommentFilter, InpExcludeManual ? "true" : "false");
+                     if(SHA256(legacySelfId) == fp) { matchIdx = j; break; }
+                     // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC (broker-native, typically uppercase)
+                     if(SHA256("AUTO:v1:" + upper + ":" + m) == fp) { matchIdx = j; break; }
                   }
+               }
+               // Fallback 2: match by symbol + magicNumber fields (7-field state lines).
+               if(matchIdx < 0 && partCount >= 7)
+               {
+                  string savedSymbol = parts[5];
+                  StringToUpper(savedSymbol);
+                  long savedMagic = StringToInteger(parts[6]);
+                  for(int j = 0; j < g_contextCount; j++)
+                  {
+                     if(g_contexts[j].seqNo > 0) continue; // already restored
+                     string ctxSym = g_contexts[j].symbol;
+                     StringToUpper(ctxSym);
+                     if(ctxSym == savedSymbol && g_contexts[j].magicNumber == savedMagic)
+                     {
+                        matchIdx = j;
+                        break;
+                     }
+                  }
+               }
+               if(matchIdx >= 0)
+               {
+                  g_contexts[matchIdx].seqNo    = (int)StringToInteger(parts[1]);
+                  if(StringLen(parts[2]) == 64)
+                     g_contexts[matchIdx].lastHash = parts[2];
+                  if(StringLen(parts[3]) > 0)
+                     g_contexts[matchIdx].instanceId = parts[3];
+                  g_contexts[matchIdx].sessionStartSent = (parts[4] == "1");
+                  bool migrated = (g_contexts[matchIdx].fingerprint != fp);
+                  Print("AlgoStudio Monitor: Restored context [", g_contexts[matchIdx].eaName,
+                        "] seqNo=", g_contexts[matchIdx].seqNo,
+                        " instanceId=", StringLen(g_contexts[matchIdx].instanceId) > 0
+                           ? g_contexts[matchIdx].instanceId : "(pending)",
+                        (migrated ? " (fingerprint migrated)" : ""));
                }
             }
          }
@@ -2513,7 +3085,7 @@ void PanelCreate()
 
    // Info rows — labels (left) and values (right)
    int y = 92;
-   string rowNames[] = {"Status", "Governance", "Heartbeat", "Instance", "Account", "Queue", "Last error"};
+   string rowNames[] = {"Status", "Governance", "Heartbeat", "Instance", "Account", "Diagnostics", "Last error"};
    for(int i = 0; i < 7; i++)
    {
       OvlLabel("L" + IntegerToString(i), OVL_LEFT_MARGIN, y, rowNames[i], OVL_LABEL_COLOR, OVL_LABEL_FONT_SIZE);
@@ -2635,9 +3207,26 @@ void PanelUpdate()
                    + "  " + AccountInfoString(ACCOUNT_SERVER);
    PanelSetValue(4, acctText, OVL_DIM_COLOR);
 
-   // Row 5: Queue — only show count when non-zero
-   if(g_queueCount > 0)
-      PanelSetValue(5, IntegerToString(g_queueCount) + " queued", OVL_YELLOW);
+   // Row 5: Diagnostics — chain health, queue, deal-select failures
+   if(g_chainDegraded || g_chainSyncPending || g_queueCount > 0 || g_dealSelectFailures > 0)
+   {
+      string diagParts = "";
+      color  diagClr = OVL_YELLOW;
+      if(g_chainDegraded)
+      {
+         diagParts = "CHAIN STALLED";
+         diagClr = OVL_RED;
+      }
+      else if(g_chainSyncPending)
+         diagParts = "SYNC PENDING";
+      if(g_queueCount > 0)
+         diagParts += (StringLen(diagParts) > 0 ? "  " : "")
+                    + IntegerToString(g_queueCount) + " queued";
+      if(g_dealSelectFailures > 0)
+         diagParts += (StringLen(diagParts) > 0 ? "  " : "")
+                    + IntegerToString(g_dealSelectFailures) + " deal-sel fail";
+      PanelSetValue(5, diagParts, diagClr);
+   }
    else
       PanelSetValue(5, "—", OVL_DIM_COLOR);
 

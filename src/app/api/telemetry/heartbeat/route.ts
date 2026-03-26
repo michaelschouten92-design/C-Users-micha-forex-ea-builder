@@ -21,9 +21,6 @@ import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/mat
 import { createHash } from "crypto";
 import { z } from "zod";
 
-// NOTE: Alert processing uses only the EAAlertConfig system (via @/lib/alerts).
-// The legacy EAAlertRule/EAAlert system has been removed from runtime code.
-// See prisma/schema.prisma for deprecated model annotations.
 
 /** Strict hex hash: 64 chars (SHA-256 output). */
 const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
@@ -60,6 +57,13 @@ const heartbeatSchema = z.object({
   drawdown: z.number().finite().min(0).max(100).default(0),
   spread: z.number().finite().min(0).max(10000).default(0),
   mode: z.enum(["LIVE", "PAPER"]).optional(),
+  // EA monitor mode — determines whether a separate account-level heartbeat
+  // sends aggregated trade metrics to the base instance. Older EAs omit this
+  // field; the default preserves existing ACCOUNT_WIDE behaviour.
+  monitorMode: z.enum(["SYMBOL_ONLY", "ACCOUNT_WIDE"]).optional(),
+  heartbeatSessionId: z.string().min(1).max(64).optional(),
+  heartbeatSessionStartedAt: z.number().int().min(0).optional(),
+  heartbeatSeqNo: z.number().int().min(1).optional(),
   deployment: deploymentSchema.optional(),
   // Account-wide deployment discovery
   discoveredDeployments: z.array(discoveredDeploymentSchema).max(50).optional(),
@@ -119,8 +123,7 @@ export async function POST(request: NextRequest) {
         : auth.instanceId;
     const isManifestContext = effectiveInstanceId !== auth.instanceId;
 
-    // TODO: remove after manifest instanceId validation
-    log.info(
+    log.debug(
       {
         baseInstanceId: auth.instanceId,
         fingerprint: data.deployment?.materialFingerprint ?? null,
@@ -130,9 +133,10 @@ export async function POST(request: NextRequest) {
       "heartbeat:instance-resolution"
     );
 
-    // Fetch instance state before the update for status change detection
+    // Fetch instance state before the update for status change detection.
+    // TR3: Skip soft-deleted instances — no state mutations for deleted EAs.
     const previousState = await prisma.liveEAInstance.findUnique({
-      where: { id: effectiveInstanceId },
+      where: { id: effectiveInstanceId, deletedAt: null },
       select: {
         status: true,
         tradingState: true,
@@ -147,28 +151,72 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (!previousState) {
+      // Instance not found or soft-deleted — skip heartbeat silently
+      return NextResponse.json({ success: true, action: "PAUSE", reasonCode: "NO_INSTANCE" });
+    }
+
     // Atomically update instance + insert heartbeat record.
+    // TR1: Only update if this heartbeat is newer than the last one (stale-safe).
     // In manifest mode, also pulse the base instance so the terminal doesn't go OFFLINE.
     const now = new Date();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const txOps: any[] = [
-      prisma.liveEAInstance.update({
-        where: { id: effectiveInstanceId },
-        data: {
-          status: "ONLINE",
-          lastHeartbeat: now,
-          symbol: data.symbol ?? undefined,
-          timeframe: data.timeframe ?? undefined,
-          broker: data.broker ?? undefined,
-          accountNumber: data.accountNumber ?? undefined,
-          mode: data.mode === "PAPER" ? "PAPER" : undefined,
-          balance: data.balance,
-          equity: data.equity,
-          openTrades: data.openTrades,
-          totalTrades: data.totalTrades,
-          totalProfit: data.totalProfit,
-        },
-      }),
+      // TR1: Stale heartbeat guard via orderable session timestamp + seqNo.
+      // Accepts if: no prior session (NULL) OR newer session (startedAt >) OR
+      // same session + higher seqNo. Rejects stale heartbeats from old sessions.
+      // Legacy EA (missing fields): unconditional Prisma update (backward compat).
+      ...(data.heartbeatSessionId != null && data.heartbeatSessionStartedAt != null && data.heartbeatSeqNo != null
+        ? [
+            prisma.$queryRaw`
+              UPDATE "LiveEAInstance"
+              SET status = 'ONLINE',
+                  "lastHeartbeat" = ${now},
+                  "heartbeatSessionId" = ${data.heartbeatSessionId},
+                  "heartbeatSessionStartedAt" = ${data.heartbeatSessionStartedAt},
+                  "heartbeatSeqNo" = ${data.heartbeatSeqNo},
+                  symbol = COALESCE(${data.symbol ?? null}, symbol),
+                  timeframe = COALESCE(${data.timeframe ?? null}, timeframe),
+                  broker = COALESCE(${data.broker ?? null}, broker),
+                  "accountNumber" = COALESCE(${data.accountNumber ?? null}, "accountNumber"),
+                  mode = CASE WHEN ${data.mode === "PAPER"} THEN 'PAPER' ELSE mode END,
+                  balance = ${data.balance},
+                  equity = ${data.equity},
+                  "openTrades" = ${data.openTrades},
+                  "totalTrades" = ${data.totalTrades},
+                  "totalProfit" = ${data.totalProfit}
+              WHERE id = ${effectiveInstanceId}
+                AND "deletedAt" IS NULL
+                AND (
+                  "heartbeatSessionStartedAt" IS NULL
+                  OR "heartbeatSessionStartedAt" < ${data.heartbeatSessionStartedAt}
+                  OR (
+                    "heartbeatSessionStartedAt" = ${data.heartbeatSessionStartedAt}
+                    AND "heartbeatSessionId" = ${data.heartbeatSessionId}
+                    AND ("heartbeatSeqNo" IS NULL OR "heartbeatSeqNo" < ${data.heartbeatSeqNo})
+                  )
+                )
+            `,
+          ]
+        : [
+            prisma.liveEAInstance.update({
+              where: { id: effectiveInstanceId },
+              data: {
+                status: "ONLINE",
+                lastHeartbeat: now,
+                symbol: data.symbol ?? undefined,
+                timeframe: data.timeframe ?? undefined,
+                broker: data.broker ?? undefined,
+                accountNumber: data.accountNumber ?? undefined,
+                mode: data.mode === "PAPER" ? "PAPER" : undefined,
+                balance: data.balance,
+                equity: data.equity,
+                openTrades: data.openTrades,
+                totalTrades: data.totalTrades,
+                totalProfit: data.totalProfit,
+              },
+            }),
+          ]),
       prisma.eAHeartbeat.create({
         data: {
           instanceId: effectiveInstanceId,
@@ -183,6 +231,20 @@ export async function POST(request: NextRequest) {
       }),
     ];
     if (isManifestContext) {
+      // In SYMBOL_ONLY deployment-aware mode there is no separate account-level
+      // heartbeat — every heartbeat routes through context resolution. The base
+      // instance must receive openTrades/totalTrades/totalProfit here, otherwise
+      // they stay at the default 0.
+      //
+      // In ACCOUNT_WIDE manifest mode a dedicated account-level heartbeat (without
+      // deployment field) writes the correct aggregates directly to the base
+      // instance. Per-context heartbeats must NOT overwrite those values.
+      //
+      // The EA sends `monitorMode: "SYMBOL_ONLY" | "ACCOUNT_WIDE"` to distinguish
+      // the two cases. For backward compatibility with older EAs that omit the
+      // field, default to ACCOUNT_WIDE (safe: preserves existing behaviour).
+      const isSymbolOnly = data.monitorMode === "SYMBOL_ONLY";
+
       txOps.push(
         prisma.liveEAInstance.update({
           where: { id: auth.instanceId },
@@ -196,9 +258,13 @@ export async function POST(request: NextRequest) {
             // Propagate account-level metrics so the base instance card shows live values.
             balance: data.balance,
             equity: data.equity,
-            openTrades: data.openTrades,
-            totalTrades: data.totalTrades,
-            totalProfit: data.totalProfit,
+            // Only propagate trade metrics for SYMBOL_ONLY EAs that have no
+            // separate account-level heartbeat to write these aggregates.
+            ...(isSymbolOnly && {
+              openTrades: data.openTrades,
+              totalTrades: data.totalTrades,
+              totalProfit: data.totalProfit,
+            }),
           },
         }),
         // Also create a heartbeat record for the base instance so the SSE
@@ -299,8 +365,7 @@ export async function POST(request: NextRequest) {
         })
       : { action: "PAUSE" as const, reasonCode: "NO_INSTANCE" as const };
 
-    // TODO: remove after manifest instanceId validation
-    log.info(
+    log.debug(
       { responseInstanceId: effectiveInstanceId, action: decision.action },
       "heartbeat:response"
     );
@@ -315,6 +380,62 @@ export async function POST(request: NextRequest) {
     log.error({ err, instanceId: auth.instanceId }, "Heartbeat processing failed");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal error"), { status: 500 });
   }
+}
+
+// ── Fingerprint Migration Fallback ───────────────────────────────────
+
+/**
+ * Find an existing child instance by (parentInstanceId, symbol, magicNumber).
+ *
+ * Used as fallback when the primary apiKeyHash lookup misses — this happens
+ * when the EA fingerprint formula changes (e.g. canonical unification).
+ *
+ * Returns the instance id if exactly one unambiguous match exists.
+ * Returns null if zero or multiple matches (ambiguity guard).
+ */
+async function findExistingContextByIdentity(
+  baseInstanceId: string,
+  symbol: string,
+  magicNumber: number
+): Promise<string | null> {
+  const normalizedSymbol = symbol.toUpperCase();
+
+  // Find child instances with matching parent + symbol
+  const candidates = await prisma.liveEAInstance.findMany({
+    where: {
+      parentInstanceId: baseInstanceId,
+      symbol: normalizedSymbol,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      terminalDeployments: {
+        where: { magicNumber, ignoredAt: null },
+        select: { id: true },
+        take: 1,
+      },
+    },
+  });
+
+  if (candidates.length === 0) return null;
+
+  // Prefer candidates that have a matching deployment with the correct magic number
+  const withMagic = candidates.filter((c) => c.terminalDeployments.length > 0);
+
+  if (withMagic.length === 1) return withMagic[0].id;
+
+  // No confirmed magic match or multiple matches — do not auto-merge
+  log.warn(
+    {
+      baseInstanceId,
+      symbol: normalizedSymbol,
+      magicNumber,
+      candidateCount: candidates.length,
+      withMagicCount: withMagic.length,
+    },
+    "Fingerprint migration fallback: ambiguous match — skipping auto-merge"
+  );
+  return null;
 }
 
 // ── Manifest Context Instance Resolution ─────────────────────────────
@@ -344,21 +465,55 @@ async function resolveManifestContextInstance(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.upsert({
+  // Step 1: Try direct hash lookup
+  const existing = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: syntheticKeyHash },
-    create: {
+    select: { id: true },
+  });
+
+  if (existing) {
+    // Hash hit — update parentInstanceId backfill and return
+    await prisma.liveEAInstance.update({
+      where: { id: existing.id },
+      data: { parentInstanceId: baseInstanceId },
+    });
+    return existing.id;
+  }
+
+  // Step 2: Fallback — fingerprint migration compatibility.
+  // If a child instance already exists with the same parent + symbol + magic
+  // (via its deployment), reuse it and adopt the new apiKeyHash.
+  const fallback = await findExistingContextByIdentity(
+    baseInstanceId,
+    deployment.symbol,
+    deployment.magicNumber
+  );
+
+  if (fallback) {
+    log.info(
+      {
+        instanceId: fallback,
+        symbol: deployment.symbol,
+        magicNumber: deployment.magicNumber,
+      },
+      "Fingerprint migration fallback: reusing existing instance for manifest context"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: fallback },
+      data: { apiKeyHash: syntheticKeyHash, parentInstanceId: baseInstanceId },
+    });
+    return fallback;
+  }
+
+  // Step 3: No match — create new instance
+  const ctx = await prisma.liveEAInstance.create({
+    data: {
       userId,
       apiKeyHash: syntheticKeyHash,
       eaName: deployment.eaName,
       symbol: deployment.symbol.toUpperCase(),
       timeframe: deployment.timeframe.toUpperCase(),
-      // Start in LIVE_MONITORING so governance returns RUN immediately.
-      // Manifest context instances represent actively deployed live strategies.
       lifecycleState: "LIVE_MONITORING",
-      parentInstanceId: baseInstanceId,
-    },
-    update: {
-      // Backfill parentInstanceId for instances created before this field existed
       parentInstanceId: baseInstanceId,
     },
     select: { id: true },
@@ -407,9 +562,56 @@ async function resolveAutoDiscoveredContextInstance(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${deployment.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.upsert({
+  // Step 1: Try direct hash lookup
+  const existing = await prisma.liveEAInstance.findUnique({
     where: { apiKeyHash: syntheticKeyHash },
-    create: {
+    select: { id: true },
+  });
+
+  if (existing) {
+    // Hash hit — backfill metadata and return
+    await prisma.liveEAInstance.update({
+      where: { id: existing.id },
+      data: {
+        ...(deployment.broker != null && { broker: deployment.broker }),
+        ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+        parentInstanceId: baseInstanceId,
+      },
+    });
+    return existing.id;
+  }
+
+  // Step 2: Fallback — fingerprint migration compatibility.
+  const fallback = await findExistingContextByIdentity(
+    baseInstanceId,
+    deployment.symbol,
+    deployment.magicNumber
+  );
+
+  if (fallback) {
+    log.info(
+      {
+        instanceId: fallback,
+        symbol: deployment.symbol,
+        magicNumber: deployment.magicNumber,
+      },
+      "Fingerprint migration fallback: reusing existing instance for auto-discovered context"
+    );
+    await prisma.liveEAInstance.update({
+      where: { id: fallback },
+      data: {
+        apiKeyHash: syntheticKeyHash,
+        ...(deployment.broker != null && { broker: deployment.broker }),
+        ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
+        parentInstanceId: baseInstanceId,
+      },
+    });
+    return fallback;
+  }
+
+  // Step 3: No match — create new instance
+  const ctx = await prisma.liveEAInstance.create({
+    data: {
       userId,
       apiKeyHash: syntheticKeyHash,
       eaName: deployment.eaName,
@@ -418,12 +620,6 @@ async function resolveAutoDiscoveredContextInstance(
       lifecycleState: "DRAFT",
       broker: deployment.broker ?? undefined,
       accountNumber: deployment.accountNumber ?? undefined,
-      parentInstanceId: baseInstanceId,
-    },
-    update: {
-      // Backfill broker/accountNumber and parentInstanceId for pre-existing instances
-      ...(deployment.broker != null && { broker: deployment.broker }),
-      ...(deployment.accountNumber != null && { accountNumber: deployment.accountNumber }),
       parentInstanceId: baseInstanceId,
     },
     select: { id: true },

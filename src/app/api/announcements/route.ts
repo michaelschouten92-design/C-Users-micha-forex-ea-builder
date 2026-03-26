@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }],
       },
       orderBy: { createdAt: "desc" },
+      take: 50,
       select: {
         id: true,
         title: true,

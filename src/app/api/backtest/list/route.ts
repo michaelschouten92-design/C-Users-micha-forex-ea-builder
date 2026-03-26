@@ -39,6 +39,7 @@ export async function GET(request: Request) {
               winRate: true,
               healthScore: true,
               healthStatus: true,
+              parseWarnings: true,
               createdAt: true,
             },
           },
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
               winRate: run.winRate,
               healthScore: run.healthScore,
               healthStatus: run.healthStatus,
+              parseWarnings: run.parseWarnings,
             }
           : {}),
       };

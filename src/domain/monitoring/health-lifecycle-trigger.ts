@@ -16,7 +16,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { performLifecycleTransition } from "@/lib/strategy-lifecycle/transition-service";
+import { performLifecycleTransitionInTx } from "@/lib/strategy-lifecycle/transition-service";
+import { appendProofEventInTx } from "@/lib/proof/events";
+import { randomUUID } from "crypto";
 import { MONITORING } from "./constants";
 import * as Sentry from "@sentry/nextjs";
 
@@ -39,55 +41,81 @@ export async function evaluateHealthLifecycleTrigger(instanceId: string): Promis
   // 1. Check current lifecycle state — only LIVE_MONITORING is eligible
   const instance = await prisma.liveEAInstance.findUnique({
     where: { id: instanceId },
-    select: { lifecycleState: true },
+    select: {
+      lifecycleState: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
+    },
   });
 
   if (!instance || instance.lifecycleState !== "LIVE_MONITORING") {
     return; // Not eligible — no-op
   }
 
-  // 2. Load the most recent N snapshots
-  const snapshots = await prisma.healthSnapshot.findMany({
-    where: { instanceId },
-    orderBy: { createdAt: "desc" },
-    take: CONSECUTIVE_DEGRADED_REQUIRED,
-    select: { status: true, driftDetected: true, tradesSampled: true },
-  });
-
-  // Need exactly N snapshots to evaluate
-  if (snapshots.length < CONSECUTIVE_DEGRADED_REQUIRED) {
-    return;
-  }
-
-  // 3. All N snapshots must be DEGRADED + drift detected + sufficient trades
-  const allQualify = snapshots.every(
-    (s) =>
-      s.status === "DEGRADED" &&
-      s.driftDetected === true &&
-      s.tradesSampled >= MIN_TRADES_FOR_TRIGGER
-  );
-
-  if (!allQualify) {
-    return;
-  }
-
-  // 4. All conditions met — perform lifecycle transition
-  log.info(
-    {
-      instanceId,
-      consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
-      latestTradesSampled: snapshots[0].tradesSampled,
-    },
-    "Health lifecycle trigger: LIVE_MONITORING → EDGE_AT_RISK"
-  );
+  const strategyId = instance.strategyVersion?.strategyIdentity?.strategyId;
 
   try {
-    await performLifecycleTransition(
-      instanceId,
-      "LIVE_MONITORING",
-      "EDGE_AT_RISK",
-      "health_drift_degradation",
-      "monitoring"
+    await prisma.$transaction(
+      async (tx) => {
+        // 2. Load the most recent N snapshots — inside tx so the read is
+        //    consistent with the lifecycle transition that follows.
+        const snapshots = await tx.healthSnapshot.findMany({
+          where: { instanceId },
+          orderBy: { createdAt: "desc" },
+          take: CONSECUTIVE_DEGRADED_REQUIRED,
+          select: { status: true, driftDetected: true, tradesSampled: true },
+        });
+
+        if (snapshots.length < CONSECUTIVE_DEGRADED_REQUIRED) {
+          return; // Not enough snapshots — no-op (tx commits empty)
+        }
+
+        // 3. All N snapshots must be DEGRADED + drift detected + sufficient trades
+        const allQualify = snapshots.every(
+          (s) =>
+            s.status === "DEGRADED" &&
+            s.driftDetected === true &&
+            s.tradesSampled >= MIN_TRADES_FOR_TRIGGER
+        );
+
+        if (!allQualify) {
+          return; // Conditions not met — no-op
+        }
+
+        // 4. All conditions met — perform lifecycle transition
+        log.info(
+          {
+            instanceId,
+            consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
+            latestTradesSampled: snapshots[0].tradesSampled,
+          },
+          "Health lifecycle trigger: LIVE_MONITORING → EDGE_AT_RISK"
+        );
+
+        if (strategyId) {
+          await appendProofEventInTx(tx, strategyId, "LIFECYCLE_EDGE_AT_RISK", {
+            eventType: "LIFECYCLE_EDGE_AT_RISK",
+            recordId: randomUUID(),
+            strategyId,
+            instanceId,
+            from: "LIVE_MONITORING",
+            to: "EDGE_AT_RISK",
+            reason: "health_drift_degradation",
+            consecutiveDegraded: CONSECUTIVE_DEGRADED_REQUIRED,
+            timestamp: new Date().toISOString(),
+          });
+        }
+        await performLifecycleTransitionInTx(
+          tx,
+          instanceId,
+          "LIVE_MONITORING",
+          "EDGE_AT_RISK",
+          "health_drift_degradation",
+          "monitoring"
+        );
+      },
+      { isolationLevel: "Serializable" }
     );
   } catch (err) {
     // If the instance is no longer in LIVE_MONITORING (race condition),

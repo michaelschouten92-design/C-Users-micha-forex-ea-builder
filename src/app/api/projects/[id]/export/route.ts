@@ -291,6 +291,17 @@ export async function POST(request: NextRequest, { params }: Props) {
         period: latestBacktest.period,
       });
 
+      // Proof event: record the export in the proof chain BEFORE mutable state is created.
+      // Inside this tx — if proof write fails, the entire export rolls back.
+      // Use job.id as recordId: deterministic, stable across Prisma P2034 retries.
+      await appendProofEventInTx(tx, identity.strategyId, "STRATEGY_EXPORTED", {
+        recordId: job.id,
+        strategyId: identity.strategyId,
+        exportJobId: job.id,
+        strategyVersionId: strategyVersion.id,
+        fingerprint: fingerprintResult.fingerprint,
+      });
+
       // Create LiveEAInstance for telemetry tracking (linked to strategy version)
       const liveEA = await tx.liveEAInstance.create({
         data: {
@@ -306,17 +317,6 @@ export async function POST(request: NextRequest, { params }: Props) {
       // Initialize TrackRecordState for the event-sourced track record system
       await tx.trackRecordState.create({
         data: { instanceId: liveEA.id },
-      });
-
-      // Proof event: record the export in the proof chain.
-      // Inside this tx — if proof write fails, the entire export rolls back.
-      await appendProofEventInTx(tx, identity.strategyId, "STRATEGY_EXPORTED", {
-        recordId: randomUUID(),
-        strategyId: identity.strategyId,
-        exportJobId: job.id,
-        strategyVersionId: strategyVersion.id,
-        liveEAInstanceId: liveEA.id,
-        fingerprint: fingerprintResult.fingerprint,
       });
 
       return { job, strategyVersionId: strategyVersion.id };

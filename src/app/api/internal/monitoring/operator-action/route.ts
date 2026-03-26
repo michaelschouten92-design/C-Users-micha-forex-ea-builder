@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
   // Look up instance via strategy identity chain
   const instance = await prisma.liveEAInstance.findFirst({
     where: {
+      deletedAt: null,
       strategyVersion: {
         strategyIdentity: { strategyId },
       },

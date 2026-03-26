@@ -6,6 +6,7 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
 import { linkExternalBaseline } from "@/lib/strategy-identity/external-baseline";
 import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
+import { apiRateLimiter, checkRateLimit, createRateLimitHeaders, formatRateLimitError } from "@/lib/rate-limit";
 
 const log = logger.child({ route: "link-baseline" });
 
@@ -32,6 +33,15 @@ export async function POST(
       return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
         status: 403,
       });
+    }
+
+    // Rate limit baseline operations
+    const rl = await checkRateLimit(apiRateLimiter, `baseline-link:${session.user.id}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rl)),
+        { status: 429, headers: createRateLimitHeaders(rl) }
+      );
     }
 
     const { instanceId } = await params;
@@ -94,15 +104,6 @@ export async function POST(
       );
     }
 
-    // 5a. Relink: clear existing strategyVersionId so linkExternalBaseline can proceed
-    if (instance.strategyVersionId && relink) {
-      await prisma.liveEAInstance.update({
-        where: { id: instanceId },
-        data: { strategyVersionId: null },
-      });
-      log.info({ instanceId }, "Cleared strategyVersionId for relink");
-    }
-
     // 6. Validate the backtest run: exists, owned by same user, has required metrics
     const backtestRun = await prisma.backtestRun.findUnique({
       where: { id: backtestRunId },
@@ -144,6 +145,18 @@ export async function POST(
 
     // 8. Create canonical chain in a transaction, including deployment status update
     const result = await prisma.$transaction(async (tx) => {
+      // 8a. Relink: clear existing strategyVersionId atomically before re-linking.
+      // Keeping this inside the transaction prevents a window where concurrent readers
+      // see the instance as baseline-free between the clear and the new link commit.
+      if (instance.strategyVersionId && relink) {
+        await tx.liveEAInstance.update({
+          where: { id: instanceId },
+          data: { strategyVersionId: null },
+        });
+        log.info({ instanceId }, "Cleared strategyVersionId for relink");
+      }
+
+
       const linkResult = await linkExternalBaseline(tx, instanceId, {
         id: backtestRun.id,
         totalTrades: backtestRun.totalTrades,
@@ -165,13 +178,20 @@ export async function POST(
       return linkResult;
     });
 
-    // 9. Post-commit: bind identity (deterministic hashes, same as export flow)
+    // 9. Post-commit: bind identity (deterministic hashes, same as export flow).
+    // Treated as a critical failure: StrategyIdentityBinding is the cryptographic
+    // seal on the strategy identity. If it cannot be written, return 500 so the
+    // caller can retry. On retry with relink=true, linkExternalBaseline reuses the
+    // existing version (idempotent) and this step runs again.
     const bindResult = await bindIdentityToVersion(result.strategyVersionId);
     if (!bindResult.ok) {
-      log.warn(
+      log.error(
         { strategyVersionId: result.strategyVersionId, code: bindResult.code },
-        "Identity binding failed for external link (non-critical)"
+        "Identity binding failed for external link"
       );
+      return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+        status: 500,
+      });
     }
 
     // 10. Audit

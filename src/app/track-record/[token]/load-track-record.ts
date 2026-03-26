@@ -27,7 +27,22 @@ export interface TrackRecordData {
   };
   equityCurve: Array<{ equity: number; balance: number; createdAt: string }>;
   monthlyReturns: Array<{ month: string; returnPct: number }>;
-  recentTrades: Array<{ closeTime: string; symbol: string; profit: number }>;
+  closedTrades: Array<{
+    closeTime: string;
+    openTime: string;
+    symbol: string;
+    type: string;
+    lots: number;
+    openPrice: number;
+    closePrice: number | null;
+    profit: number;
+  }>;
+  ledgerEvents: Array<{
+    timestamp: string;
+    eventType: string;
+    seqNo: number;
+    payload: Record<string, unknown>;
+  }>;
   strategies: Array<{
     symbol: string | null;
     magicNumber: number | null;
@@ -62,6 +77,20 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       equity: true,
       status: true,
       lastHeartbeat: true,
+      trades: {
+        where: { closeTime: { not: null } },
+        orderBy: { closeTime: "desc" },
+        select: {
+          profit: true,
+          closeTime: true,
+          openTime: true,
+          symbol: true,
+          type: true,
+          lots: true,
+          openPrice: true,
+          closePrice: true,
+        },
+      },
     },
   });
 
@@ -80,7 +109,16 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        select: { profit: true, closeTime: true, symbol: true },
+        select: {
+          profit: true,
+          closeTime: true,
+          openTime: true,
+          symbol: true,
+          type: true,
+          lots: true,
+          openPrice: true,
+          closePrice: true,
+        },
       },
       healthSnapshots: {
         orderBy: { createdAt: "desc" },
@@ -95,27 +133,60 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     },
   });
 
-  const heartbeats = await prisma.eAHeartbeat.findMany({
-    where: { instanceId: base.id },
-    orderBy: { createdAt: "asc" },
-    select: { equity: true, balance: true, createdAt: true },
+  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
+
+  const [heartbeats, ledgerEventsRaw] = await Promise.all([
+    prisma.eAHeartbeat
+      .findMany({
+        where: { instanceId: base.id },
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+        select: { equity: true, balance: true, createdAt: true },
+      })
+      .then((rows) => rows.reverse()),
+    prisma.trackRecordEvent.findMany({
+      where: { instanceId: { in: allInstanceIds } },
+      orderBy: { timestamp: "desc" },
+      take: 50,
+      select: { eventType: true, timestamp: true, seqNo: true, payload: true },
+    }),
+  ]);
+
+  // Single source of truth: TrackRecordState (chain-backed) for all public metrics.
+  // Profit factor is NOT available from TrackRecordState (no grossProfit/grossLoss).
+  // Rather than mixing sources, we show null when chain-backed state exists.
+  const trackStates = await prisma.trackRecordState.findMany({
+    where: { instanceId: { in: allInstanceIds } },
+    select: { totalTrades: true, totalProfit: true, winCount: true, lossCount: true, maxDrawdownPct: true },
   });
 
-  // Compute aggregates from closed trades (same scope as winRate/profitFactor)
-  const allTrades = children.flatMap((c) => c.trades);
-  const totalTrades = allTrades.length;
-  const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
+  const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
 
-  const wins = allTrades.filter((t) => t.profit > 0).length;
-  const winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
+  let totalTrades: number;
+  let totalProfit: number;
+  let winRate: number;
+  let profitFactor: number | null;
 
-  const grossProfit = allTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
-  const grossLoss = Math.abs(
-    allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0)
-  );
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  if (trackStates.length > 0) {
+    // Chain-backed: all metrics from TrackRecordState only
+    totalTrades = trackStates.reduce((s, ts) => s + ts.totalTrades, 0);
+    totalProfit = trackStates.reduce((s, ts) => s + ts.totalProfit, 0);
+    const totalWins = trackStates.reduce((s, ts) => s + ts.winCount, 0);
+    winRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : 0;
+    profitFactor = null; // Not derivable from chain state without individual trade profits
+  } else {
+    // Fallback: no track record state yet — use EATrade aggregation (consistent within itself)
+    totalTrades = allTrades.length;
+    totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
+    const wins = allTrades.filter((t) => t.profit > 0).length;
+    winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
+    const grossProfit = allTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
+    const grossLoss = Math.abs(allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0));
+    profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  }
+
   const profitFactorDisplay =
-    profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
+    profitFactor === null ? "—" : profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
 
   // Max drawdown from equity curve (peak-to-trough, both % and absolute)
   let maxDrawdownPct = 0;
@@ -166,9 +237,12 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     }
   }
 
-  // Recent trades (20 most recent closed trades across all children, sorted account-wide)
-  const recentTrades = allTrades
-    .filter((t): t is { profit: number; closeTime: Date; symbol: string } => t.closeTime != null)
+  // Closed trades (newest first, capped at 200 for public page)
+  const closedTrades = allTrades
+    .filter(
+      (t): t is typeof t & { closeTime: Date; openTime: Date } =>
+        t.closeTime != null && t.openTime != null
+    )
     .sort((a, b) => {
       const ta =
         a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
@@ -176,10 +250,15 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
         b.closeTime instanceof Date ? b.closeTime.getTime() : new Date(b.closeTime).getTime();
       return tb - ta;
     })
-    .slice(0, 20)
+    .slice(0, 200)
     .map((t) => ({
       closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
+      openTime: t.openTime instanceof Date ? t.openTime.toISOString() : String(t.openTime),
       symbol: t.symbol ?? "—",
+      type: t.type ?? "—",
+      lots: t.lots ?? 0,
+      openPrice: t.openPrice ?? 0,
+      closePrice: t.closePrice ?? null,
       profit: t.profit,
     }));
 
@@ -228,7 +307,13 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       createdAt: hb.createdAt.toISOString(),
     })),
     monthlyReturns,
-    recentTrades,
+    closedTrades,
+    ledgerEvents: ledgerEventsRaw.map((e) => ({
+      timestamp: e.timestamp.toISOString(),
+      eventType: e.eventType,
+      seqNo: e.seqNo,
+      payload: (e.payload ?? {}) as Record<string, unknown>,
+    })),
     strategies,
   };
 }

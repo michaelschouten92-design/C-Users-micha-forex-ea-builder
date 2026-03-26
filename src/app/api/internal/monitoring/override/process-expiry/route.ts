@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
           if (override.status === "PENDING" || override.status === "APPROVED") {
             await tx.liveEAInstance.updateMany({
               where: {
+                deletedAt: null,
                 strategyVersion: {
                   strategyIdentity: { strategyId: override.strategyId },
                 },

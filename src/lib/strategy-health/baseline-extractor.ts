@@ -44,7 +44,8 @@ export function extractBaselineMetrics(
     backtestDurationDays: number;
   };
 } {
-  const initialDeposit = backtestResult.initialDeposit || 10000;
+  const rawInitialDeposit = backtestResult.initialDeposit ?? 10000;
+  const initialDeposit = Math.max(rawInitialDeposit, 1);
   const netReturnPct = (backtestResult.netProfit / initialDeposit) * 100;
   const avgTradesPerDay =
     backtestDurationDays > 0 ? backtestResult.totalTrades / backtestDurationDays : 0;

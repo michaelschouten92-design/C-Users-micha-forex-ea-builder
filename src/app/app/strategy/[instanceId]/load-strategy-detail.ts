@@ -595,7 +595,7 @@ export async function loadStrategyDetail(
       instance.lifecycleState === "DRAFT" &&
       instance.terminalDeployments.some((d) => {
         const expected = createHash("sha256")
-          .update(`AUTO:v1:${d.symbol}:${d.magicNumber}`)
+          .update(`ctx:v2:${d.symbol}:${d.magicNumber}`)
           .digest("hex");
         return d.materialFingerprint === expected;
       }),

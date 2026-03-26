@@ -31,12 +31,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         trades: {
           where: { closeTime: { not: null } },
           select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
-          take: 500,
+          take: 20,
           orderBy: { closeTime: "desc" },
         },
         heartbeats: {
           orderBy: { createdAt: "desc" },
-          take: 200,
+          take: 20,
           select: { equity: true, createdAt: true },
         },
         strategyVersion: {
@@ -88,6 +88,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Serialize dates to ISO strings for client consumption
     const data = eaInstances.map((ea) => ({
       id: ea.id,
+      createdAt: ea.createdAt.toISOString(),
       eaName: ea.eaName,
       symbol: ea.symbol,
       timeframe: ea.timeframe,

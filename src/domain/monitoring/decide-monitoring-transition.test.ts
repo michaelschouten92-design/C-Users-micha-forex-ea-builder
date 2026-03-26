@@ -94,64 +94,21 @@ describe("decideMonitoringTransition", () => {
       });
     });
 
-    it("HEALTHY with consecutiveHealthyRuns >= N → TRANSITION to LIVE_MONITORING (recovery)", () => {
-      const result = decideMonitoringTransition(
-        makeInput({
-          currentLifecycleState: "EDGE_AT_RISK",
-          monitoringVerdict: "HEALTHY",
-          consecutiveHealthyRuns: 3,
-        })
-      );
+    it("HEALTHY with any consecutiveHealthyRuns → NO_TRANSITION (manual recovery only)", () => {
+      for (const runs of [0, 2, 3, 10]) {
+        const result = decideMonitoringTransition(
+          makeInput({
+            currentLifecycleState: "EDGE_AT_RISK",
+            monitoringVerdict: "HEALTHY",
+            consecutiveHealthyRuns: runs,
+          })
+        );
 
-      expect(result).toEqual({
-        type: "TRANSITION",
-        from: "EDGE_AT_RISK",
-        to: "LIVE_MONITORING",
-        reason: expect.stringContaining("3 consecutive healthy runs"),
-        proofEventType: "STRATEGY_RECOVERED",
-      });
-    });
-
-    it("HEALTHY with consecutiveHealthyRuns > N → still recovers", () => {
-      const result = decideMonitoringTransition(
-        makeInput({
-          currentLifecycleState: "EDGE_AT_RISK",
-          monitoringVerdict: "HEALTHY",
-          consecutiveHealthyRuns: 10,
-        })
-      );
-
-      expect(result.type).toBe("TRANSITION");
-    });
-
-    it("HEALTHY with consecutiveHealthyRuns < N → NO_TRANSITION (recovering)", () => {
-      const result = decideMonitoringTransition(
-        makeInput({
-          currentLifecycleState: "EDGE_AT_RISK",
-          monitoringVerdict: "HEALTHY",
-          consecutiveHealthyRuns: 2,
-        })
-      );
-
-      expect(result).toEqual({
-        type: "NO_TRANSITION",
-        reason: "recovering",
-      });
-    });
-
-    it("HEALTHY with consecutiveHealthyRuns = 0 → NO_TRANSITION", () => {
-      const result = decideMonitoringTransition(
-        makeInput({
-          currentLifecycleState: "EDGE_AT_RISK",
-          monitoringVerdict: "HEALTHY",
-          consecutiveHealthyRuns: 0,
-        })
-      );
-
-      expect(result).toEqual({
-        type: "NO_TRANSITION",
-        reason: "recovering",
-      });
+        expect(result).toEqual({
+          type: "NO_TRANSITION",
+          reason: "edge_at_risk_manual_recovery_only",
+        });
+      }
     });
   });
 

@@ -104,8 +104,10 @@ export function computeTradeReturns(
   for (const trade of trades) {
     const pnl = trade.profit + trade.swap + trade.commission;
     if (balance > 0) {
-      // Use log returns: additive and symmetric — better for statistical tests
-      returns.push(Math.log(1 + pnl / balance) * 100);
+      // Use log returns: additive and symmetric — better for statistical tests.
+      // Clamp argument to Number.EPSILON to prevent -Infinity on catastrophic losses.
+      const logArg = Math.max(Number.EPSILON, 1 + pnl / balance);
+      returns.push(Math.log(logArg) * 100);
     }
     balance += pnl;
   }
