@@ -236,7 +236,7 @@ async function handleProcessOutbox(request: NextRequest) {
         }
       } catch (err) {
         const newAttempts = entry.attempts + 1;
-        const backoffMs = 30_000 * Math.pow(2, newAttempts); // 30s * 2^attempts
+        const backoffMs = 30_000 * Math.pow(2, Math.min(newAttempts, 10)); // 30s * 2^attempts, capped at ~8.5h
         const nextRetry = new Date(Date.now() + backoffMs);
         const newStatus: OutboxStatus = newAttempts >= entry.maxAttempts ? "DEAD" : "FAILED";
         const reason = newStatus === "DEAD" ? "max_attempts_exceeded" : "delivery_failure";
