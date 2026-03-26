@@ -1196,22 +1196,24 @@ model TradeFact {
 // ============================================
 
 model NotificationOutbox {
-  id          String   @id @default(cuid())
-  userId      String
-  channel     String   // "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH"
-  destination String   // email address, webhook URL, chat ID, etc.
-  subject     String?  // email subject (null for non-email)
-  payload     Json     // channel-specific data
-  status      String   @default("PENDING") // PENDING | SENT | FAILED | DEAD
-  attempts    Int      @default(0)
-  maxAttempts Int      @default(5)
-  lastError   String?
-  nextRetryAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  channel       String   // "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH" | "SLACK"
+  destination   String   // email address, webhook URL, chat ID, etc.
+  subject       String?  // email subject (null for non-email)
+  payload       Json     // channel-specific data
+  status        String   @default("PENDING") // PENDING | SENT | FAILED | DEAD
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(5)
+  lastError     String?
+  alertSourceId String?  // Source alert ID for dedup (null = no dedup)
+  nextRetryAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([alertSourceId, channel])
   @@index([status, nextRetryAt])
   @@index([userId, createdAt])
 }
