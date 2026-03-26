@@ -230,6 +230,7 @@ export async function GET(request: Request): Promise<Response> {
               byInstance.set(hb.instanceId, hb);
             }
             for (const [, hb] of byInstance) {
+              if (!hb.instance) continue;
               controller.enqueue(
                 encoder.encode(
                   `event: heartbeat\ndata: ${JSON.stringify({
