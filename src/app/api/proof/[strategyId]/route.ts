@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { computeMetrics } from "@/lib/track-record/metrics";
+import { verifyChain } from "@/lib/track-record/chain-verifier";
 import {
   computeLadderLevel,
   mergeThresholds,
@@ -121,6 +122,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   let trackRecord = null;
   let liveHealth = null;
   let chainInfo = null;
+  let chainEvents: Array<{ instanceId: string; seqNo: number; eventType: string; eventHash: string; prevHash: string; payload: unknown; timestamp: Date }> = [];
   let equityCurve: Array<{ equity: number; balance: number; createdAt: string }> = [];
   let liveMetrics = null;
   let monitoringStatus = null;
@@ -213,17 +215,31 @@ export async function GET(request: NextRequest, { params }: Props) {
         };
       }
 
-      // Chain info
-      const [chainLength, lastCheckpoint] = await Promise.all([
-        prisma.trackRecordEvent.count({ where: { instanceId: instance.id } }),
+      // Chain info — load events for cryptographic verification (cap 1000 for performance)
+      const [chainEventsLoaded, lastCheckpoint] = await Promise.all([
+        prisma.trackRecordEvent.findMany({
+          where: { instanceId: instance.id },
+          orderBy: { seqNo: "asc" },
+          take: 1000,
+          select: {
+            instanceId: true,
+            seqNo: true,
+            eventType: true,
+            eventHash: true,
+            prevHash: true,
+            payload: true,
+            timestamp: true,
+          },
+        }),
         prisma.trackRecordCheckpoint.findFirst({
           where: { instanceId: instance.id },
           orderBy: { createdAt: "desc" },
           select: { createdAt: true },
         }),
       ]);
+      chainEvents = chainEventsLoaded;
       chainInfo = {
-        length: chainLength,
+        length: chainEventsLoaded.length,
         lastHash: trackState?.lastEventHash ?? null,
         lastVerification: lastCheckpoint?.createdAt ?? null,
       };
@@ -278,11 +294,15 @@ export async function GET(request: NextRequest, { params }: Props) {
     ? (Date.now() - new Date(instanceData.createdAt).getTime()) / (1000 * 60 * 60 * 24)
     : null;
 
-  // Chain integrity: verify event count matches lastSeqNo (no gaps)
-  // Reuses chainLength from the earlier count query (same instanceId).
+  // Chain integrity: cryptographic verification of prevHash linkage, seqNo
+  // monotonicity, and eventHash consistency using verifyChain().
   let chainIntegrity = false;
-  if (trackRecord && (trackRecord.lastSeqNo ?? 0) > 0 && chainInfo) {
-    chainIntegrity = chainInfo.length === trackRecord.lastSeqNo;
+  if (trackRecord && (trackRecord.lastSeqNo ?? 0) > 0 && chainEvents.length > 0) {
+    const chainResult = verifyChain(
+      chainEvents as Parameters<typeof verifyChain>[0],
+      page.pinnedInstanceId!
+    );
+    chainIntegrity = chainResult.valid && chainResult.chainLength === trackRecord.lastSeqNo;
   }
 
   // Score collapse: check if health score ever dropped below stability threshold

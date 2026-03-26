@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { checkRateLimit, publicApiRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { verifyChain } from "@/lib/track-record/chain-verifier";
 
 export async function GET(
   request: NextRequest,
@@ -20,6 +21,7 @@ export async function GET(
     include: {
       instance: {
         select: {
+          id: true,
           eaName: true,
           symbol: true,
           timeframe: true,
@@ -59,6 +61,25 @@ export async function GET(
     });
 
   const inst = bundle.instance;
+
+  // Verify chain integrity via cryptographic hash-chain walk
+  const [trackState, chainEvents] = await Promise.all([
+    prisma.trackRecordState.findUnique({
+      where: { instanceId: inst.id },
+      select: { lastSeqNo: true },
+    }),
+    prisma.trackRecordEvent.findMany({
+      where: { instanceId: inst.id },
+      orderBy: { seqNo: "asc" },
+      take: 200,
+      select: { instanceId: true, seqNo: true, eventType: true, eventHash: true, prevHash: true, payload: true, timestamp: true },
+    }),
+  ]);
+  let verified = false;
+  if (trackState && trackState.lastSeqNo > 0 && chainEvents.length > 0) {
+    const result = verifyChain(chainEvents as Parameters<typeof verifyChain>[0], inst.id);
+    verified = result.valid && result.chainLength === trackState.lastSeqNo;
+  }
 
   // Calculate metrics from heartbeats
   const heartbeats = inst.heartbeats.sort(
@@ -105,7 +126,7 @@ export async function GET(
       firstDate && lastDate
         ? `${new Date(firstDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })} - ${new Date(lastDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
         : null,
-    verified: true,
+    verified,
   };
 
   return NextResponse.json(data, {

@@ -152,21 +152,41 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     }),
   ]);
 
-  // Compute aggregates from closed trades (base instance + all child instances)
+  // Single source of truth: TrackRecordState (chain-backed) for all public metrics.
+  // Profit factor is NOT available from TrackRecordState (no grossProfit/grossLoss).
+  // Rather than mixing sources, we show null when chain-backed state exists.
+  const trackStates = await prisma.trackRecordState.findMany({
+    where: { instanceId: { in: allInstanceIds } },
+    select: { totalTrades: true, totalProfit: true, winCount: true, lossCount: true, maxDrawdownPct: true },
+  });
+
   const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
-  const totalTrades = allTrades.length;
-  const totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
 
-  const wins = allTrades.filter((t) => t.profit > 0).length;
-  const winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
+  let totalTrades: number;
+  let totalProfit: number;
+  let winRate: number;
+  let profitFactor: number | null;
 
-  const grossProfit = allTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
-  const grossLoss = Math.abs(
-    allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0)
-  );
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  if (trackStates.length > 0) {
+    // Chain-backed: all metrics from TrackRecordState only
+    totalTrades = trackStates.reduce((s, ts) => s + ts.totalTrades, 0);
+    totalProfit = trackStates.reduce((s, ts) => s + ts.totalProfit, 0);
+    const totalWins = trackStates.reduce((s, ts) => s + ts.winCount, 0);
+    winRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : 0;
+    profitFactor = null; // Not derivable from chain state without individual trade profits
+  } else {
+    // Fallback: no track record state yet — use EATrade aggregation (consistent within itself)
+    totalTrades = allTrades.length;
+    totalProfit = allTrades.reduce((sum, t) => sum + t.profit, 0);
+    const wins = allTrades.filter((t) => t.profit > 0).length;
+    winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
+    const grossProfit = allTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
+    const grossLoss = Math.abs(allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0));
+    profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  }
+
   const profitFactorDisplay =
-    profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
+    profitFactor === null ? "—" : profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
 
   // Max drawdown from equity curve (peak-to-trough, both % and absolute)
   let maxDrawdownPct = 0;
