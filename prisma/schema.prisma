@@ -451,6 +451,7 @@ model LiveEAInstance {
   incidents              Incident[]
   controlLayerAlerts     ControlLayerAlert[]
   terminalDeployments    TerminalDeployment[]
+  tradeCloseClaims       TradeCloseClaim[]
 
   @@index([userId, status])
   @@index([userId, deletedAt])
@@ -727,6 +728,21 @@ model TrackRecordState {
   updatedAt              DateTime @updatedAt
 
   instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+// Dedup claim for TRADE_CLOSE events — guarantees at-most-once close per ticket per instance.
+// The unique constraint (instanceId, ticket) is the hard invariant. INSERT inside the same
+// transaction as state mutation ensures atomicity: claim + state commit together or not at all.
+model TradeCloseClaim {
+  id         String   @id @default(cuid())
+  instanceId String
+  ticket     String
+  seqNo      Int                          // seqNo of the TRADE_CLOSE event that claimed this ticket
+  claimedAt  DateTime @default(now())
+
+  instance   LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, ticket])
 }
 
 model LedgerCommitment {

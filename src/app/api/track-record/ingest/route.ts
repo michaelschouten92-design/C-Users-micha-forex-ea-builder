@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -246,6 +246,46 @@ export async function POST(request: NextRequest) {
               lastEventHash: dbState.lastEventHash,
             },
           };
+        }
+
+        // ── TRADE_CLOSE dedup: hard DB-enforced claim ──────────────────
+        // INSERT a TradeCloseClaim row with @@unique([instanceId, ticket]).
+        // First close wins; second close hits P2002 → deterministic 409.
+        // The claim is inside the same tx as processEvent and state update,
+        // so claim + mutation commit atomically or not at all.
+        if (eventType === "TRADE_CLOSE") {
+          const rawTicket = payload.ticket;
+          if (rawTicket == null || String(rawTicket).trim() === "") {
+            return {
+              status: 400 as const,
+              body: apiError(ErrorCode.VALIDATION_FAILED, "TRADE_CLOSE requires a non-empty ticket"),
+            };
+          }
+          const ticket = String(rawTicket).trim();
+          try {
+            await tx.tradeCloseClaim.create({
+              data: { instanceId: effectiveInstanceId, ticket, seqNo },
+            });
+          } catch (claimErr) {
+            if (
+              claimErr instanceof Prisma.PrismaClientKnownRequestError &&
+              claimErr.code === "P2002"
+            ) {
+              logger.warn(
+                { instanceId: effectiveInstanceId, ticket, seqNo },
+                "Duplicate TRADE_CLOSE rejected: ticket already claimed"
+              );
+              return {
+                status: 409 as const,
+                body: {
+                  ...apiError(ErrorCode.DUPLICATE_EVENT, `Ticket ${ticket} already closed`),
+                  lastSeqNo: dbState.lastSeqNo,
+                  lastEventHash: dbState.lastEventHash,
+                },
+              };
+            }
+            throw claimErr; // re-throw unexpected errors → tx rollback
+          }
         }
 
         // Cross-event validation: CLOSE/MODIFY/PARTIAL_CLOSE must reference a known open ticket

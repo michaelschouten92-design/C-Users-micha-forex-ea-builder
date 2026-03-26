@@ -183,6 +183,7 @@ describe("POST /api/track-record/ingest", () => {
       liveEAInstance: {
         findUnique: vi.fn().mockResolvedValue({ createdAt: new Date("2025-01-01") }),
       },
+      tradeCloseClaim: { create: vi.fn() },
       trackRecordCheckpoint: { create: vi.fn() },
       ledgerCommitment: { create: vi.fn() },
     };
@@ -206,6 +207,7 @@ describe("POST /api/track-record/ingest", () => {
       mockTx.trackRecordState.update.mockReset();
       mockTx.trackRecordEvent.findUnique.mockReset();
       mockTx.trackRecordEvent.create.mockReset();
+      mockTx.tradeCloseClaim.create.mockReset();
       mockTx.liveEAInstance.findUnique.mockResolvedValue({ createdAt: new Date("2025-01-01") });
       mockTransaction.mockImplementation(async (fn: (tx: typeof mockTx) => Promise<unknown>) => {
         return fn(mockTx);
@@ -383,6 +385,150 @@ describe("POST /api/track-record/ingest", () => {
       expect(response.status).toBe(429);
       const body = await response.json();
       expect(body.code).toBe("RATE_LIMITED");
+    });
+  });
+
+  describe("duplicate TRADE_CLOSE guard (TradeCloseClaim)", () => {
+    // Prisma P2002 error for unique constraint violation
+    class MockP2002 extends Error {
+      code = "P2002";
+      constructor() { super("Unique constraint failed"); Object.setPrototypeOf(this, MockP2002.prototype); }
+    }
+    // Patch class name so instanceof checks in route work
+    Object.defineProperty(MockP2002.prototype, "constructor", { value: MockP2002 });
+
+    const mockTx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      trackRecordState: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+      },
+      trackRecordEvent: {
+        findUnique: vi.fn(),
+        create: vi.fn(),
+      },
+      tradeCloseClaim: { create: vi.fn() },
+      liveEAInstance: {
+        findUnique: vi.fn().mockResolvedValue({ createdAt: new Date("2025-01-01") }),
+      },
+      trackRecordCheckpoint: { create: vi.fn() },
+      ledgerCommitment: { create: vi.fn() },
+    };
+
+    function tradeCloseEvent(seqNo: number, ticket: string | null) {
+      return {
+        eventType: "TRADE_CLOSE",
+        seqNo,
+        prevHash: "a".repeat(64),
+        eventHash: "b".repeat(64),
+        timestamp: Math.floor(Date.now() / 1000) - 60,
+        payload: {
+          ...(ticket !== null ? { ticket } : {}),
+          closePrice: 1.1, profit: 50, swap: 0, commission: -2, closeReason: "tp",
+        },
+      };
+    }
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      authSuccess();
+      mockTx.$queryRaw.mockResolvedValue([]);
+      mockTx.trackRecordState.findUnique.mockReset();
+      mockTx.trackRecordState.create.mockReset();
+      mockTx.trackRecordState.update.mockReset();
+      mockTx.trackRecordEvent.findUnique.mockReset();
+      mockTx.trackRecordEvent.create.mockReset();
+      mockTx.tradeCloseClaim.create.mockReset();
+      mockTx.liveEAInstance.findUnique.mockResolvedValue({ createdAt: new Date("2025-01-01") });
+      mockTransaction.mockImplementation(async (fn: (tx: typeof mockTx) => Promise<unknown>) => {
+        return fn(mockTx);
+      });
+    });
+
+    it("first TRADE_CLOSE for a ticket succeeds (claim insert works)", async () => {
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID, lastSeqNo: 5, lastEventHash: "a".repeat(64),
+      });
+      // Claim insert succeeds (first close)
+      mockTx.tradeCloseClaim.create.mockResolvedValue({ id: "claim_1" });
+
+      mockVerifySingleEvent.mockReturnValue({ valid: true });
+      const { stateFromDb, processEvent, stateToDbUpdate } = await import("@/lib/track-record/state-manager");
+      (stateFromDb as ReturnType<typeof vi.fn>).mockReturnValue({
+        lastSeqNo: 5, lastEventHash: "a".repeat(64), openPositions: [{ ticket: "12345" }],
+      });
+      (processEvent as ReturnType<typeof vi.fn>).mockReturnValue({ lastSeqNo: 6, lastEventHash: "b".repeat(64) });
+      (stateToDbUpdate as ReturnType<typeof vi.fn>).mockReturnValue({});
+      const { shouldCreateCheckpoint } = await import("@/lib/track-record/checkpoint");
+      (shouldCreateCheckpoint as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      const { shouldCreateCommitment } = await import("@/lib/track-record/ledger-commitment");
+      (shouldCreateCommitment as ReturnType<typeof vi.fn>).mockReturnValue(false);
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest(tradeCloseEvent(6, "12345")));
+
+      expect(response.status).toBe(200);
+      expect(mockTx.tradeCloseClaim.create).toHaveBeenCalledWith({
+        data: { instanceId: INSTANCE_ID, ticket: "12345", seqNo: 6 },
+      });
+      expect(mockTx.trackRecordState.update).toHaveBeenCalled();
+      expect(mockTx.trackRecordEvent.create).toHaveBeenCalled();
+    });
+
+    it("second TRADE_CLOSE for same ticket returns 409 (P2002 on claim)", async () => {
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID, lastSeqNo: 6, lastEventHash: "b".repeat(64),
+      });
+      // Claim insert fails with P2002 (ticket already claimed)
+      mockTx.tradeCloseClaim.create.mockRejectedValue(new MockP2002());
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest(tradeCloseEvent(7, "12345")));
+
+      expect(response.status).toBe(409);
+      const body = await response.json();
+      expect(body.code).toBe("DUPLICATE_EVENT");
+      expect(body.error).toContain("12345");
+      // No state mutation must have occurred
+      expect(mockTx.trackRecordState.update).not.toHaveBeenCalled();
+      expect(mockTx.trackRecordEvent.create).not.toHaveBeenCalled();
+    });
+
+    it("TRADE_CLOSE without ticket returns 400", async () => {
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID, lastSeqNo: 5, lastEventHash: "a".repeat(64),
+      });
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest(tradeCloseEvent(6, null)));
+
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.code).toBe("VALIDATION_FAILED");
+      expect(mockTx.tradeCloseClaim.create).not.toHaveBeenCalled();
+      expect(mockTx.trackRecordState.update).not.toHaveBeenCalled();
+    });
+
+    it("seqNo idempotency still works (same seqNo+hash returns 200 without claim)", async () => {
+      const hash = "d".repeat(64);
+      mockTx.trackRecordState.findUnique.mockResolvedValue({
+        instanceId: INSTANCE_ID, lastSeqNo: 5, lastEventHash: hash,
+      });
+      // Exact same seqNo as last processed
+      mockTx.trackRecordEvent.findUnique.mockResolvedValue({ eventHash: hash });
+
+      const { POST } = await import("./route");
+      const response = await POST(makeRequest({
+        eventType: "TRADE_CLOSE", seqNo: 5, prevHash: "a".repeat(64), eventHash: hash,
+        timestamp: Math.floor(Date.now() / 1000) - 60,
+        payload: { ticket: "99999", closePrice: 1.0, profit: 10, swap: 0, commission: 0, closeReason: "sl" },
+      }));
+
+      expect(response.status).toBe(200);
+      // Idempotent path: no claim insert, no state update
+      expect(mockTx.tradeCloseClaim.create).not.toHaveBeenCalled();
+      expect(mockTx.trackRecordState.update).not.toHaveBeenCalled();
     });
   });
 });
