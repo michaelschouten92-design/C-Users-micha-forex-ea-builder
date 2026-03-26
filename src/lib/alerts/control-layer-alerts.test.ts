@@ -42,8 +42,8 @@ vi.mock("@/lib/logger", () => ({
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-function setupUserAndInstance() {
-  const { prisma } = require("@/lib/prisma");
+async function setupUserAndInstance() {
+  const { prisma } = await import("@/lib/prisma");
   prisma.user.findUnique.mockResolvedValue({
     email: "trader@example.com",
     webhookUrl: null,
@@ -62,7 +62,7 @@ function setupUserAndInstance() {
 describe("emitControlLayerAlert — delivery visibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setupUserAndInstance();
+    await setupUserAndInstance();
   });
 
   it("enqueue failure is caught and logged by emitControlLayerAlert (AD1)", async () => {
@@ -72,7 +72,7 @@ describe("emitControlLayerAlert — delivery visibility", () => {
     mockEnqueue.mockRejectedValue(new Error("DB connection lost"));
 
     const { emitControlLayerAlert } = await import("./control-layer-alerts");
-    const { prisma } = require("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
     // Should NOT throw — emitControlLayerAlert has try/catch
     await expect(
@@ -96,7 +96,7 @@ describe("emitControlLayerAlert — delivery visibility", () => {
     mockEnqueue.mockResolvedValue(undefined);
 
     const { emitControlLayerAlert } = await import("./control-layer-alerts");
-    const { prisma } = require("@/lib/prisma");
+    const { prisma } = await import("@/lib/prisma");
 
     await expect(
       emitControlLayerAlert(prisma, {
