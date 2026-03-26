@@ -57,7 +57,7 @@ function scoreMetric(
   totalTrades: number
 ): number {
   const t = THRESHOLDS[thresholdKey];
-  if (!t || baselineValue === 0) return 0.5; // neutral if no baseline
+  if (!t || Math.abs(baselineValue) < 1e-9) return 0.5; // neutral if no baseline or baseline ≈ 0
 
   // Scale tolerance bands wider when sample size is small
   const cm = confidenceMultiplier(totalTrades);
