@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -96,9 +96,17 @@ export async function POST(request: NextRequest) {
   // Resolve per-context instanceId when strategy context identity is present.
   // Read-only lookup — heartbeat is responsible for creating context instances.
   // Falls back to base instance if context not yet created or not provided.
+  // TR4: Returns empty string if context instance was deleted — reject, don't misroute.
   const effectiveInstanceId = validation.data.context
     ? await resolveContextInstanceForIngest(baseInstanceId, validation.data.context)
     : baseInstanceId;
+
+  if (!effectiveInstanceId) {
+    return NextResponse.json(
+      apiError(ErrorCode.NOT_FOUND, "Context instance has been deleted"),
+      { status: 410 }
+    );
+  }
 
   // Per-event-type payload validation
   const payloadError = validatePayload(eventType, payload);
@@ -248,6 +256,46 @@ export async function POST(request: NextRequest) {
           };
         }
 
+        // ── TRADE_CLOSE dedup: hard DB-enforced claim ──────────────────
+        // INSERT a TradeCloseClaim row with @@unique([instanceId, ticket]).
+        // First close wins; second close hits P2002 → deterministic 409.
+        // The claim is inside the same tx as processEvent and state update,
+        // so claim + mutation commit atomically or not at all.
+        if (eventType === "TRADE_CLOSE") {
+          const rawTicket = payload.ticket;
+          if (rawTicket == null || String(rawTicket).trim() === "") {
+            return {
+              status: 400 as const,
+              body: apiError(ErrorCode.VALIDATION_FAILED, "TRADE_CLOSE requires a non-empty ticket"),
+            };
+          }
+          const ticket = String(rawTicket).trim();
+          try {
+            await tx.tradeCloseClaim.create({
+              data: { instanceId: effectiveInstanceId, ticket, seqNo },
+            });
+          } catch (claimErr) {
+            if (
+              claimErr instanceof Prisma.PrismaClientKnownRequestError &&
+              claimErr.code === "P2002"
+            ) {
+              logger.warn(
+                { instanceId: effectiveInstanceId, ticket, seqNo },
+                "Duplicate TRADE_CLOSE rejected: ticket already claimed"
+              );
+              return {
+                status: 409 as const,
+                body: {
+                  ...apiError(ErrorCode.DUPLICATE_EVENT, `Ticket ${ticket} already closed`),
+                  lastSeqNo: dbState.lastSeqNo,
+                  lastEventHash: dbState.lastEventHash,
+                },
+              };
+            }
+            throw claimErr; // re-throw unexpected errors → tx rollback
+          }
+        }
+
         // Cross-event validation: CLOSE/MODIFY/PARTIAL_CLOSE must reference a known open ticket
         const state = stateFromDb(dbState);
         if (
@@ -391,10 +439,24 @@ async function resolveContextInstanceForIngest(
     .update(`manifest-ctx-key:v1:${baseInstanceId}:${context.materialFingerprint}`)
     .digest("hex");
 
-  const ctx = await prisma.liveEAInstance.findUnique({
-    where: { apiKeyHash: syntheticKeyHash },
+  const ctx = await prisma.liveEAInstance.findFirst({
+    where: { apiKeyHash: syntheticKeyHash, deletedAt: null },
     select: { id: true },
   });
 
-  return ctx?.id ?? baseInstanceId;
+  // TR4: If context instance is deleted, do NOT fall back to base instance.
+  // Only fall back if context instance was never created (ctx === null AND no deleted match).
+  if (!ctx) {
+    // Check if a deleted instance exists — if so, reject rather than misroute
+    const deleted = await prisma.liveEAInstance.findUnique({
+      where: { apiKeyHash: syntheticKeyHash },
+      select: { id: true, deletedAt: true },
+    });
+    if (deleted?.deletedAt) {
+      return ""; // Signal: instance was deleted, caller should reject
+    }
+    return baseInstanceId; // Context instance not yet created — safe fallback
+  }
+
+  return ctx.id;
 }

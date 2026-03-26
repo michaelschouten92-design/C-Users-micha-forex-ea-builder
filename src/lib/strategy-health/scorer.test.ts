@@ -86,4 +86,37 @@ describe("computeHealth (live scorer)", () => {
       expect(result.metrics[key].score).toBeLessThanOrEqual(1);
     }
   });
+
+  it("baseline returnPct = 0 does not produce Infinity deviation (BD2)", () => {
+    const result = computeHealth(
+      makeLiveMetrics({ returnPct: 5 }),
+      makeBaseline({ returnPct: 0 })
+    );
+
+    expect(Number.isFinite(result.overallScore)).toBe(true);
+    // Return metric should be neutral (0.5) when baseline is zero
+    expect(result.metrics.return.score).toBe(0.5);
+  });
+
+  it("baseline winRate = 0 does not produce Infinity deviation (BD2)", () => {
+    const result = computeHealth(
+      makeLiveMetrics({ winRate: 55 }),
+      makeBaseline({ winRate: 0 })
+    );
+
+    expect(Number.isFinite(result.overallScore)).toBe(true);
+    expect(result.metrics.winRate.score).toBe(0.5);
+  });
+
+  it("baseline near-zero values produce finite scores (BD2)", () => {
+    const result = computeHealth(
+      makeLiveMetrics(),
+      makeBaseline({ returnPct: 1e-10, maxDrawdownPct: 1e-10 })
+    );
+
+    expect(Number.isFinite(result.overallScore)).toBe(true);
+    for (const key of Object.keys(result.metrics) as Array<keyof typeof result.metrics>) {
+      expect(Number.isFinite(result.metrics[key].score)).toBe(true);
+    }
+  });
 });

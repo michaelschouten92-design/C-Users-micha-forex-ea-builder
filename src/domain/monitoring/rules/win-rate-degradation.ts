@@ -63,7 +63,7 @@ export function evaluateWinRateDegradation(
 
   const minAcceptable = baselineWinRate * winRateMinRatio;
 
-  if (liveWinRate < minAcceptable) {
+  if (liveWinRate <= minAcceptable) {
     return {
       ruleId: RULE_ID,
       status: "AT_RISK",

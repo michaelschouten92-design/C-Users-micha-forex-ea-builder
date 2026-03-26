@@ -14,9 +14,17 @@ export async function GET(request: NextRequest, { params }: Props) {
   const { instanceId: authInstanceId } = auth;
   const { instanceId } = await params;
 
-  // Ensure the authenticated instance matches the requested one
+  // Ensure the authenticated instance matches the requested one,
+  // or the requested instance is a child of the authenticated base instance.
+  // This allows context chain sync from the same EA (same API key).
   if (authInstanceId !== instanceId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const child = await prisma.liveEAInstance.findUnique({
+      where: { id: instanceId },
+      select: { parentInstanceId: true },
+    });
+    if (!child || child.parentInstanceId !== authInstanceId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const state = await prisma.trackRecordState.findUnique({

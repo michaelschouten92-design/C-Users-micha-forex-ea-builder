@@ -147,7 +147,6 @@ model User {
   exports        ExportJob[]
   templates      UserTemplate[]
   liveEAs        LiveEAInstance[]
-  alertRules     EAAlertRule[]
   alertConfigs   EAAlertConfig[]
   templateRatings TemplateRating[]
   tradeJournals      TradeJournal[]
@@ -399,6 +398,10 @@ model LiveEAInstance {
   openTrades    Int       @default(0)
   totalTrades   Int       @default(0)
   totalProfit   Float     @default(0)
+  heartbeatSessionId        String?      // EA session identifier (changes on restart)
+  heartbeatSessionStartedAt Int?        // Unix epoch seconds when EA session started (orderable)
+  heartbeatSeqNo            Int?        // Monotone heartbeat ordering within session (null = legacy EA)
+  sortOrder     Int       @default(0)   // User-defined account card display order (0 = auto by createdAt)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // Soft delete
@@ -437,7 +440,6 @@ model LiveEAInstance {
   heartbeats     EAHeartbeat[]
   trades         EATrade[]
   errors         EAError[]
-  alerts         EAAlert[]
   alertConfigs   EAAlertConfig[]
   tradeJournals  TradeJournal[]
   trackRecordEvents      TrackRecordEvent[]
@@ -452,6 +454,7 @@ model LiveEAInstance {
   incidents              Incident[]
   controlLayerAlerts     ControlLayerAlert[]
   terminalDeployments    TerminalDeployment[]
+  tradeCloseClaims       TradeCloseClaim[]
 
   @@index([userId, status])
   @@index([userId, deletedAt])
@@ -589,43 +592,6 @@ model EAAlertConfig {
   @@index([instanceId])
 }
 
-// ============================================
-// EA ALERT RULES & ALERTS (DEPRECATED)
-// These models are superseded by EAAlertConfig above.
-// Kept for migration compatibility only — do NOT use in new code.
-// Runtime code has been removed; see heartbeat/route.ts.
-// TODO: Remove these models in a future migration once data is migrated.
-// ============================================
-
-model EAAlertRule {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // DRAWDOWN_EXCEEDED, CONSECUTIVE_LOSSES, OFFLINE_DURATION, EQUITY_DROP
-  threshold Float
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  alerts    EAAlert[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([enabled, type])
-}
-
-model EAAlert {
-  id           String         @id @default(cuid())
-  ruleId       String
-  instanceId   String
-  message      String         @db.Text
-  acknowledged Boolean        @default(false)
-  createdAt    DateTime       @default(now())
-  rule         EAAlertRule    @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  instance     LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-
-  @@index([acknowledged, createdAt])
-  @@index([instanceId, acknowledged, createdAt])
-  @@index([ruleId])
-}
 
 // ============================================
 // TEMPLATE RATINGS
@@ -767,6 +733,21 @@ model TrackRecordState {
   instance        LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
 }
 
+// Dedup claim for TRADE_CLOSE events — guarantees at-most-once close per ticket per instance.
+// The unique constraint (instanceId, ticket) is the hard invariant. INSERT inside the same
+// transaction as state mutation ensures atomicity: claim + state commit together or not at all.
+model TradeCloseClaim {
+  id         String   @id @default(cuid())
+  instanceId String
+  ticket     String
+  seqNo      Int                          // seqNo of the TRADE_CLOSE event that claimed this ticket
+  claimedAt  DateTime @default(now())
+
+  instance   LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, ticket])
+}
+
 model LedgerCommitment {
   id             String   @id @default(cuid())
   instanceId     String
@@ -863,6 +844,7 @@ model BacktestBaseline {
   volatility           Float?
   initialDeposit       Float
   backtestDurationDays Int
+  baselineHash         String
   rawMetrics           Json
   createdAt            DateTime @default(now())
 
@@ -1208,6 +1190,7 @@ model TradeFact {
   @@index([strategyId, executedAt])
   @@index([strategyId, source])
   @@index([instanceId, source])
+  @@index([instanceId, executedAt])
   @@index([sourceRunId])
 }
 
@@ -1216,22 +1199,24 @@ model TradeFact {
 // ============================================
 
 model NotificationOutbox {
-  id          String   @id @default(cuid())
-  userId      String
-  channel     String   // "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH"
-  destination String   // email address, webhook URL, chat ID, etc.
-  subject     String?  // email subject (null for non-email)
-  payload     Json     // channel-specific data
-  status      String   @default("PENDING") // PENDING | SENT | FAILED | DEAD
-  attempts    Int      @default(0)
-  maxAttempts Int      @default(5)
-  lastError   String?
-  nextRetryAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  channel       String   // "EMAIL" | "WEBHOOK" | "TELEGRAM" | "BROWSER_PUSH" | "SLACK"
+  destination   String   // email address, webhook URL, chat ID, etc.
+  subject       String?  // email subject (null for non-email)
+  payload       Json     // channel-specific data
+  status        String   @default("PENDING") // PENDING | SENT | FAILED | DEAD
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(5)
+  lastError     String?
+  alertSourceId String?  // Source alert ID for dedup (null = no dedup)
+  nextRetryAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([alertSourceId, channel])
   @@index([status, nextRetryAt])
   @@index([userId, createdAt])
 }
@@ -1278,6 +1263,7 @@ model ControlLayerAlert {
 
   @@index([userId, acknowledgedAt, createdAt])
   @@index([instanceId])
+  @@index([instanceId, acknowledgedAt])
 }
 
 // ============================================

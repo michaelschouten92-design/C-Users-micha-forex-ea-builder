@@ -108,6 +108,47 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 }
 
+// PATCH /api/backtest/[id] — Rename a backtest
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const newName = typeof body.eaName === "string" ? body.eaName.trim().slice(0, 200) : null;
+
+    if (!newName) {
+      return NextResponse.json(apiError(ErrorCode.VALIDATION_FAILED, "eaName is required"), {
+        status: 400,
+      });
+    }
+
+    const run = await prisma.backtestRun.findUnique({
+      where: { id },
+      include: { upload: { select: { userId: true } } },
+    });
+
+    if (!run || run.upload.userId !== session.user.id) {
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Backtest not found"), { status: 404 });
+    }
+
+    await prisma.backtestRun.update({
+      where: { id },
+      data: { eaName: newName },
+    });
+
+    return NextResponse.json({ success: true, eaName: newName });
+  } catch (error) {
+    logger.error({ error }, "Failed to rename backtest");
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {
+      status: 500,
+    });
+  }
+}
+
 // DELETE /api/backtest/[id] — Delete a backtest upload
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

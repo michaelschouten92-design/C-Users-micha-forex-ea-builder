@@ -89,11 +89,13 @@ export async function emitControlLayerAlert(
     return;
   }
 
-  // Fire-and-forget: deliver via all configured channels — never blocks or throws
+  // Deliver via all configured channels — awaited so enqueue failures are visible
   if (alertId) {
-    deliverAlertAllChannels(alertId, userId, instanceId, alertType, reasons).catch((err) => {
-      log.error({ err, alertId }, "Alert delivery background task failed");
-    });
+    try {
+      await deliverAlertAllChannels(alertId, userId, instanceId, alertType, reasons);
+    } catch (err) {
+      log.error({ err, alertId }, "Alert delivery failed");
+    }
   }
 }
 
@@ -204,6 +206,7 @@ async function deliverAlertAllChannels(
       channel: "EMAIL",
       destination: user.email,
       subject: `[${severity}] ${eaName}${symbol ? ` (${symbol})` : ""} — ${summary}`,
+      alertSourceId: alertId,
       payload: {
         html:
           `<h2 style="margin:0 0 12px">${esc(eaName)}${symbol ? ` <span style="color:#7C8DB0">(${esc(symbol)})</span>` : ""}</h2>` +
@@ -230,6 +233,7 @@ async function deliverAlertAllChannels(
         userId,
         channel: "TELEGRAM",
         destination: user.telegramChatId,
+        alertSourceId: alertId,
         payload: { botToken, message: tgMessage },
       });
     }
@@ -247,6 +251,7 @@ async function deliverAlertAllChannels(
       userId,
       channel: "SLACK",
       destination: user.slackWebhookUrl,
+      alertSourceId: alertId,
       payload: { message: slackMessage },
     });
   }

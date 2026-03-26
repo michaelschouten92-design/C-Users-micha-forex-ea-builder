@@ -7,7 +7,7 @@ import {
   buildBrokerDigestPayload,
   analyzeBrokerCorroboration,
 } from "@/lib/track-record/broker-corroboration";
-import { appendChainEvent } from "@/lib/track-record/chain-append";
+import { appendChainEvent, ChainSerializationError } from "@/lib/track-record/chain-append";
 
 const digestSchema = z.object({
   instanceId: z.string().min(1),
@@ -70,6 +70,12 @@ export async function POST(request: NextRequest) {
       chainEvent: { seqNo: chainEvent.seqNo, eventHash: chainEvent.eventHash },
     });
   } catch (error) {
+    if (error instanceof ChainSerializationError) {
+      return NextResponse.json(
+        { error: "Transaction conflict, please retry", code: "TRANSACTION_CONFLICT" },
+        { status: 409 }
+      );
+    }
     logger.error(
       { error: error instanceof Error ? error.message : String(error) },
       "Broker evidence error"

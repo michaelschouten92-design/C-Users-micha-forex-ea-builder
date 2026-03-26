@@ -19,7 +19,7 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
   // Fetch from the public API (same data the page uses)
   let data: Record<string, unknown> | null = null;
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
     const res = await fetch(`${baseUrl}/api/track-record/${token}`, { next: { revalidate: 300 } });
     if (res.ok) data = await res.json();
   } catch {

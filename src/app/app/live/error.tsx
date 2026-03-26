@@ -1,0 +1,44 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import * as Sentry from "@sentry/nextjs";
+
+export default function LiveError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("[live error boundary]", error.message, error.digest);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#09090B]">
+      <div role="alert" className="text-center p-8 max-w-lg">
+        <h2 className="text-xl font-bold text-white mb-3">Command Center unavailable</h2>
+        <p className="text-sm text-[#A1A1AA] mb-6">
+          An error occurred while loading the Command Center. Your live EAs continue running
+          independently.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={reset}
+            className="px-5 py-2 bg-[#6366F1] text-white text-sm rounded-lg hover:bg-[#6366F1]/90 transition-colors"
+          >
+            Try Again
+          </button>
+          <Link
+            href="/app"
+            className="px-5 py-2 border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] text-sm rounded-lg hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -7,6 +7,7 @@ import {
   LADDER_META,
   type Thresholds,
 } from "@/lib/proof/ladder";
+import { verifyChain } from "@/lib/track-record/chain-verifier";
 
 /**
  * GET /api/live/:instanceId/proof-status
@@ -25,7 +26,7 @@ export async function GET(
 
   // Find the instance and navigate: LiveEAInstance → StrategyVersion → StrategyIdentity → VerifiedStrategyPage
   const instance = await prisma.liveEAInstance.findFirst({
-    where: { id: instanceId, userId: session.user.id },
+    where: { id: instanceId, userId: session.user.id, deletedAt: null },
     select: {
       id: true,
       createdAt: true,
@@ -94,15 +95,31 @@ export async function GET(
     }
   }
 
-  // Chain integrity check: verify no event has a broken prevHash link
+  // Chain integrity: cryptographic verification of prevHash linkage, seqNo
+  // monotonicity, and eventHash consistency using verifyChain().
   let chainIntegrity = false;
   if (trackRecordState && trackRecordState.lastSeqNo > 0) {
-    // Check if first non-genesis event has prevHash = genesis hash (valid start)
-    // and if we have no gaps — simplified: check count matches lastSeqNo
-    const eventCount = await prisma.trackRecordEvent.count({
+    const chainEvents = await prisma.trackRecordEvent.findMany({
       where: { instanceId },
+      orderBy: { seqNo: "asc" },
+      take: 1000,
+      select: {
+        instanceId: true,
+        seqNo: true,
+        eventType: true,
+        eventHash: true,
+        prevHash: true,
+        payload: true,
+        timestamp: true,
+      },
     });
-    chainIntegrity = eventCount === trackRecordState.lastSeqNo;
+    if (chainEvents.length > 0) {
+      const chainResult = verifyChain(
+        chainEvents as Parameters<typeof verifyChain>[0],
+        instanceId
+      );
+      chainIntegrity = chainResult.valid && chainResult.chainLength === trackRecordState.lastSeqNo;
+    }
   }
 
   const liveTrades = trackRecordState?.totalTrades ?? 0;

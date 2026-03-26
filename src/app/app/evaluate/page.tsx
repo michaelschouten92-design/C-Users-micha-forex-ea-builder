@@ -29,6 +29,8 @@ interface UploadResult {
     winRate: number;
     sharpeRatio: number | null;
     recoveryFactor: number | null;
+    grossProfit?: number;
+    grossLoss?: number;
   };
   healthScore: number;
   healthStatus: "ROBUST" | "MODERATE" | "WEAK";
@@ -40,6 +42,7 @@ interface UploadResult {
   }>;
   parseWarnings: string[];
   dealCount: number;
+  symbolSource?: "html_report" | "file_name" | "unknown";
 }
 
 interface BacktestListItem {
@@ -58,6 +61,7 @@ interface BacktestListItem {
   winRate?: number;
   healthScore?: number;
   healthStatus?: string;
+  parseWarnings?: string[];
   project?: { id: string; name: string } | null;
 }
 
@@ -125,6 +129,8 @@ export default function EvaluatePage() {
   const [error, setError] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const { data: listData, mutate } = useSWR<{
     data: BacktestListItem[];
@@ -224,6 +230,27 @@ export default function EvaluatePage() {
       toast.error("Failed to delete");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRename = async (runId: string) => {
+    const name = renameValue.trim();
+    if (!name) return;
+    try {
+      const res = await fetch(`/api/backtest/${runId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ eaName: name }),
+      });
+      if (res.ok) {
+        toast.success("Name updated");
+        setRenamingId(null);
+        mutate();
+      } else {
+        toast.error("Failed to rename");
+      }
+    } catch {
+      toast.error("Failed to rename");
     }
   };
 
@@ -346,6 +373,17 @@ export default function EvaluatePage() {
                   </div>
                   <h2 className="text-xl font-bold text-white mb-1">
                     {result.metadata.eaName || "Strategy"} — {result.metadata.symbol}
+                    {result.symbolSource && result.symbolSource !== "html_report" && (
+                      <span
+                        className="ml-2 text-[10px] font-medium px-2 py-0.5 rounded-full align-middle"
+                        style={{
+                          color: result.symbolSource === "file_name" ? "#F59E0B" : "#71717A",
+                          background: result.symbolSource === "file_name" ? "rgba(245,158,11,0.15)" : "rgba(113,113,122,0.15)",
+                        }}
+                      >
+                        {result.symbolSource === "file_name" ? "detected from filename" : "symbol unknown"}
+                      </span>
+                    )}
                   </h2>
                   <p className="text-sm text-[#71717A]">
                     {result.metadata.timeframe} | {result.metadata.period} |{" "}
@@ -355,11 +393,21 @@ export default function EvaluatePage() {
               </div>
 
               {/* Key Metrics Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
                 <MetricCard
                   label="Net Profit"
                   value={`$${result.metrics.totalNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   positive={result.metrics.totalNetProfit > 0}
+                />
+                <MetricCard
+                  label="Gross Profit"
+                  value={`$${(result.metrics.grossProfit ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  positive={true}
+                />
+                <MetricCard
+                  label="Gross Loss"
+                  value={`$${(result.metrics.grossLoss ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  positive={false}
                 />
                 <MetricCard
                   label="Profit Factor"
@@ -507,11 +555,29 @@ export default function EvaluatePage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-medium text-white truncate">
-                        {[item.symbol, item.timeframe].filter(Boolean).join(" · ") ||
-                          item.eaName ||
-                          item.fileName}
-                      </span>
+                      {renamingId === item.runId ? (
+                        <form
+                          className="flex items-center gap-1.5"
+                          onSubmit={(e) => { e.preventDefault(); handleRename(item.runId!); }}
+                        >
+                          <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                            className="text-sm font-medium text-white bg-[#18181B] border border-[rgba(255,255,255,0.15)] rounded px-2 py-0.5 w-48 outline-none focus:border-[#818CF8]"
+                            onKeyDown={(e) => { if (e.key === "Escape") setRenamingId(null); }}
+                          />
+                          <button type="submit" className="text-[10px] text-[#10B981] hover:text-white">Save</button>
+                          <button type="button" onClick={() => setRenamingId(null)} className="text-[10px] text-[#71717A] hover:text-white">Cancel</button>
+                        </form>
+                      ) : (
+                        <span className="text-sm font-medium text-white truncate">
+                          {[item.symbol, item.timeframe].filter(Boolean).join(" · ") ||
+                            item.eaName ||
+                            item.fileName}
+                        </span>
+                      )}
                       {item.healthStatus && (
                         <span
                           className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -523,6 +589,14 @@ export default function EvaluatePage() {
                           {item.healthScore}
                         </span>
                       )}
+                      {item.parseWarnings && item.parseWarnings.length > 0 && (
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-[#F59E0B] bg-[#F59E0B]/10 cursor-help"
+                          title={(item.parseWarnings as string[]).join("\n")}
+                        >
+                          {item.parseWarnings.length} warning{item.parseWarnings.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
                     </div>
                     {item.symbol && item.eaName && (
                       <div className="text-xs text-[#A1A1AA] truncate mb-0.5">{item.eaName}</div>
@@ -530,11 +604,25 @@ export default function EvaluatePage() {
                     <div className="flex items-center gap-3 text-xs text-[#71717A]">
                       {item.totalTrades != null && <span>{item.totalTrades} trades</span>}
                       {item.profitFactor != null && <span>PF {item.profitFactor.toFixed(2)}</span>}
+                      {item.totalNetProfit != null && (
+                        <span style={{ color: item.totalNetProfit > 0 ? "#10B981" : "#EF4444" }}>
+                          ${item.totalNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {item.runId && (
+                      <button
+                        onClick={() => { setRenamingId(item.runId); setRenameValue(item.eaName || item.fileName || ""); }}
+                        className="text-xs text-[#71717A] hover:text-[#818CF8] transition-colors"
+                        title="Rename"
+                      >
+                        Rename
+                      </button>
+                    )}
                     {item.runId && (
                       <Link
                         href={`/app/evaluate/${item.runId}`}

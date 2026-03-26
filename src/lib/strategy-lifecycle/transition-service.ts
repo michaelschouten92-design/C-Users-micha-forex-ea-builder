@@ -114,11 +114,11 @@ export async function setOperatorHold({
 
   // 3) Validate transition direction
   //    HALT:    only from NONE (not from OVERRIDE_PENDING)
-  //    RELEASE: only from HALTED (not from OVERRIDE_PENDING)
+  //    RELEASE: from HALTED or OVERRIDE_PENDING (unstick after failed override flow)
   if (hold === "HALTED" && instance.operatorHold !== "NONE") {
     return { ok: false, code: "INVALID_TRANSITION" };
   }
-  if (hold === "NONE" && instance.operatorHold !== "HALTED") {
+  if (hold === "NONE" && instance.operatorHold !== "HALTED" && instance.operatorHold !== "OVERRIDE_PENDING") {
     return { ok: false, code: "INVALID_TRANSITION" };
   }
 
