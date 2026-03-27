@@ -223,12 +223,16 @@ export function lookupMetricKey(label: string): MetricKey | null {
   // Exact match first
   if (LABEL_MAP[normalized]) return LABEL_MAP[normalized];
 
-  // Fuzzy: check if any known label is a substring of the input
+  // Fuzzy: longest matching label wins to avoid short-key false positives
+  // (e.g., "balance drawdown maximal" should match maxDrawdown, not balance)
+  let bestMatch: MetricKey | null = null;
+  let bestLen = 0;
   for (const [knownLabel, key] of Object.entries(LABEL_MAP)) {
-    if (normalized.includes(knownLabel)) {
-      return key;
+    if (normalized.includes(knownLabel) && knownLabel.length > bestLen) {
+      bestMatch = key;
+      bestLen = knownLabel.length;
     }
   }
 
-  return null;
+  return bestMatch;
 }

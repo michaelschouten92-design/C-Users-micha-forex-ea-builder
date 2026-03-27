@@ -56,6 +56,17 @@ export function parseMT5Report(html: string): ParsedReport {
   const deals = extractDeals(tables, locale, warnings);
 
   // ========================================
+  // 4a. Derive initialDeposit from first balance deal if still 0
+  // ========================================
+  if (metadata.initialDeposit === 0 && deals.length > 0) {
+    const balanceDeal = deals.find((d) => d.type === "balance" && d.profit > 0);
+    if (balanceDeal) {
+      metadata.initialDeposit = balanceDeal.profit;
+      warnings.push("Initial deposit derived from first balance deal row.");
+    }
+  }
+
+  // ========================================
   // 4b. Derive symbol from deals if still unknown
   // ========================================
   if (metadata.symbol === "UNKNOWN" && deals.length > 0) {
@@ -70,7 +81,10 @@ export function parseMT5Report(html: string): ParsedReport {
       let best = "";
       let bestCount = 0;
       for (const [s, c] of counts) {
-        if (c > bestCount) { best = s; bestCount = c; }
+        if (c > bestCount) {
+          best = s;
+          bestCount = c;
+        }
       }
       if (best) {
         metadata.symbol = best;
@@ -104,11 +118,15 @@ export function parseMT5Report(html: string): ParsedReport {
   // 6. Cross-validate net profit against deal sum
   // ========================================
   if (deals.length > 0 && metrics.totalNetProfit !== 0) {
+    // Use only exit deals (profit ≠ 0) to avoid double-counting entry deals in MT5 hedging mode
     const dealSum = deals
-      .filter((d) => d.type !== "balance")
+      .filter((d) => d.type !== "balance" && d.profit !== 0)
       .reduce((sum, d) => sum + d.profit, 0);
     // Only warn when discrepancy exceeds 1% of the reported value
-    if (dealSum !== 0 && Math.abs(metrics.totalNetProfit - dealSum) > Math.abs(metrics.totalNetProfit) * 0.01) {
+    if (
+      dealSum !== 0 &&
+      Math.abs(metrics.totalNetProfit - dealSum) > Math.abs(metrics.totalNetProfit) * 0.01
+    ) {
       warnings.push(
         `Net profit discrepancy: metrics table reports ${metrics.totalNetProfit.toFixed(2)} ` +
           `but deal sum is ${dealSum.toFixed(2)}. Deal-derived value used.`
@@ -202,7 +220,7 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       // Strip broker suffixes: "EURUSD.r" → "EURUSD", "GBPJPYm" → "GBPJPY", "XAUUSD.ecn" → "XAUUSD"
       metadata.symbol = nextText
         .replace(/[._](r|m|i|raw|ecn|pro|std|micro|mini|c|e|sb|z)\b/i, "")
-        .replace(/([A-Z]{6})([a-z]{1,3})$/, "$1")  // trailing lowercase suffix like "EURUSDm"
+        .replace(/([A-Z]{6})([a-z]{1,3})$/, "$1") // trailing lowercase suffix like "EURUSDm"
         .trim();
     } else if (
       cellText === "period" ||
@@ -392,7 +410,7 @@ function extractMetrics(
             }
 
             // Drawdown can be: "1234.56 (12.34%)" or just "12.34%"
-            const ddMatch = valueText.match(/([\d\s.,]+)\s*\(([\d\s.,]+)%?\)/);
+            const ddMatch = valueText.match(/(-?[\d\s.,]+)\s*\(([\d\s.,]+)%?\)/);
             if (ddMatch) {
               metrics.maxDrawdownAbs = parseLocalizedNumber(ddMatch[1], locale);
               metrics.maxDrawdownPct = parseLocalizedNumber(ddMatch[2], locale);
@@ -517,7 +535,13 @@ function extractDeals(
     );
     const volumeIdx = headerTexts.findIndex(
       (h) =>
-        h.includes("volume") || h.includes("volumen") || h.includes("объём") || h.includes("lot")
+        h.includes("volume") ||
+        h.includes("volumen") ||
+        h.includes("объём") ||
+        h.includes("lot") ||
+        h === "size" ||
+        h === "größe" ||
+        h === "tamaño"
     );
     const priceIdx = headerTexts.findIndex(
       (h) => h === "price" || h === "preis" || h === "precio" || h === "цена" || h === "prix"
@@ -530,8 +554,7 @@ function extractDeals(
         h.includes("bénéfice")
     );
     const symbolIdx = headerTexts.findIndex(
-      (h) =>
-        h === "symbol" || h === "символ" || h === "símbolo" || h === "symbole"
+      (h) => h === "symbol" || h === "символ" || h === "símbolo" || h === "symbole"
     );
     const commentIdx = headerTexts.findIndex(
       (h) =>
