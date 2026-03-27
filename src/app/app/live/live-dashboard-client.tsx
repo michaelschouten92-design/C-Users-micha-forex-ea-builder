@@ -2647,6 +2647,8 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const fetchedRef = useRef(false);
+  const prevCountsRef = useRef<Map<string, number>>(new Map());
+  const fetchingInstancesRef = useRef<Set<string>>(new Set());
 
   // Instances with reported open trades
   const activeInstances = instances.filter((ea) => ea.openTrades > 0);
@@ -2684,6 +2686,10 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
       if (!cancelled) {
         setOpenTrades(results);
         setLoading(false);
+        // Seed count tracker so the first heartbeat after expand doesn't spuriously re-fetch
+        for (const ea of activeInstances) {
+          prevCountsRef.current.set(ea.id, ea.openTrades);
+        }
       }
     }
 
@@ -2695,6 +2701,50 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
   useEffect(() => {
     if (!expanded) fetchedRef.current = false;
   }, [expanded]);
+
+  // Re-fetch when heartbeat updates the openTrades count for any instance
+  useEffect(() => {
+    if (!fetchedRef.current) return;
+
+    const instancesToRefetch: string[] = [];
+    for (const ea of instances) {
+      const prevCount = prevCountsRef.current.get(ea.id) ?? -1;
+      if (prevCount !== -1 && prevCount !== ea.openTrades) {
+        instancesToRefetch.push(ea.id);
+      }
+      prevCountsRef.current.set(ea.id, ea.openTrades);
+    }
+
+    if (instancesToRefetch.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      for (const instanceId of instancesToRefetch) {
+        if (fetchingInstancesRef.current.has(instanceId) || cancelled) continue;
+        fetchingInstancesRef.current.add(instanceId);
+        try {
+          const res = await fetch(`/api/live/${instanceId}/open-trades?pageSize=50`);
+          if (!res.ok || cancelled) continue;
+          const json = await res.json();
+          const trades = (json.data ?? []) as OpenTrade[];
+          if (!cancelled) {
+            setOpenTrades((prev: Map<string, OpenTrade[]>) => {
+              const next = new Map(prev);
+              if (trades.length > 0) {
+                next.set(instanceId, trades);
+              } else {
+                next.delete(instanceId);
+              }
+              return next;
+            });
+          }
+        } finally {
+          fetchingInstancesRef.current.delete(instanceId);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [instances]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (totalOpen === 0) return null;
 
