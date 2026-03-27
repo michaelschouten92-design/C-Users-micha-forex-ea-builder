@@ -17,6 +17,11 @@ export interface LiveInstanceTrade {
   closeTime: string | null;
   symbol?: string | null;
   magicNumber?: number | null;
+  ticket?: string;
+  openPrice?: number;
+  closePrice?: number | null;
+  lots?: number;
+  type?: string;
 }
 
 export interface LiveInstanceHeartbeat {

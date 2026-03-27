@@ -50,6 +50,19 @@ interface TradeRecord {
   mode: string | null;
 }
 
+interface OpenTrade {
+  id: string;
+  ticket: string;
+  symbol: string;
+  type: string;
+  openPrice: number;
+  lots: number;
+  profit: number;
+  openTime: string;
+  mode: string | null;
+  magicNumber: number | null;
+}
+
 interface AlertConfig {
   id: string;
   instanceId: string | null;
@@ -2626,6 +2639,132 @@ function ConnectionIndicator({
 }
 
 // ============================================
+// OPEN TRADES PANEL
+// ============================================
+
+function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
+  const [openTrades, setOpenTrades] = useState<Map<string, OpenTrade[]>>(new Map());
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const fetchedRef = useRef(false);
+
+  // Instances with reported open trades
+  const activeInstances = instances.filter((ea) => ea.openTrades > 0);
+  const totalOpen = activeInstances.reduce((sum, ea) => sum + ea.openTrades, 0);
+
+  useEffect(() => {
+    if (!expanded || fetchedRef.current || activeInstances.length === 0) return;
+    fetchedRef.current = true;
+    let cancelled = false;
+
+    async function fetchOpenTrades(): Promise<void> {
+      setLoading(true);
+      const results = new Map<string, OpenTrade[]>();
+      // Fetch in parallel, capped at 10 concurrent requests
+      const batches: EAInstanceData[][] = [];
+      for (let i = 0; i < activeInstances.length; i += 10) {
+        batches.push(activeInstances.slice(i, i + 10));
+      }
+      for (const batch of batches) {
+        if (cancelled) break;
+        const responses = await Promise.allSettled(
+          batch.map(async (ea) => {
+            const res = await fetch(`/api/live/${ea.id}/open-trades?pageSize=50`);
+            if (!res.ok) return { instanceId: ea.id, trades: [] as OpenTrade[] };
+            const json = await res.json();
+            return { instanceId: ea.id, trades: (json.data ?? []) as OpenTrade[] };
+          })
+        );
+        for (const r of responses) {
+          if (r.status === "fulfilled" && r.value.trades.length > 0) {
+            results.set(r.value.instanceId, r.value.trades);
+          }
+        }
+      }
+      if (!cancelled) {
+        setOpenTrades(results);
+        setLoading(false);
+      }
+    }
+
+    fetchOpenTrades();
+    return () => { cancelled = true; };
+  }, [expanded, activeInstances.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset fetch flag when panel is collapsed so re-expanding triggers a fresh fetch
+  useEffect(() => {
+    if (!expanded) fetchedRef.current = false;
+  }, [expanded]);
+
+  if (totalOpen === 0) return null;
+
+  return (
+    <div className="rounded-md bg-white/[0.015] border border-[#1E293B]/25 overflow-hidden">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.02] transition-colors"
+        onClick={() => setExpanded((prev) => !prev)}
+      >
+        <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+          Open Positions ({totalOpen})
+        </span>
+        <span className="text-[10px] text-[#475569]">{expanded ? "▲" : "▼"}</span>
+      </button>
+
+      {expanded && (
+        <div className="px-3 pb-3">
+          {loading ? (
+            <p className="text-[11px] text-[#475569] py-2">Loading positions...</p>
+          ) : openTrades.size === 0 ? (
+            <p className="text-[11px] text-[#475569] py-2">No open position details available yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {activeInstances.map((ea) => {
+                const trades = openTrades.get(ea.id);
+                if (!trades || trades.length === 0) return null;
+                return (
+                  <div key={ea.id}>
+                    <p className="text-[10px] text-[#64748B] font-medium mb-1">
+                      {ea.eaName} {ea.symbol ? `· ${ea.symbol}` : ""}
+                    </p>
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="text-[#475569] text-left">
+                          <th className="font-medium pb-1 pr-3">Symbol</th>
+                          <th className="font-medium pb-1 pr-3">Type</th>
+                          <th className="font-medium pb-1 pr-3 text-right">Lots</th>
+                          <th className="font-medium pb-1 pr-3 text-right">Entry</th>
+                          <th className="font-medium pb-1 text-right">P/L</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {trades.map((t) => (
+                          <tr key={t.ticket} className="text-[#94A3B8]">
+                            <td className="pr-3 py-0.5 font-mono">{t.symbol}</td>
+                            <td className={`pr-3 py-0.5 font-medium ${t.type === "BUY" ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+                              {t.type}
+                            </td>
+                            <td className="pr-3 py-0.5 text-right tabular-nums">{t.lots.toFixed(2)}</td>
+                            <td className="pr-3 py-0.5 text-right tabular-nums">{t.openPrice.toFixed(5)}</td>
+                            <td className={`py-0.5 text-right tabular-nums font-semibold ${t.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+                              {formatCurrency(t.profit)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // SUMMARY CARD
 // ============================================
 
@@ -3126,10 +3265,15 @@ export function LiveDashboardClient({
     onTrade: (data) => {
       const trade = data as {
         instanceId: string;
+        ticket?: string;
         profit: number;
         closeTime: string | null;
         symbol?: string | null;
         magicNumber?: number | null;
+        openPrice?: number;
+        closePrice?: number | null;
+        lots?: number;
+        type?: string;
       };
       if (soundAlertsRef.current) {
         const ea = previousDataRef.current.get(trade.instanceId);
@@ -3147,6 +3291,11 @@ export function LiveDashboardClient({
                     closeTime: trade.closeTime ?? null,
                     symbol: trade.symbol ?? null,
                     magicNumber: trade.magicNumber ?? null,
+                    ticket: trade.ticket,
+                    openPrice: trade.openPrice,
+                    closePrice: trade.closePrice ?? null,
+                    lots: trade.lots,
+                    type: trade.type,
                   },
                   ...ea.trades,
                 ].slice(0, 20),
@@ -3583,28 +3732,38 @@ export function LiveDashboardClient({
             </p>
             {/* Primary readings */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <SummaryCard
-                label="Floating P&L"
-                subtitle="unrealized"
-                value={eaInstances
-                  .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
-                  .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-              />
-              <SummaryCard
-                label="Total Trades"
-                value={eaInstances
-                  .filter(isAccountContainer)
-                  .reduce((sum, ea) => sum + ea.totalTrades, 0)}
-                isCurrency={false}
-              />
-              <SummaryCard
-                label="Open Trades"
-                value={eaInstances
-                  .filter(isAccountContainer)
-                  .reduce((sum, ea) => sum + ea.openTrades, 0)}
-                isCurrency={false}
-              />
+              {(() => {
+                // Account containers aggregate metrics in ACCOUNT_WIDE mode.
+                // In SYMBOL_ONLY mode no containers exist — fall back to summing all LIVE instances.
+                const containers = eaInstances.filter(isAccountContainer);
+                const metricsSource = containers.length > 0
+                  ? containers
+                  : eaInstances.filter((ea) => ea.mode === "LIVE");
+                return (
+                  <>
+                    <SummaryCard
+                      label="Floating P&L"
+                      subtitle="unrealized"
+                      value={metricsSource
+                        .filter((ea) => ea.equity != null && ea.balance != null)
+                        .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
+                    />
+                    <SummaryCard
+                      label="Total Trades"
+                      value={metricsSource.reduce((sum, ea) => sum + ea.totalTrades, 0)}
+                      isCurrency={false}
+                    />
+                    <SummaryCard
+                      label="Open Trades"
+                      value={metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0)}
+                      isCurrency={false}
+                    />
+                  </>
+                );
+              })()}
             </div>
+            {/* Open Positions detail panel */}
+            <OpenTradesPanel instances={eaInstances} />
             {/* Secondary reading: Paper P&L (only when paper instances exist) */}
             {eaInstances.some((ea) => ea.mode === "PAPER") && (
               <div className="flex items-baseline gap-2 px-1">

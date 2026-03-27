@@ -177,7 +177,7 @@ export async function GET(request: Request): Promise<Response> {
         return;
       }
 
-      // Poll for deltas every 5 seconds
+      // Poll for deltas every 15 seconds
       const pollInterval = setInterval(async () => {
         try {
           // Backpressure check: if the stream is full or closed, stop enqueuing
@@ -272,6 +272,9 @@ export async function GET(request: Request): Promise<Response> {
                   ticket: trade.ticket,
                   symbol: trade.symbol,
                   type: trade.type,
+                  openPrice: trade.openPrice,
+                  closePrice: trade.closePrice ?? null,
+                  lots: trade.lots,
                   profit: trade.profit,
                   closeTime: trade.closeTime?.toISOString() ?? null,
                 })}\n\n`
