@@ -108,6 +108,16 @@ const nextConfig: NextConfig = {
         destination: "/app/risk",
         permanent: true,
       },
+      {
+        source: "/app/monitor",
+        destination: "/app/live",
+        permanent: true,
+      },
+      {
+        source: "/app/referrals",
+        destination: "/app/settings",
+        permanent: true,
+      },
       // Marketing consolidation redirects
       {
         source: "/compare-platforms",

@@ -8,6 +8,13 @@ import { apiError, ErrorCode } from "@/lib/error-codes";
 import { resolveTradeDeploymentAttribution } from "@/lib/deployment/trade-attribution";
 import { z } from "zod";
 
+/** Convert a timestamp (string or number) to a Date. Handles Unix seconds vs milliseconds. */
+function toDate(value: string | number): Date {
+  if (typeof value === "string") return new Date(value);
+  // Unix seconds are < 1e12 (year ~33658 in ms); treat small numbers as seconds
+  return new Date(value < 1e12 ? value * 1000 : value);
+}
+
 const tradeSchema = z.object({
   ticket: z.union([z.string(), z.number()]).transform(String),
   symbol: z.string().max(32),
@@ -81,8 +88,8 @@ export async function POST(request: NextRequest) {
         closePrice: closePrice ?? null,
         lots,
         profit,
-        openTime: new Date(openTime),
-        closeTime: closeTime ? new Date(closeTime) : null,
+        openTime: toDate(openTime),
+        closeTime: closeTime ? toDate(closeTime) : null,
         mode: parsed.data.mode ?? null,
         magicNumber: magicNumber ?? null,
         terminalDeploymentId: attribution.terminalDeploymentId,
@@ -90,7 +97,7 @@ export async function POST(request: NextRequest) {
       update: {
         closePrice: closePrice != null ? closePrice : undefined,
         profit,
-        closeTime: closeTime ? new Date(closeTime) : undefined,
+        closeTime: closeTime ? toDate(closeTime) : undefined,
         mode: parsed.data.mode ?? undefined,
       },
     });
