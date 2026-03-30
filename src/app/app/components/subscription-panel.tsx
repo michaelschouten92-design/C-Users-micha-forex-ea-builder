@@ -15,6 +15,11 @@ type SubscriptionPanelProps = {
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
+  /** Server-resolved dynamic limits from DB (overrides hardcoded PLANS) */
+  effectiveLimits?: {
+    maxProjects: number;
+    maxExportsPerMonth: number;
+  };
 };
 
 export function SubscriptionPanel({
@@ -26,6 +31,7 @@ export function SubscriptionPanel({
   hasStripeSubscription,
   currentPeriodEnd,
   scheduledDowngradeTier,
+  effectiveLimits,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
@@ -35,8 +41,13 @@ export function SubscriptionPanel({
   );
   const plan = PLANS[tier];
 
-  const projectLimit = plan.limits.maxProjects;
-  const exportLimit = plan.limits.maxExportsPerMonth;
+  // Determine the next lower tier for downgrade
+  const tierOrder: PlanTier[] = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
+  const currentIndex = tierOrder.indexOf(tier);
+  const downgradeTier: PlanTier | null = currentIndex > 1 ? tierOrder[currentIndex - 1] : null;
+
+  const projectLimit = effectiveLimits?.maxProjects ?? plan.limits.maxProjects;
+  const exportLimit = effectiveLimits?.maxExportsPerMonth ?? plan.limits.maxExportsPerMonth;
   const accountLimit = plan.limits.maxMonitoredTradingAccounts;
 
   const projectPercentage =
@@ -70,13 +81,15 @@ export function SubscriptionPanel({
     }
   }
 
-  async function handleDowngradeToPro() {
+  async function handleDowngrade() {
+    if (!downgradeTier) return;
+    const targetName = PLANS[downgradeTier].name;
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/change-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ plan: "PRO", interval: "monthly" }),
+        body: JSON.stringify({ plan: downgradeTier, interval: "monthly" }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -85,13 +98,13 @@ export function SubscriptionPanel({
       }
       const data = await res.json();
       if (data.scheduled) {
-        setPendingDowngrade("PRO");
+        setPendingDowngrade(downgradeTier);
         showSuccess(
           "Downgrade scheduled",
-          `Your plan will change to Pro on ${data.effectiveDate ? formatDate(data.effectiveDate) : "the end of your billing period"}. You have full Elite access until then.`
+          `Your plan will change to ${targetName} on ${data.effectiveDate ? formatDate(data.effectiveDate) : "the end of your billing period"}. You have full ${plan.name} access until then.`
         );
       } else {
-        showSuccess("Plan changed to Pro", "Your account has been updated.");
+        showSuccess(`Plan changed to ${targetName}`, "Your account has been updated.");
         window.location.reload();
       }
     } catch {
@@ -484,7 +497,11 @@ export function SubscriptionPanel({
               <>
                 <h3 className="text-lg font-semibold text-white mb-3">Downgrade Plan?</h3>
                 <p className="text-sm text-[#A1A1AA] mb-4">
-                  Your plan will change at the end of your billing period
+                  Your plan will change to{" "}
+                  <span className="font-medium text-white">
+                    {downgradeTier ? PLANS[downgradeTier].name : "a lower tier"}
+                  </span>{" "}
+                  at the end of your billing period
                   {currentPeriodEnd && <> ({formatDate(currentPeriodEnd)})</>}. You&apos;ll keep
                   full access until then. Your monitored account limit will decrease — existing
                   accounts are preserved but you won&apos;t be able to add new ones if over the new
@@ -499,7 +516,7 @@ export function SubscriptionPanel({
                     Keep Current Plan
                   </button>
                   <button
-                    onClick={handleDowngradeToPro}
+                    onClick={handleDowngrade}
                     disabled={loading}
                     className="px-4 py-2 text-sm text-white bg-[#F59E0B] rounded-lg hover:bg-[#D97706] transition-colors disabled:opacity-50 flex items-center gap-2"
                   >

@@ -19,6 +19,7 @@ import type { ParsedDeal } from "@/lib/backtest-parser/types";
 // Select the right rate limiter based on plan tier
 function getRateLimiterForTier(tier: string) {
   switch (tier) {
+    case "INSTITUTIONAL":
     case "ELITE":
       return aiAnalysisEliteRateLimiter;
     case "PRO":

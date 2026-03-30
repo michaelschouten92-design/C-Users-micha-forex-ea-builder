@@ -78,6 +78,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     category: "Support",
     rows: [
       ["Priority support", false, true, true, true],
+      ["1-on-1 strategy review (1/month)", false, false, true, true],
       ["Direct developer channel", false, false, false, true],
       ["Custom onboarding", false, false, false, true],
     ],
@@ -89,7 +90,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
 const FAQ_ITEMS = [
   {
     q: "What is the difference between the plans?",
-    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, Authority supports up to 10, and Institutional offers unlimited. Paid plans also include priority support, with Authority and Institutional adding 1-on-1 strategy reviews and direct developer access.",
+    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, Authority supports up to 10, and Institutional offers unlimited. Paid plans also include priority support, with Authority adding 1-on-1 strategy reviews. Institutional includes a direct developer channel and custom onboarding.",
   },
   {
     q: "What is a monitored trading account?",

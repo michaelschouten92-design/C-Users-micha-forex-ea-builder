@@ -13,13 +13,18 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
-import { parseMT5Report, computeHealthScore, extractSymbolFromFileName } from "@/lib/backtest-parser";
+import {
+  parseMT5Report,
+  computeHealthScore,
+  extractSymbolFromFileName,
+} from "@/lib/backtest-parser";
 import { BACKTEST_MAX_FILE_SIZE, isLikelyMT5Report } from "@/lib/validations/backtest";
 import { createHash } from "crypto";
 
 // Select the right rate limiter based on plan tier
 function getUploadRateLimiterForTier(tier: string) {
   switch (tier) {
+    case "INSTITUTIONAL":
     case "ELITE":
       return backtestUploadEliteRateLimiter;
     case "PRO":
@@ -206,7 +211,8 @@ export async function POST(request: Request) {
         // Replace the "could not detect" warning with a more specific one
         const idx = parsed.parseWarnings.findIndex((w) => w.includes("Could not detect symbol"));
         if (idx >= 0) {
-          parsed.parseWarnings[idx] = `Symbol "${fileNameSymbol}" detected from file name (not found in report HTML)`;
+          parsed.parseWarnings[idx] =
+            `Symbol "${fileNameSymbol}" detected from file name (not found in report HTML)`;
         }
       } else {
         symbolSource = "unknown";

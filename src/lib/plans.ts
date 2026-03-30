@@ -147,7 +147,7 @@ export const PLANS = {
       "10 monitored trading accounts",
       "Embeddable proof widget",
       "1-on-1 strategy review (1/month)",
-      "Direct developer channel",
+      "Priority support",
     ],
     mostPopular: true,
     limits: {

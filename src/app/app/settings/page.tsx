@@ -5,6 +5,8 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { SubscriptionPanel } from "../components/subscription-panel";
 import { SettingsContent } from "./settings-content";
+import { resolveTier } from "@/lib/plan-limits";
+import { getEffectiveLimits } from "@/lib/plans";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -40,7 +42,8 @@ export default async function SettingsPage() {
     }),
   ]);
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
+  const effectiveLimits = await getEffectiveLimits(tier);
 
   return (
     <div className="min-h-screen">
@@ -63,6 +66,10 @@ export default async function SettingsPage() {
               ? (subscription.scheduledDowngradeTier as string)
               : null
           }
+          effectiveLimits={{
+            maxProjects: effectiveLimits.maxProjects,
+            maxExportsPerMonth: effectiveLimits.maxExportsPerMonth,
+          }}
         />
 
         <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />
