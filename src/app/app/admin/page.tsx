@@ -17,6 +17,7 @@ import { UserDetailModal } from "./components/user-detail-modal";
 import { StrategyDistributionPanel } from "./components/strategy-distribution-panel";
 import { AttentionQueue } from "./components/attention-queue";
 import { IncidentsTab } from "./components/incidents-tab";
+import { HealthRadar } from "./components/health-radar";
 
 interface UserData {
   id: string;
@@ -348,61 +349,67 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Stats — Users */}
-        <div className="mb-6">
-          <h3 className="text-xs font-semibold tracking-wider uppercase text-[#71717A] mb-3">
-            Users
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {/* Stats — combined users + revenue */}
+        <div className="mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {(
               [
-                { label: "Total", value: stats.total, color: "#FAFAFA" },
-                { label: "New This Week", value: stats.newThisWeek, color: "#10B981" },
-                { label: "Control", value: stats.control, color: "#6366F1" },
-                { label: "Authority", value: stats.authority, color: "#818CF8" },
-                { label: "Institutional", value: stats.institutional, color: "#F59E0B" },
+                {
+                  label: "Total Users",
+                  value: stats.total,
+                  display: String(stats.total),
+                  color: "#FAFAFA",
+                },
+                {
+                  label: "New This Week",
+                  value: stats.newThisWeek,
+                  display: String(stats.newThisWeek),
+                  color: "#10B981",
+                },
+                {
+                  label: "Control",
+                  value: stats.control,
+                  display: String(stats.control),
+                  color: "#6366F1",
+                },
+                {
+                  label: "Authority",
+                  value: stats.authority,
+                  display: String(stats.authority),
+                  color: "#818CF8",
+                },
+                {
+                  label: "Institutional",
+                  value: stats.institutional,
+                  display: String(stats.institutional),
+                  color: "#F59E0B",
+                },
+                {
+                  label: "MRR",
+                  value: 0,
+                  display: extraStats ? `\u20AC${extraStats.mrr.toLocaleString()}` : "\u2014",
+                  color: "#10B981",
+                },
+                {
+                  label: "Exports Today",
+                  value: 0,
+                  display: extraStats ? String(extraStats.exportsToday) : "\u2014",
+                  color: "#FAFAFA",
+                },
               ] as const
             ).map((card) => (
               <div
                 key={card.label}
-                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
+                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4"
               >
-                <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
+                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
                   {card.label}
                 </div>
-                <div
-                  className="text-2xl font-bold mt-1.5 tabular-nums"
-                  style={{ color: card.color }}
-                >
-                  {card.value}
+                <div className="text-xl font-bold mt-1 tabular-nums" style={{ color: card.color }}>
+                  {card.display}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Stats — Revenue */}
-        <div className="mb-8">
-          <h3 className="text-xs font-semibold tracking-wider uppercase text-[#71717A] mb-3">
-            Revenue
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-              <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-                MRR
-              </div>
-              <div className="text-2xl font-bold text-[#10B981] mt-1.5 tabular-nums">
-                {extraStats ? `\u20AC${extraStats.mrr.toLocaleString()}` : "\u2014"}
-              </div>
-            </div>
-            <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5">
-              <div className="text-[11px] font-semibold tracking-wider uppercase text-[#71717A]">
-                Exports Today
-              </div>
-              <div className="text-2xl font-bold text-[#FAFAFA] mt-1.5 tabular-nums">
-                {extraStats ? extraStats.exportsToday : "\u2014"}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -412,8 +419,9 @@ export default function AdminPage() {
         {/* Tab content */}
         {activeTab === "dashboard" && (
           <div className="space-y-6">
-            <StrategyDistributionPanel />
+            <HealthRadar />
             <AttentionQueue />
+            <StrategyDistributionPanel />
           </div>
         )}
         {activeTab === "users" && (

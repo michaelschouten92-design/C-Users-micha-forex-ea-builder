@@ -22,11 +22,22 @@ interface TabGroup {
 
 const TAB_GROUPS: TabGroup[] = [
   {
+    label: "Dashboard",
+    tabs: [{ id: "dashboard", label: "Overview" }],
+  },
+  {
     label: "Users",
     tabs: [
-      { id: "dashboard", label: "Overview" },
       { id: "users", label: "All Users" },
       { id: "audit", label: "Audit Log" },
+    ],
+  },
+  {
+    label: "Operations",
+    tabs: [
+      { id: "live-eas", label: "Live EAs" },
+      { id: "incidents", label: "Incidents" },
+      { id: "system-health", label: "System Health" },
     ],
   },
   {
@@ -34,22 +45,14 @@ const TAB_GROUPS: TabGroup[] = [
     tabs: [
       { id: "revenue", label: "Dashboard" },
       { id: "exports", label: "Exports" },
-    ],
-  },
-  {
-    label: "Analytics",
-    tabs: [
       { id: "analytics", label: "Insights" },
-      { id: "live-eas", label: "Live EAs" },
     ],
   },
   {
-    label: "Config",
+    label: "Settings",
     tabs: [
       { id: "announcements", label: "Announcements" },
       { id: "plan-limits", label: "Plan Limits" },
-      { id: "system-health", label: "System Health" },
-      { id: "incidents", label: "Incidents" },
     ],
   },
 ];
