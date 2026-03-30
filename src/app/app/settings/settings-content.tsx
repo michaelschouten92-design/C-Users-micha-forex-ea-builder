@@ -5,6 +5,7 @@ import { PushNotificationToggle } from "@/components/app/push-notification-toggl
 import { HandleSetting } from "@/components/app/handle-setting";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
+import { DiscordSection } from "./discord-section";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -83,6 +84,9 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
         </p>
         <PushNotificationToggle />
       </div>
+
+      {/* Discord */}
+      <DiscordSection />
 
       {/* Webhook */}
       <WebhookSection />
@@ -513,7 +517,7 @@ function WebhookSection() {
     try {
       const res = await fetch("/api/account/webhook", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
         body: JSON.stringify({ webhookUrl: url || null }),
       });
       const data = await res.json();
