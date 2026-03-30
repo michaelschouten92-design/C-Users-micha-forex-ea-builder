@@ -169,7 +169,7 @@ export function PricingSection({ showHeader = true }: PricingSectionProps) {
               "All platform features included",
               "Unlimited strategies & exports",
               "Priority support",
-              "Email, webhook & Telegram alerts",
+              "Email & webhook alerts",
             ].map((feature, i) => (
               <li key={i} className="flex items-start gap-3 text-[#CBD5E1] text-sm">
                 <CheckIcon />

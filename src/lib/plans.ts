@@ -128,7 +128,7 @@ export const PLANS = {
       "All platform features included",
       "3 monitored trading accounts",
       "Multi-strategy portfolio view",
-      "Email, webhook & Telegram alerts",
+      "Email & webhook alerts",
       "Priority support",
     ],
     limits: {

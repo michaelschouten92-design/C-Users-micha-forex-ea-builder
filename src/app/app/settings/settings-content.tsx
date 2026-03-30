@@ -5,7 +5,6 @@ import { PushNotificationToggle } from "@/components/app/push-notification-toggl
 import { HandleSetting } from "@/components/app/handle-setting";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showSuccess, showError } from "@/lib/toast";
-import { DiscordSection } from "./discord-section";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -84,9 +83,6 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
         </p>
         <PushNotificationToggle />
       </div>
-
-      {/* Discord */}
-      <DiscordSection />
 
       {/* Webhook */}
       <WebhookSection />

@@ -895,7 +895,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
                 Dashboard
               </Link>
               <Link
-                href="/app/monitor"
+                href="/app/live"
                 className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
               >
                 Monitor

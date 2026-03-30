@@ -124,7 +124,7 @@ const CARD_FEATURES: [string, boolean, boolean, boolean, boolean][] = [
   ["All platform features included", true, true, true, true],
   ["Unlimited strategies", true, true, true, true],
   ["Priority support", false, true, true, true],
-  ["Email, webhook & Telegram alerts", false, true, true, true],
+  ["Email & webhook alerts", false, true, true, true],
   ["Direct developer channel", false, false, false, true],
   ["Custom onboarding", false, false, false, true],
 ];
