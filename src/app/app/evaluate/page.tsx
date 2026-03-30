@@ -131,11 +131,12 @@ export default function EvaluatePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [listLimit, setListLimit] = useState(10);
 
   const { data: listData, mutate } = useSWR<{
     data: BacktestListItem[];
     pagination: { total: number };
-  }>("/api/backtest/list?limit=10", fetcher);
+  }>(`/api/backtest/list?limit=${listLimit}`, fetcher);
 
   const handleUpload = useCallback(
     async (file: File) => {
@@ -313,9 +314,9 @@ export default function EvaluatePage() {
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <p className="text-white font-medium mb-1">Drop MT5 backtest report here</p>
+              <p className="text-white font-medium mb-1">Drop your backtest report here</p>
               <p className="text-sm text-[#71717A]">
-                or click to browse — accepts .html files from Strategy Tester
+                or click to browse — accepts MT4 and MT5 Strategy Tester .html files
               </p>
             </>
           )}
@@ -378,10 +379,15 @@ export default function EvaluatePage() {
                         className="ml-2 text-[10px] font-medium px-2 py-0.5 rounded-full align-middle"
                         style={{
                           color: result.symbolSource === "file_name" ? "#F59E0B" : "#71717A",
-                          background: result.symbolSource === "file_name" ? "rgba(245,158,11,0.15)" : "rgba(113,113,122,0.15)",
+                          background:
+                            result.symbolSource === "file_name"
+                              ? "rgba(245,158,11,0.15)"
+                              : "rgba(113,113,122,0.15)",
                         }}
                       >
-                        {result.symbolSource === "file_name" ? "detected from filename" : "symbol unknown"}
+                        {result.symbolSource === "file_name"
+                          ? "detected from filename"
+                          : "symbol unknown"}
                       </span>
                     )}
                   </h2>
@@ -558,7 +564,10 @@ export default function EvaluatePage() {
                       {renamingId === item.runId ? (
                         <form
                           className="flex items-center gap-1.5"
-                          onSubmit={(e) => { e.preventDefault(); handleRename(item.runId!); }}
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleRename(item.runId!);
+                          }}
                         >
                           <input
                             type="text"
@@ -566,16 +575,33 @@ export default function EvaluatePage() {
                             onChange={(e) => setRenameValue(e.target.value)}
                             autoFocus
                             className="text-sm font-medium text-white bg-[#18181B] border border-[rgba(255,255,255,0.15)] rounded px-2 py-0.5 w-48 outline-none focus:border-[#818CF8]"
-                            onKeyDown={(e) => { if (e.key === "Escape") setRenamingId(null); }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") setRenamingId(null);
+                            }}
                           />
-                          <button type="submit" className="text-[10px] text-[#10B981] hover:text-white">Save</button>
-                          <button type="button" onClick={() => setRenamingId(null)} className="text-[10px] text-[#71717A] hover:text-white">Cancel</button>
+                          <button
+                            type="submit"
+                            className="text-[10px] text-[#10B981] hover:text-white"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRenamingId(null)}
+                            className="text-[10px] text-[#71717A] hover:text-white"
+                          >
+                            Cancel
+                          </button>
                         </form>
                       ) : (
                         <span className="text-sm font-medium text-white truncate">
-                          {[item.symbol, item.timeframe].filter(Boolean).join(" · ") ||
-                            item.eaName ||
-                            item.fileName}
+                          {(() => {
+                            const sym =
+                              item.symbol && item.symbol !== "UNKNOWN" ? item.symbol : null;
+                            const tf = sym ? item.timeframe : null;
+                            const ea = item.eaName && item.eaName !== "Report" ? item.eaName : null;
+                            return [sym, tf].filter(Boolean).join(" · ") || ea || item.fileName;
+                          })()}
                         </span>
                       )}
                       {item.healthStatus && (
@@ -586,7 +612,7 @@ export default function EvaluatePage() {
                             background: `${getHealthColor(item.healthStatus)}15`,
                           }}
                         >
-                          {item.healthScore}
+                          {item.healthScore}/100
                         </span>
                       )}
                       {item.parseWarnings && item.parseWarnings.length > 0 && (
@@ -594,19 +620,30 @@ export default function EvaluatePage() {
                           className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-[#F59E0B] bg-[#F59E0B]/10 cursor-help"
                           title={(item.parseWarnings as string[]).join("\n")}
                         >
-                          {item.parseWarnings.length} warning{item.parseWarnings.length !== 1 ? "s" : ""}
+                          {item.parseWarnings.length} warning
+                          {item.parseWarnings.length !== 1 ? "s" : ""}
                         </span>
                       )}
                     </div>
-                    {item.symbol && item.eaName && (
-                      <div className="text-xs text-[#A1A1AA] truncate mb-0.5">{item.eaName}</div>
-                    )}
+                    {item.symbol &&
+                      item.symbol !== "UNKNOWN" &&
+                      item.eaName &&
+                      item.eaName !== "Report" && (
+                        <div className="text-xs text-[#A1A1AA] truncate mb-0.5">{item.eaName}</div>
+                      )}
                     <div className="flex items-center gap-3 text-xs text-[#71717A]">
                       {item.totalTrades != null && <span>{item.totalTrades} trades</span>}
                       {item.profitFactor != null && <span>PF {item.profitFactor.toFixed(2)}</span>}
+                      {item.maxDrawdownPct != null && (
+                        <span>DD {item.maxDrawdownPct.toFixed(1)}%</span>
+                      )}
                       {item.totalNetProfit != null && (
                         <span style={{ color: item.totalNetProfit > 0 ? "#10B981" : "#EF4444" }}>
-                          ${item.totalNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          $
+                          {item.totalNetProfit.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </span>
                       )}
                       <span>{new Date(item.createdAt).toLocaleDateString()}</span>
@@ -616,7 +653,10 @@ export default function EvaluatePage() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {item.runId && (
                       <button
-                        onClick={() => { setRenamingId(item.runId); setRenameValue(item.eaName || item.fileName || ""); }}
+                        onClick={() => {
+                          setRenamingId(item.runId);
+                          setRenameValue(item.eaName || item.fileName || "");
+                        }}
                         className="text-xs text-[#71717A] hover:text-[#818CF8] transition-colors"
                         title="Rename"
                       >
@@ -666,10 +706,13 @@ export default function EvaluatePage() {
               ))}
             </div>
 
-            {listData.pagination.total > 10 && (
-              <p className="text-xs text-[#71717A] mt-3 text-center">
-                Showing 10 of {listData.pagination.total} uploads
-              </p>
+            {listData.pagination.total > listData.data.length && (
+              <button
+                onClick={() => setListLimit((prev) => prev + 10)}
+                className="w-full mt-3 py-2 text-xs text-[#818CF8] hover:text-white border border-[rgba(255,255,255,0.06)] rounded-lg hover:bg-[rgba(255,255,255,0.03)] transition-colors"
+              >
+                Load more ({listData.data.length} of {listData.pagination.total})
+              </button>
             )}
           </div>
         )}
