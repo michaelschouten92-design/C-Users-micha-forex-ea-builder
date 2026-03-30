@@ -25,6 +25,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#09090B] text-[#FAFAFA]">
+      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <SiteNav />
 
       <main id="main-content">
@@ -39,8 +40,7 @@ export default async function HomePage() {
               starts losing its edge.
             </h1>
             <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-xl mx-auto leading-relaxed">
-              Continuously compare live strategies against baseline backtests. Detect statistical
-              drift before losses compound.
+              Monitor your trading strategies 24/7 and get alerted before they start losing money.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -56,8 +56,15 @@ export default async function HomePage() {
                 See how it works
               </Link>
             </div>
-            <p className="mt-5 text-sm text-[#52525B]">
-              Free plan available — no credit card required.
+            <p className="mt-5 text-sm text-[#71717A] flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#10B981]" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Free plan available — no credit card required
             </p>
           </div>
 
@@ -134,8 +141,11 @@ export default async function HomePage() {
                   </div>
                 </div>
 
-                {/* Alert strip */}
-                <div className="mx-6 mb-5 rounded-lg px-4 py-3 border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.05)]">
+                {/* Alert strip — fades in to simulate live detection */}
+                <div
+                  className="mx-6 mb-5 rounded-lg px-4 py-3 border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.05)]"
+                  style={{ animation: "fadeIn 0.6s ease-out 1.5s both" }}
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <svg
@@ -162,6 +172,30 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════════
+            1b. SOCIAL PROOF
+            ════════════════════════════════════════════════════════════ */}
+        <section className="pb-10 px-6">
+          <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-[#52525B]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-[#6366F1]" />
+              Live strategy monitoring
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-[#10B981]" />
+              Verified track records
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-[#F59E0B]" />
+              Automatic drift detection
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-[#818CF8]" />
+              Governed intervention
+            </span>
           </div>
         </section>
 
@@ -655,8 +689,15 @@ export default async function HomePage() {
                 See pricing
               </Link>
             </div>
-            <p className="mt-5 text-sm text-[#52525B]">
-              Free plan available — no credit card required.
+            <p className="mt-5 text-sm text-[#71717A] flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#10B981]" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Free plan available — no credit card required
             </p>
           </div>
         </section>
