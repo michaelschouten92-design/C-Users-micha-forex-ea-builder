@@ -237,8 +237,8 @@ int OnInit()
    if(GlobalVariableCheck(g_lockGV))
    {
       double lockTime = GlobalVariableGet(g_lockGV);
-      // If lock is fresh (within 2 minutes), another instance is running
-      if((double)TimeCurrent() - lockTime < 120)
+      // If lock is fresh (within 10 minutes), another instance is running
+      if((double)TimeCurrent() - lockTime < 600)
       {
          Print("AlgoStudio Monitor: Another instance with this API key is already running.");
          return INIT_FAILED;
@@ -692,10 +692,10 @@ void ParseManifest()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Canonical fingerprint: mode-independent, based on strategy identity only
+      // Canonical fingerprint: mode-independent, based on strategy identity (symbol + magic + timeframe)
       string fpSymbol = ctx.symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber) + ":" + ctx.timeframe;
       ctx.fingerprint = SHA256(canonical);
 
       // Guard: max context count
@@ -802,8 +802,8 @@ void BuildSelfIdentifiedContext()
    ctx.lastHash         = GENESIS_HASH;
    ctx.sessionStartSent = false;
 
-   // Canonical fingerprint: mode-independent, based on strategy identity only
-   string canonical = "ctx:v2:" + sym + ":" + IntegerToString(InpStrategyMagic);
+   // Canonical fingerprint: mode-independent, based on strategy identity (symbol + magic + timeframe)
+   string canonical = "ctx:v3:" + sym + ":" + IntegerToString(InpStrategyMagic) + ":" + tf;
    ctx.fingerprint = SHA256(canonical);
 
    ArrayResize(g_contexts, 1);
@@ -871,10 +871,10 @@ void AutoDiscoverContexts()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Canonical fingerprint: mode-independent, based on strategy identity only
+      // Canonical fingerprint: mode-independent, based on strategy identity (symbol + magic + timeframe)
       string fpSymbol = ctx.symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber) + ":" + ctx.timeframe;
       ctx.fingerprint   = SHA256(canonical);
 
       // Dedup by fingerprint (same guard as ParseManifest)
@@ -940,7 +940,8 @@ void IncrementalRediscovery()
       // Build fingerprint to check for duplicates against existing contexts
       string fpSymbol = candidates[i].symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber);
+      // Auto-discovered contexts have no timeframe (empty string), consistent with AutoDiscoverContexts
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber) + ":";
       string fp = SHA256(canonical);
 
       bool duplicate = false;
@@ -1007,14 +1008,18 @@ string GetWorstContextGovAction()
 //+------------------------------------------------------------------+
 int FindContextForDeal(string dealSymbol, long dealMagic)
 {
+   int fallback = -1;  // first magic-only match (empty symbol context)
    for(int i = 0; i < g_contextCount; i++)
    {
       if(g_contexts[i].magicNumber != dealMagic) continue;
-      if(StringLen(g_contexts[i].symbol) > 0 &&
-         g_contexts[i].symbol != dealSymbol) continue;
-      return i;
+      // Exact symbol match takes priority
+      if(StringLen(g_contexts[i].symbol) > 0 && g_contexts[i].symbol == dealSymbol)
+         return i;
+      // Empty-symbol context is a fallback (matches any symbol with this magic)
+      if(StringLen(g_contexts[i].symbol) == 0 && fallback < 0)
+         fallback = i;
    }
-   return -1;
+   return fallback;
 }
 
 //+------------------------------------------------------------------+
@@ -1077,7 +1082,10 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
          candidates[discoveredCount].tradeCount  = 1;
          candidates[discoveredCount].hasOpenPosition = false;
          string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         // Strip broker-injected ticket hints (e.g., "[tp 12345]", "[sl]", "#12345")
+         // but preserve legitimate EA comments containing brackets
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
          candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
@@ -1112,7 +1120,10 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
          candidates[discoveredCount].tradeCount     = 1;
          candidates[discoveredCount].hasOpenPosition = true;
          string comment = PositionGetString(POSITION_COMMENT);
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         // Strip broker-injected ticket hints (e.g., "[tp 12345]", "[sl]", "#12345")
+         // but preserve legitimate EA comments containing brackets
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
          candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
@@ -1643,7 +1654,7 @@ void SendContextSnapshot(int ctxIdx)
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Count positions matching this context
@@ -1753,7 +1764,7 @@ void SendSnapshot()
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Count filtered open positions
@@ -1794,8 +1805,8 @@ bool SendTradeOpen(ulong dealTicket)
    {
       g_dealSelectFailures++;
       Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_OPEN deal #",
-            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
-      return true; // can't select → don't retry (deal marked as known — event is lost)
+            dealTicket, " (total failures: ", g_dealSelectFailures, "). Will retry on next poll.");
+      return false; // can't select → retry on next poll cycle
    }
 
    string symbol   = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
@@ -1873,8 +1884,8 @@ bool SendTradeClose(ulong dealTicket)
    {
       g_dealSelectFailures++;
       Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_CLOSE deal #",
-            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
-      return true; // can't select → don't retry (deal marked as known — event is lost)
+            dealTicket, " (total failures: ", g_dealSelectFailures, "). Will retry on next poll.");
+      return false; // can't select → retry on next poll cycle
    }
 
    string ticket    = IntegerToString(dealTicket);
@@ -1945,7 +1956,7 @@ void SendHeartbeat()
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    int spread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
@@ -1963,7 +1974,7 @@ void SendHeartbeat()
       if(ticket == 0) continue;
       if(!PositionPassesFilter(ticket)) continue;
       myOpen++;
-      unrealizedPnL += PositionGetDouble(POSITION_PROFIT);
+      unrealizedPnL += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
    }
 
    HistorySelect(0, TimeCurrent());
@@ -2093,7 +2104,7 @@ void SendContextHeartbeat(StrategyContext &ctx)
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Use context symbol for spread lookup; fall back to chart symbol if empty
@@ -2913,6 +2924,8 @@ void LoadState()
                      if(SHA256(legacySelfId) == fp) { matchIdx = j; break; }
                      // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC (broker-native, typically uppercase)
                      if(SHA256("AUTO:v1:" + upper + ":" + m) == fp) { matchIdx = j; break; }
+                     // Legacy ctx:v2: SYMBOL:MAGIC (without timeframe, used before v3)
+                     if(SHA256("ctx:v2:" + upper + ":" + m) == fp) { matchIdx = j; break; }
                   }
                }
                // Fallback 2: match by symbol + magicNumber fields (7-field state lines).
