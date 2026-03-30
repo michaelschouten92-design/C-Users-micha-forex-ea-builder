@@ -212,6 +212,9 @@ export default async function TrackRecordPage({ params }: Props) {
             <span>Last update: {new Date(account.lastHeartbeat).toLocaleString()}</span>
           )}
         </div>
+        <div className="mt-3">
+          <ShareActions />
+        </div>
       </div>
 
       {/* Verification explainer */}
@@ -270,9 +273,45 @@ export default async function TrackRecordPage({ params }: Props) {
         </div>
       )}
 
-      {/* Metrics grid */}
-      <div className="max-w-4xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Hero metrics — the numbers that matter most */}
+      {performance.totalTrades > 0 && (
+        <div className="max-w-4xl mx-auto px-6 pt-6 pb-2">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-4 text-center">
+              <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-1">Total P&L</p>
+              <p
+                className="text-2xl sm:text-3xl font-bold tabular-nums"
+                style={{ color: performance.totalProfit >= 0 ? "#10B981" : "#EF4444" }}
+              >
+                {formatCurrency(performance.totalProfit)}
+              </p>
+            </div>
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-4 text-center">
+              <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-1">Win Rate</p>
+              <p className="text-2xl sm:text-3xl font-bold tabular-nums text-[#CBD5E1]">
+                {performance.winRate.toFixed(1)}%
+              </p>
+            </div>
+            <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-4 py-4 text-center">
+              <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-1">
+                Max Drawdown
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold tabular-nums text-[#CBD5E1]">
+                {performance.maxDrawdownPct.toFixed(1)}%
+              </p>
+              {performance.maxDrawdownAbs > 0 && (
+                <p className="text-[10px] text-[#64748B] mt-0.5">
+                  ({formatCurrency(performance.maxDrawdownAbs)})
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Secondary metrics */}
+      <div className="max-w-4xl mx-auto px-6 py-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             {
               label: "Balance",
@@ -282,28 +321,10 @@ export default async function TrackRecordPage({ params }: Props) {
               label: "Equity",
               value: account.equity != null ? formatCurrency(account.equity) : "—",
             },
-            {
-              label: "Total P&L",
-              value: formatCurrency(performance.totalProfit),
-              color: performance.totalProfit >= 0 ? "#10B981" : "#EF4444",
-            },
             { label: "Trades", value: performance.totalTrades.toLocaleString() },
-            {
-              label: "Win Rate",
-              value: performance.totalTrades > 0 ? `${performance.winRate.toFixed(1)}%` : "—",
-            },
             {
               label: "Profit Factor",
               value: performance.totalTrades > 0 ? performance.profitFactorDisplay : "—",
-            },
-            {
-              label: "Max Drawdown",
-              value:
-                performance.totalTrades > 0 ? `${performance.maxDrawdownPct.toFixed(1)}%` : "—",
-              sub:
-                performance.totalTrades > 0 && performance.maxDrawdownAbs > 0
-                  ? `(${formatCurrency(performance.maxDrawdownAbs)})`
-                  : undefined,
             },
             {
               label: "Duration",
@@ -313,16 +334,23 @@ export default async function TrackRecordPage({ params }: Props) {
           ].map((m) => (
             <div
               key={m.label}
-              className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-3 py-2.5"
+              className="bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg px-3 py-2"
             >
               <p className="text-[9px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">{m.label}</p>
-              <p className="text-sm font-semibold" style={{ color: m.color ?? "#CBD5E1" }}>
-                {m.value}
-              </p>
-              {"sub" in m && m.sub && <p className="text-[10px] text-[#64748B]">{m.sub}</p>}
+              <p className="text-sm font-semibold text-[#CBD5E1]">{m.value}</p>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* CTA for visitors */}
+      <div className="max-w-4xl mx-auto px-6 pb-4">
+        <Link
+          href="/pricing"
+          className="block text-center py-2 text-[11px] text-[#818CF8] hover:text-white transition-colors"
+        >
+          Monitor your own trading account with AlgoStudio &rarr;
+        </Link>
       </div>
 
       {/* Equity curve */}
@@ -354,24 +382,55 @@ export default async function TrackRecordPage({ params }: Props) {
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-3">
               Monthly Performance
             </p>
-            <div className="grid grid-cols-[1fr_80px] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
+            <div className="grid grid-cols-[80px_1fr_60px] gap-2 px-2 py-1 text-[9px] uppercase tracking-wider text-[#64748B]">
               <span>Month</span>
+              <span />
               <span className="text-right">Return</span>
             </div>
-            {monthlyReturns.map((m) => (
-              <div
-                key={m.month}
-                className="grid grid-cols-[1fr_80px] gap-2 px-2 py-1.5 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors"
-              >
-                <p className="text-xs text-[#CBD5E1]">{m.month}</p>
+            {(() => {
+              const maxAbs = Math.max(...monthlyReturns.map((m) => Math.abs(m.returnPct)), 1);
+              return monthlyReturns.map((m) => {
+                const barWidth = Math.min(100, (Math.abs(m.returnPct) / maxAbs) * 100);
+                const barColor = m.returnPct >= 0 ? "#10B981" : "#EF4444";
+                return (
+                  <div
+                    key={m.month}
+                    className="grid grid-cols-[80px_1fr_60px] gap-2 px-2 py-1.5 rounded-md hover:bg-[rgba(79,70,229,0.05)] transition-colors items-center"
+                  >
+                    <p className="text-xs text-[#CBD5E1]">{m.month}</p>
+                    <div className="h-3 rounded-full overflow-hidden bg-[rgba(255,255,255,0.03)]">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${barWidth}%`, backgroundColor: barColor, opacity: 0.6 }}
+                      />
+                    </div>
+                    <p
+                      className={`text-xs text-right font-medium tabular-nums ${m.returnPct >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                    >
+                      {m.returnPct >= 0 ? "+" : ""}
+                      {m.returnPct.toFixed(2)}%
+                    </p>
+                  </div>
+                );
+              });
+            })()}
+            {/* Total return */}
+            {monthlyReturns.length > 1 && (
+              <div className="grid grid-cols-[80px_1fr_60px] gap-2 px-2 pt-2 mt-1 border-t border-[rgba(79,70,229,0.1)]">
+                <p className="text-xs text-[#7C8DB0] font-medium">Total</p>
+                <span />
                 <p
-                  className={`text-xs text-right font-medium ${m.returnPct >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                  className={`text-xs text-right font-semibold tabular-nums ${
+                    monthlyReturns.reduce((sum, m) => sum + m.returnPct, 0) >= 0
+                      ? "text-[#10B981]"
+                      : "text-[#EF4444]"
+                  }`}
                 >
-                  {m.returnPct >= 0 ? "+" : ""}
-                  {m.returnPct.toFixed(2)}%
+                  {monthlyReturns.reduce((sum, m) => sum + m.returnPct, 0) >= 0 ? "+" : ""}
+                  {monthlyReturns.reduce((sum, m) => sum + m.returnPct, 0).toFixed(2)}%
                 </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -513,19 +572,21 @@ export default async function TrackRecordPage({ params }: Props) {
           <ul className="space-y-1 text-[11px] text-[#94A3B8]">
             <li className="flex items-start gap-2">
               <span className="text-[#818CF8] mt-px">&#8226;</span>
-              <span>Immutable, proof-chained trade events recorded at execution time</span>
+              <span>Every trade is recorded the moment it happens — no edits possible</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#818CF8] mt-px">&#8226;</span>
-              <span>Broker equity and balance heartbeats captured at regular intervals</span>
+              <span>Account balance verified directly from the broker at regular intervals</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#818CF8] mt-px">&#8226;</span>
-              <span>Per-strategy health snapshots monitored by the AlgoStudio control layer</span>
+              <span>Each strategy is independently monitored for performance and health</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#818CF8] mt-px">&#8226;</span>
-              <span>No manual edits — all data is write-once and append-only</span>
+              <span>
+                All data is append-only — nothing can be deleted or modified after the fact
+              </span>
             </li>
           </ul>
           {coverage.lastHeartbeatAt && (
