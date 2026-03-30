@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/app/app-nav";
 import { OnboardingClient } from "./onboarding-client";
+import { resolveTier } from "@/lib/plan-limits";
 
 export default async function OnboardingPage() {
   const session = await auth();
@@ -15,7 +16,7 @@ export default async function OnboardingPage() {
     where: { userId: session.user.id },
   });
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
 
   return (
     <div className="min-h-screen bg-[#09090B]">

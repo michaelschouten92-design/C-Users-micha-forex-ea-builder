@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { AppNav } from "@/components/app/app-nav";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { RiskPageTabs } from "./risk-page-tabs";
+import { resolveTier } from "@/lib/plan-limits";
 
 export const metadata: Metadata = {
   title: "Risk — Monte Carlo Simulator, Position Sizing & Portfolio Risk | AlgoStudio",
@@ -23,7 +24,7 @@ export default async function RiskPage() {
     where: { userId: session.user.id },
   });
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
 
   return (
     <div className="min-h-screen">

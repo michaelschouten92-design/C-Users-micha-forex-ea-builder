@@ -9,6 +9,7 @@ import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
+import { resolveTier } from "@/lib/plan-limits";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -44,7 +45,7 @@ export default async function LiveEADashboardPage({
 
   const { subscription } = data;
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
 
   try {
     return renderDashboard(session, data, params, tier);
