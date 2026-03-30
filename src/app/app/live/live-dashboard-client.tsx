@@ -369,7 +369,24 @@ function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: str
       </div>
 
       {loading ? (
-        <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading trades...</div>
+        <div className="flex items-center justify-center gap-2 text-xs text-[#7C8DB0] py-4">
+          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          Loading trades...
+        </div>
       ) : error ? (
         <div className="text-xs text-[#EF4444] py-4 text-center">{error}</div>
       ) : trades.length === 0 ? (
@@ -755,9 +772,14 @@ function resolveInstanceAttention(
     };
   }
   if (ea.healthStatus === "INSUFFICIENT_DATA" || ea.strategyStatus === "TESTING") {
+    const waitReason = !ea.lastHeartbeat
+      ? "Awaiting first heartbeat from the EA"
+      : ea.totalTrades === 0
+        ? "Awaiting first trade to begin evaluation"
+        : "More live samples needed before evaluation";
     return {
       statusLabel: "Waiting for data",
-      reason: "More live samples are needed before evaluation",
+      reason: waitReason,
       actionLabel: "Collect more data",
       color: "#A78BFA",
     };
@@ -1216,9 +1238,7 @@ function AccountCard({
       if (ctx.id === primary.id || !ctx.symbol) continue;
       const key = `ctx:${ctx.id}`;
       if (!map.has(key)) {
-        const dep = ctx.deployments?.find(
-          (d) => normSym(d.symbol) === normSym(ctx.symbol!)
-        );
+        const dep = ctx.deployments?.find((d) => normSym(d.symbol) === normSym(ctx.symbol!));
         map.set(key, {
           symbol: ctx.symbol,
           magicNumber: dep?.magicNumber ?? null,
@@ -1409,8 +1429,7 @@ function AccountCard({
                   execState === "HALTED" || execState === "OVERRIDE_PENDING"
                     ? "#EF4444"
                     : "#F59E0B";
-                const execLabel =
-                  execState === "OVERRIDE_PENDING" ? "OVERRIDE PENDING" : execState;
+                const execLabel = execState === "OVERRIDE_PENDING" ? "OVERRIDE PENDING" : execState;
                 return (
                   <span
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-medium rounded"
@@ -1497,9 +1516,24 @@ function AccountCard({
                   }}
                   className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-medium rounded border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/10 transition-colors"
                 >
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"
+                    />
                   </svg>
                   Link Baseline
                 </button>
@@ -1781,10 +1815,9 @@ function AccountCard({
                     <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
                     <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
                       Your Monitor EA is connected and listening. Strategies will appear here
-                      automatically once a trade is detected — this typically takes under 60
-                      seconds after your EA opens or closes its first position. If no strategy
-                      appears after several minutes, verify that your EA is using a non-zero
-                      Magic Number.
+                      automatically once a trade is detected — this typically takes under 60 seconds
+                      after your EA opens or closes its first position. If no strategy appears after
+                      several minutes, verify that your EA is using a non-zero Magic Number.
                     </p>
                   </div>
                 </div>
@@ -1815,7 +1848,8 @@ function AccountCard({
                   const baselineTrades = owningInstance?.baseline?.totalTrades;
                   const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
                   const isExpanded = expandedStrategyKey === rowKey;
-                  const isHighlighted = forceExpandId != null && resolvedInstanceId === forceExpandId;
+                  const isHighlighted =
+                    forceExpandId != null && resolvedInstanceId === forceExpandId;
                   return (
                     <div key={rowKey}>
                       <div
@@ -1849,29 +1883,30 @@ function AccountCard({
                                 ? "Relink required"
                                 : "Missing"}
                           </p>
-                          {resolvedInstanceId && (isLinked ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUnlinkBaseline(resolvedInstanceId);
-                              }}
-                              className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
-                            >
-                              Unlink
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onLinkBaseline(resolvedInstanceId);
-                              }}
-                              className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
-                            >
-                              {relinkRequired ? "Relink" : "Link"}
-                            </button>
-                          ))}
+                          {resolvedInstanceId &&
+                            (isLinked ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onUnlinkBaseline(resolvedInstanceId);
+                                }}
+                                className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
+                              >
+                                Unlink
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onLinkBaseline(resolvedInstanceId);
+                                }}
+                                className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
+                              >
+                                {relinkRequired ? "Relink" : "Link"}
+                              </button>
+                            ))}
                         </div>
                       </div>
                       {isExpanded && owningInstance && (
@@ -2154,9 +2189,7 @@ function EACard({
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
             Baseline Snapshot
           </p>
-          <p className="text-[10px] text-[#64748B] mb-2">
-            Derived from linked backtest
-          </p>
+          <p className="text-[10px] text-[#64748B] mb-2">Derived from linked backtest</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div>
               <p className="text-[10px] text-[#64748B]">Trades</p>
@@ -2582,9 +2615,9 @@ const CONNECTION_STATUS_CONFIG: Record<
   { color: string; label: string; ping: boolean }
 > = {
   connecting: { color: "#F59E0B", label: "Connecting", ping: false },
-  connected: { color: "#10B981", label: "Receiving", ping: true },
-  "fallback-polling": { color: "#3B82F6", label: "Last update", ping: false },
-  disconnected: { color: "#EF4444", label: "Disconnected", ping: false },
+  connected: { color: "#10B981", label: "Live", ping: true },
+  "fallback-polling": { color: "#F59E0B", label: "Updating", ping: false },
+  disconnected: { color: "#EF4444", label: "Offline", ping: false },
 };
 
 function ConnectionIndicator({
@@ -2694,7 +2727,9 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
     }
 
     fetchOpenTrades();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [expanded, activeInstances.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset fetch flag when panel is collapsed so re-expanding triggers a fresh fetch
@@ -2743,8 +2778,10 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
         }
       }
     })();
-    return () => { cancelled = true; };
-  }, [instances]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+  }, [instances]);
 
   if (totalOpen === 0) return null;
 
@@ -2766,7 +2803,9 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
           {loading ? (
             <p className="text-[11px] text-[#475569] py-2">Loading positions...</p>
           ) : openTrades.size === 0 ? (
-            <p className="text-[11px] text-[#475569] py-2">No open position details available yet.</p>
+            <p className="text-[11px] text-[#475569] py-2">
+              No open position details available yet.
+            </p>
           ) : (
             <div className="space-y-3">
               {activeInstances.map((ea) => {
@@ -2791,12 +2830,20 @@ function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
                         {trades.map((t) => (
                           <tr key={t.ticket} className="text-[#94A3B8]">
                             <td className="pr-3 py-0.5 font-mono">{t.symbol}</td>
-                            <td className={`pr-3 py-0.5 font-medium ${t.type === "BUY" ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+                            <td
+                              className={`pr-3 py-0.5 font-medium ${t.type === "BUY" ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                            >
                               {t.type}
                             </td>
-                            <td className="pr-3 py-0.5 text-right tabular-nums">{t.lots.toFixed(2)}</td>
-                            <td className="pr-3 py-0.5 text-right tabular-nums">{t.openPrice.toFixed(5)}</td>
-                            <td className={`py-0.5 text-right tabular-nums font-semibold ${t.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
+                            <td className="pr-3 py-0.5 text-right tabular-nums">
+                              {t.lots.toFixed(2)}
+                            </td>
+                            <td className="pr-3 py-0.5 text-right tabular-nums">
+                              {t.openPrice.toFixed(5)}
+                            </td>
+                            <td
+                              className={`py-0.5 text-right tabular-nums font-semibold ${t.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                            >
                               {formatCurrency(t.profit)}
                             </td>
                           </tr>
@@ -3233,7 +3280,11 @@ export function LiveDashboardClient({
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [showRestoreGuide] = useState(() => {
     if (typeof window === "undefined") return false;
-    try { return localStorage.getItem("algostudio:onboarding-dismissed") === "1"; } catch { return false; }
+    try {
+      return localStorage.getItem("algostudio:onboarding-dismissed") === "1";
+    } catch {
+      return false;
+    }
   });
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
@@ -3440,7 +3491,10 @@ export function LiveDashboardClient({
     const sorted = sortByPriority(groupByAccount(eaInstances));
     const fromIdx = sorted.findIndex((g) => g.key === draggedAccountKey);
     const toIdx = sorted.findIndex((g) => g.key === targetKey);
-    if (fromIdx < 0 || toIdx < 0) { handleDragEnd(); return; }
+    if (fromIdx < 0 || toIdx < 0) {
+      handleDragEnd();
+      return;
+    }
 
     const reordered = [...sorted];
     const [moved] = reordered.splice(fromIdx, 1);
@@ -3489,7 +3543,10 @@ export function LiveDashboardClient({
       showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
     } else {
       const data = await res.json().catch(() => ({}));
-      showError("Failed to unlink", (data as { message?: string }).message ?? "Something went wrong");
+      showError(
+        "Failed to unlink",
+        (data as { message?: string }).message ?? "Something went wrong"
+      );
     }
   }
 
@@ -3786,9 +3843,10 @@ export function LiveDashboardClient({
                 // Account containers aggregate metrics in ACCOUNT_WIDE mode.
                 // In SYMBOL_ONLY mode no containers exist — fall back to summing all LIVE instances.
                 const containers = eaInstances.filter(isAccountContainer);
-                const metricsSource = containers.length > 0
-                  ? containers
-                  : eaInstances.filter((ea) => ea.mode === "LIVE");
+                const metricsSource =
+                  containers.length > 0
+                    ? containers
+                    : eaInstances.filter((ea) => ea.mode === "LIVE");
                 return (
                   <>
                     <SummaryCard
@@ -4064,7 +4122,9 @@ export function LiveDashboardClient({
                                     e.stopPropagation();
                                     m.onClick();
                                   }}
-                                  disabled={linkingInstanceId === m.id || activatingInstanceId === m.id}
+                                  disabled={
+                                    linkingInstanceId === m.id || activatingInstanceId === m.id
+                                  }
                                   className="text-[9px] font-medium transition-colors hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                   style={{ color: group.color }}
                                 >
@@ -4176,10 +4236,20 @@ export function LiveDashboardClient({
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">No live EAs running</h3>
-          <p className="text-sm text-[#94A3B8] max-w-md mx-auto mb-6">
-            Export an EA and connect it to MT5 to get started. Your live EAs will appear here with
-            real-time performance tracking.
-          </p>
+          <div className="text-sm text-[#94A3B8] max-w-md mx-auto mb-6 space-y-2 text-left">
+            <p className="flex gap-2">
+              <span className="text-[#818CF8] font-semibold shrink-0">1.</span>
+              Export your strategy as an EA from the project builder
+            </p>
+            <p className="flex gap-2">
+              <span className="text-[#818CF8] font-semibold shrink-0">2.</span>
+              Download the AlgoStudio Monitor EA and add it to MT5
+            </p>
+            <p className="flex gap-2">
+              <span className="text-[#818CF8] font-semibold shrink-0">3.</span>
+              Your live strategies will appear here with real-time tracking
+            </p>
+          </div>
           <Link
             href="/app"
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-md hover:bg-[#4338CA] transition-colors"
@@ -4274,7 +4344,11 @@ export function LiveDashboardClient({
       {eaInstances.length > 0 && showRestoreGuide && (
         <button
           onClick={() => {
-            try { localStorage.removeItem("algostudio:onboarding-dismissed"); } catch { /* private browsing */ }
+            try {
+              localStorage.removeItem("algostudio:onboarding-dismissed");
+            } catch {
+              /* private browsing */
+            }
             window.location.reload();
           }}
           className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"
@@ -4368,8 +4442,12 @@ export function LiveDashboardClient({
                 }
                 setLinkingInstanceId(null);
                 setLinkedSuccessBanner(true);
-                if (linkedSuccessBannerTimerRef.current) clearTimeout(linkedSuccessBannerTimerRef.current);
-                linkedSuccessBannerTimerRef.current = setTimeout(() => setLinkedSuccessBanner(false), 3000);
+                if (linkedSuccessBannerTimerRef.current)
+                  clearTimeout(linkedSuccessBannerTimerRef.current);
+                linkedSuccessBannerTimerRef.current = setTimeout(
+                  () => setLinkedSuccessBanner(false),
+                  5000
+                );
                 setLinkBaselineInstanceId(null);
               }}
             />

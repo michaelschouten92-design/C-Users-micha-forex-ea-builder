@@ -35,18 +35,24 @@ export async function GET(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Instance not found" }, { status: 404 });
   }
 
-  const { snapshot, fresh } = await getHealthWithFreshness(instanceId);
+  try {
+    const { snapshot, fresh } = await getHealthWithFreshness(instanceId);
 
-  return NextResponse.json({
-    health: snapshot,
-    fresh,
-    lifecycle: {
-      phase: instance.lifecyclePhase,
-      phaseEnteredAt: instance.phaseEnteredAt,
-      provenAt: instance.provenAt,
-      retiredAt: instance.retiredAt,
-      peakScore: instance.peakScore,
-    },
-    strategyStatus: instance.strategyStatus,
-  });
+    return NextResponse.json({
+      health: snapshot,
+      fresh,
+      lifecycle: {
+        phase: instance.lifecyclePhase,
+        phaseEnteredAt: instance.phaseEnteredAt,
+        provenAt: instance.provenAt,
+        retiredAt: instance.retiredAt,
+        peakScore: instance.peakScore,
+      },
+      strategyStatus: instance.strategyStatus,
+    });
+  } catch {
+    return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Failed to load health data"), {
+      status: 500,
+    });
+  }
 }
