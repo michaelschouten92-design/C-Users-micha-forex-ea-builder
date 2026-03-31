@@ -83,6 +83,7 @@ async function handleReconcile(request: NextRequest) {
     let checked = 0;
     let mismatches = 0;
     let errors = 0;
+    let hitRateLimit = false;
 
     // Process in batches of 25 (balanced between speed and Stripe rate limits)
     const BATCH_SIZE = 25;
@@ -188,7 +189,6 @@ async function handleReconcile(request: NextRequest) {
         })
       );
 
-      let hitRateLimit = false;
       for (const result of results) {
         checked++;
         if (result.status === "fulfilled" && result.value.mismatch) {
@@ -210,7 +210,14 @@ async function handleReconcile(request: NextRequest) {
     const timedOut = isTimedOut();
 
     log.info(
-      { checked, mismatches, errors, timedOut, durationMs: Date.now() - cronStartTime },
+      {
+        checked,
+        mismatches,
+        errors,
+        timedOut,
+        hitRateLimit,
+        durationMs: Date.now() - cronStartTime,
+      },
       "Reconciliation completed"
     );
 
@@ -220,6 +227,7 @@ async function handleReconcile(request: NextRequest) {
       mismatches,
       errors,
       timedOut,
+      hitRateLimit,
     });
   } catch (error) {
     log.error({ error }, "Reconciliation failed");

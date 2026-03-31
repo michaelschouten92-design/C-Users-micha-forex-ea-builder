@@ -51,14 +51,15 @@ describe("computeHealthScore", () => {
     expect(result.warnings.some((w) => w.includes("capped to 79"))).toBe(true);
   });
 
-  // ─── Test 3: excludes maxDrawdownPct=0 with warning ──────────
-  it("excludes maxDrawdownPct=0 from scoring with warning", () => {
+  // ─── Test 3: scores maxDrawdownPct=0 as 100 with warning ─────
+  it("scores maxDrawdownPct=0 as perfect (100) with warning", () => {
     const result = computeHealthScore(makeMetrics({ maxDrawdownPct: 0, totalTrades: 200 }), 10000);
 
     expect(result.warnings.some((w) => w.includes("drawdown") && w.includes("0%"))).toBe(true);
-    // maxDrawdownPct should NOT appear in breakdown
+    // maxDrawdownPct should appear in breakdown with score 100
     const ddBreakdown = result.breakdown.find((b) => b.metric === "maxDrawdownPct");
-    expect(ddBreakdown).toBeUndefined();
+    expect(ddBreakdown).toBeDefined();
+    expect(ddBreakdown!.score).toBe(100);
   });
 
   // ─── Test 4: excludes NaN metrics with warning ──────────────

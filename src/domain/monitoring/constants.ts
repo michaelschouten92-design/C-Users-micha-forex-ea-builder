@@ -20,9 +20,9 @@ export const MONITORING = {
   DRAWDOWN_BREACH_MULTIPLIER: 1.5,
   /** Live Sharpe < baseline × ratio → AT_RISK */
   SHARPE_MIN_RATIO: 0.5,
-  /** Consecutive losing trades threshold */
+  /** Consecutive losing trades — AT_RISK triggers at this count (>=), i.e. the 10th loss fires the alert */
   MAX_LOSING_STREAK: 10,
-  /** Days since last trade before inactivity flag */
+  /** Days since last trade — AT_RISK triggers at this count (>=), i.e. on the 14th day of inactivity */
   MAX_INACTIVITY_DAYS: 14,
   /** Consecutive HealthSnapshots with driftDetected=true */
   CUSUM_DRIFT_CONSECUTIVE_SNAPSHOTS: 3,
