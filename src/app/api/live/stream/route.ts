@@ -136,7 +136,9 @@ export async function GET(request: Request): Promise<Response> {
           operatorHold: inst.operatorHold,
           monitoringSuppressedUntil: inst.monitoringSuppressedUntil?.toISOString() ?? null,
           strategyStatus: inst.strategyStatus,
-          relinkRequired: inst.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
+          relinkRequired: inst.terminalDeployments.some(
+            (d) => d.baselineStatus === "RELINK_REQUIRED"
+          ),
           monitoringReasons: inst.incidents[0] ? (inst.incidents[0].reasonCodes as string[]) : [],
           healthSnapshots: (inst.healthSnapshots ?? []).map((hs) => ({
             driftDetected: hs.driftDetected,
@@ -171,7 +173,9 @@ export async function GET(request: Request): Promise<Response> {
         controller.enqueue(encoder.encode(`event: init\ndata: ${JSON.stringify(initData)}\n\n`));
       } catch {
         controller.enqueue(
-          encoder.encode(`retry: 15000\nevent: stream_error\ndata: ${JSON.stringify({ reason: "init_failed" })}\n\n`)
+          encoder.encode(
+            `retry: 15000\nevent: stream_error\ndata: ${JSON.stringify({ reason: "init_failed" })}\n\n`
+          )
         );
         controller.close();
         return;
@@ -186,7 +190,7 @@ export async function GET(request: Request): Promise<Response> {
           }
 
           const since = lastCheck;
-          lastCheck = new Date();
+          const pollStart = new Date();
 
           // Refresh instance list each tick to pick up instances registered mid-session
           const freshInstances = await prisma.liveEAInstance.findMany({
@@ -303,6 +307,10 @@ export async function GET(request: Request): Promise<Response> {
               )
             );
           }
+
+          // Update lastCheck only after all queries completed — prevents
+          // missing heartbeats that arrive while queries are in-flight
+          lastCheck = pollStart;
         } catch {
           // Stream likely closed — clean up intervals to stop leaked polling
           clearInterval(pollInterval);

@@ -34,7 +34,7 @@ export function SubscriptionPanel({
   // Determine the next lower tier for downgrade
   const tierOrder: PlanTier[] = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
   const currentIndex = tierOrder.indexOf(tier);
-  const downgradeTier: PlanTier | null = currentIndex > 1 ? tierOrder[currentIndex - 1] : null;
+  const downgradeTier: PlanTier | null = currentIndex > 0 ? tierOrder[currentIndex - 1] : null;
 
   const accountLimit = plan.limits.maxMonitoredTradingAccounts;
   const accountPercentage =

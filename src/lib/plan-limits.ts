@@ -167,13 +167,17 @@ export async function getUserPlanLimits(userId: string) {
 // ============================================
 
 /**
- * Count active (non-deleted) TerminalConnections for a user.
- * This is the billable unit — each TerminalConnection represents
- * one monitored trading account (broker/MT5 account).
+ * Count actively monitored trading accounts for a user.
+ * Only counts TerminalConnections that have at least one
+ * non-deleted EA instance — idle/unused terminals don't count.
  */
 export async function getMonitoredTradingAccountUsage(userId: string): Promise<number> {
   return prisma.terminalConnection.count({
-    where: { userId, deletedAt: null },
+    where: {
+      userId,
+      deletedAt: null,
+      instances: { some: { deletedAt: null } },
+    },
   });
 }
 

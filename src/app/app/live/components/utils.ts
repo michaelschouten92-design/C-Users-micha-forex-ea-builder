@@ -159,11 +159,13 @@ export function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
   const knownParentIds = new Set(
     instances.map((ea) => ea.parentInstanceId).filter((id): id is string => id != null)
   );
+  // IDs actually present in the array — used to detect orphaned children
+  const presentIds = new Set(instances.map((ea) => ea.id));
 
   for (const ea of instances) {
     let key: string;
-    if (ea.parentInstanceId) {
-      // Child with explicit parent link — group under parent
+    if (ea.parentInstanceId && presentIds.has(ea.parentInstanceId)) {
+      // Child with explicit parent link (parent present) — group under parent
       key = ea.parentInstanceId;
     } else if (knownParentIds.has(ea.id)) {
       // This instance is a known parent (children point to it) — group by own id

@@ -56,7 +56,7 @@ export function AccountCard({
   const [trackRecordCopied, setTrackRecordCopied] = useState(false);
 
   // Account-level metrics: use primary (account-wide if available), else aggregate
-  const isAccountWide = primary.symbol === null;
+  const isAccountWide = isAccountContainer(primary);
   const balance = isAccountWide
     ? primary.balance
     : instances.reduce((sum, ea) => sum + (ea.balance ?? 0), 0) || null;

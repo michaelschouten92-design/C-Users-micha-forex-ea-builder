@@ -95,9 +95,10 @@ export async function GET() {
   const hasTerminal =
     terminalConnections.length > 0 || instances.some((i) => i.lastHeartbeat !== null);
 
-  // Step 2: Strategy discovered (any instance exists with trades)
-  const discoveredInstance = instances.find((i) => i.totalTrades > 0);
-  const hasDiscoveredStrategy = !!discoveredInstance;
+  // Step 2: Strategy discovered (any instance with trades OR a heartbeat received)
+  const hasDiscoveredStrategy = instances.some(
+    (i) => i.totalTrades > 0 || i.lastHeartbeat !== null
+  );
 
   // Step 3→4: Baseline linked (any instance has strategyVersionId)
   const hasBaselineLinked = instances.some((i) => i.strategyVersionId !== null);

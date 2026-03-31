@@ -596,6 +596,105 @@ export function LiveDashboardClient({
         <RegisterEADialog onSuccess={fetchUpdate} />
       </div>
 
+      {/* ── Governance Status: Health + Action Items ── */}
+      {eaInstances.length > 0 && (
+        <div className="space-y-3">
+          {/* System Health summary */}
+          <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
+              System Health
+            </p>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: "Healthy", count: sysHealthy, color: "#10B981" },
+                { label: "Attention", count: sysAttention, color: "#F59E0B" },
+                { label: "Collecting", count: sysMonitoring, color: "#A78BFA" },
+                { label: "Paused", count: sysPaused, color: "#64748B" },
+              ].map((c) => (
+                <div key={c.label} className="text-center">
+                  <p
+                    className="text-2xl font-bold tabular-nums leading-none"
+                    style={{ color: c.color }}
+                  >
+                    {c.count}
+                  </p>
+                  <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1.5">
+                    {c.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action items alerts */}
+          {actionItems.length > 0 && (
+            <div
+              className="rounded-lg p-4"
+              style={{
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: `${alertBorderColor}20`,
+                backgroundColor: `${alertBorderColor}05`,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
+                    style={{ backgroundColor: alertBorderColor }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full h-2 w-2"
+                    style={{ backgroundColor: alertBorderColor }}
+                  />
+                </span>
+                <p className="text-xs font-semibold" style={{ color: alertBorderColor }}>
+                  {actionItems.length}{" "}
+                  {actionItems.length === 1 ? "instance needs" : "instances need"} attention
+                </p>
+              </div>
+              <div className="space-y-3">
+                {sortedAlertGroups.map((group, gi) => (
+                  <div key={gi} className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                        style={{ color: group.color, backgroundColor: `${group.color}15` }}
+                      >
+                        {group.statusLabel}
+                      </span>
+                      <span className="text-[10px] text-[#475569]">
+                        {group.members.length} instance{group.members.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#64748B] pl-1">{group.reason}</p>
+                    <div className="flex flex-wrap gap-1.5 pl-1">
+                      {group.members.map((m) => (
+                        <span key={m.id} className="inline-flex items-center gap-0.5">
+                          <button
+                            onClick={m.onClick}
+                            className="text-[10px] px-2 py-0.5 rounded-l-md border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#475569] transition-colors"
+                          >
+                            {m.identity} &rarr; {group.actionLabel}
+                          </button>
+                          <button
+                            onClick={() => setDismissedAlerts((prev) => new Set([...prev, m.id]))}
+                            className="text-[10px] px-1 py-0.5 rounded-r-md border border-l-0 border-[#1E293B] text-[#475569] hover:text-[#EF4444] hover:border-[#475569] transition-colors"
+                            title="Dismiss alert"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Hero: Equity Curve + KPI Sidebar ── */}
       {eaInstances.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -714,102 +813,6 @@ export function LiveDashboardClient({
           onTabChange={setActiveTab}
           monitoringContent={
             <div className="space-y-4">
-              {/* Alerts */}
-              {actionItems.length > 0 && (
-                <div
-                  className="rounded-lg p-4"
-                  style={{
-                    borderWidth: 1,
-                    borderStyle: "solid",
-                    borderColor: `${alertBorderColor}20`,
-                    backgroundColor: `${alertBorderColor}05`,
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="relative flex h-2 w-2">
-                      <span
-                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
-                        style={{ backgroundColor: alertBorderColor }}
-                      />
-                      <span
-                        className="relative inline-flex rounded-full h-2 w-2"
-                        style={{ backgroundColor: alertBorderColor }}
-                      />
-                    </span>
-                    <p className="text-xs font-semibold" style={{ color: alertBorderColor }}>
-                      {actionItems.length}{" "}
-                      {actionItems.length === 1 ? "instance needs" : "instances need"} attention
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    {sortedAlertGroups.map((group, gi) => (
-                      <div key={gi} className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                            style={{ color: group.color, backgroundColor: `${group.color}15` }}
-                          >
-                            {group.statusLabel}
-                          </span>
-                          <span className="text-[10px] text-[#475569]">
-                            {group.members.length} instance{group.members.length !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-[#64748B] pl-1">{group.reason}</p>
-                        <div className="flex flex-wrap gap-1.5 pl-1">
-                          {group.members.map((m) => (
-                            <span key={m.id} className="inline-flex items-center gap-0.5">
-                              <button
-                                onClick={m.onClick}
-                                className="text-[10px] px-2 py-0.5 rounded-l-md border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#475569] transition-colors"
-                              >
-                                {m.identity} &rarr; {group.actionLabel}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setDismissedAlerts((prev) => new Set([...prev, m.id]))
-                                }
-                                className="text-[10px] px-1 py-0.5 rounded-r-md border border-l-0 border-[#1E293B] text-[#475569] hover:text-[#EF4444] hover:border-[#475569] transition-colors"
-                                title="Dismiss alert"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Health Grid */}
-              <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
-                  System Health
-                </p>
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    { label: "Healthy", count: sysHealthy, color: "#10B981" },
-                    { label: "Attention", count: sysAttention, color: "#F59E0B" },
-                    { label: "Collecting", count: sysMonitoring, color: "#A78BFA" },
-                    { label: "Paused", count: sysPaused, color: "#64748B" },
-                  ].map((c) => (
-                    <div key={c.label} className="text-center">
-                      <p
-                        className="text-2xl font-bold tabular-nums leading-none"
-                        style={{ color: c.color }}
-                      >
-                        {c.count}
-                      </p>
-                      <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1.5">
-                        {c.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Open Trades */}
               <OpenTradesPanel instances={eaInstances} />
 

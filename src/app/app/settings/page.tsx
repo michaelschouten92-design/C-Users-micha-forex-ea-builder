@@ -23,7 +23,11 @@ export default async function SettingsPage() {
       select: { emailVerified: true },
     }),
     prisma.terminalConnection.count({
-      where: { userId: session.user.id, deletedAt: null },
+      where: {
+        userId: session.user.id,
+        deletedAt: null,
+        instances: { some: { deletedAt: null } },
+      },
     }),
   ]);
 

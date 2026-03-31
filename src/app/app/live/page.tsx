@@ -161,7 +161,7 @@ function renderDashboard(
 
         {/* ── System Command Board ── */}
         <div className="mt-5 mb-4">
-          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-5">
+          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-3">
             {/* Title row */}
             <div className="flex items-baseline justify-between gap-4">
               <div className="flex items-baseline gap-3">
@@ -174,11 +174,6 @@ function renderDashboard(
                 )}
               </div>
             </div>
-
-            <p className="text-[12px] text-[#475569] max-w-xl mt-1.5 mb-5">
-              Monitor live trading strategies and detect edge drift, instability and risk anomalies
-              before they damage performance.
-            </p>
           </div>
         </div>
 

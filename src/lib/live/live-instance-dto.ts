@@ -116,11 +116,23 @@ export interface LiveHeartbeatPatch {
  * Apply a heartbeat patch to a live instance.
  * Centralizes the field mapping so SSE and any future update path
  * cannot silently drop fields.
+ *
+ * Ignores stale patches: if the patch's lastHeartbeat is older than
+ * the instance's current lastHeartbeat, the instance is returned unchanged.
  */
 export function applyHeartbeatPatch<T extends LiveInstanceDTO>(
   instance: T,
   patch: LiveHeartbeatPatch
 ): T {
+  // Freshness guard: ignore out-of-order (stale) patches
+  if (
+    instance.lastHeartbeat &&
+    patch.lastHeartbeat &&
+    patch.lastHeartbeat <= instance.lastHeartbeat
+  ) {
+    return instance;
+  }
+
   return {
     ...instance,
     equity: patch.equity,

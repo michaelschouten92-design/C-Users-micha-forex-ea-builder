@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
 
     // 2. Transition to OFFLINE — re-check BOTH status AND lastHeartbeat
     //    to prevent race with a heartbeat that arrived between query and update.
-    //    Reset openTrades to 0: the count is unverifiable while the EA is offline.
-    //    The next heartbeat will restore the real count when the instance reconnects.
+    //    Keep openTrades at last known value: zeroing causes misleading chart
+    //    discontinuities. The next heartbeat restores the real count on reconnect.
     const transitioned = await prisma.$queryRaw<Array<{ id: string }>>`
       UPDATE "LiveEAInstance"
-      SET status = 'OFFLINE', "openTrades" = 0
+      SET status = 'OFFLINE'
       WHERE id = ANY(${staleIds})
         AND status IN ('ONLINE', 'ERROR')
         AND "lastHeartbeat" < NOW() - INTERVAL '5 minutes'
