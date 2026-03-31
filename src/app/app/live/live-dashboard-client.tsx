@@ -77,7 +77,7 @@ export function LiveDashboardClient({
       }
     }
   }, [initialRelinkInstanceId]);
-  const [dismissedAlerts] = useState<Set<string>>(new Set());
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [showRestoreGuide] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -522,6 +522,8 @@ export function LiveDashboardClient({
             <button
               key={mode}
               onClick={() => setModeFilter(mode)}
+              aria-label={`Filter: ${mode === "ALL" ? "All modes" : mode === "LIVE" ? "Live only" : "Paper only"}`}
+              aria-pressed={modeFilter === mode}
               className={`px-3 py-1.5 text-[11px] font-medium transition-colors rounded-full ${
                 modeFilter === mode
                   ? mode === "PAPER"
@@ -550,6 +552,8 @@ export function LiveDashboardClient({
               : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
           }`}
           title={soundAlerts ? "Notifications on" : "Notifications off"}
+          aria-label={soundAlerts ? "Disable notifications" : "Enable notifications"}
+          aria-pressed={soundAlerts}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             {soundAlerts ? (
@@ -574,6 +578,7 @@ export function LiveDashboardClient({
         {/* Alerts config button */}
         <button
           onClick={() => setShowAlertsModal(true)}
+          aria-label="Configure alert rules"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -753,13 +758,23 @@ export function LiveDashboardClient({
                         <p className="text-[10px] text-[#64748B] pl-1">{group.reason}</p>
                         <div className="flex flex-wrap gap-1.5 pl-1">
                           {group.members.map((m) => (
-                            <button
-                              key={m.id}
-                              onClick={m.onClick}
-                              className="text-[10px] px-2 py-0.5 rounded-md border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#475569] transition-colors"
-                            >
-                              {m.identity} &rarr; {group.actionLabel}
-                            </button>
+                            <span key={m.id} className="inline-flex items-center gap-0.5">
+                              <button
+                                onClick={m.onClick}
+                                className="text-[10px] px-2 py-0.5 rounded-l-md border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#475569] transition-colors"
+                              >
+                                {m.identity} &rarr; {group.actionLabel}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setDismissedAlerts((prev) => new Set([...prev, m.id]))
+                                }
+                                className="text-[10px] px-1 py-0.5 rounded-r-md border border-l-0 border-[#1E293B] text-[#475569] hover:text-[#EF4444] hover:border-[#475569] transition-colors"
+                                title="Dismiss alert"
+                              >
+                                ×
+                              </button>
+                            </span>
                           ))}
                         </div>
                       </div>
