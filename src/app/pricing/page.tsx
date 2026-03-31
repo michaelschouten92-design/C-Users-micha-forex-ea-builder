@@ -90,7 +90,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
 const FAQ_ITEMS = [
   {
     q: "What is the difference between the plans?",
-    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline. Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, Authority supports up to 10, and Institutional offers unlimited. Paid plans also include priority support, with Authority adding 1-on-1 strategy reviews. Institutional includes a direct developer channel and custom onboarding.",
+    a: "All platform features \u2014 strategy evaluation, live monitoring, governance, and verification \u2014 are included on every plan, including Baseline (free tier). Plans differ by the number of monitored trading accounts: Baseline includes 1, Control supports up to 3, Authority supports up to 10, and Institutional offers unlimited. Paid plans also include priority support, with Authority adding 1-on-1 strategy reviews. Institutional includes a direct developer channel and custom onboarding.",
   },
   {
     q: "What is a monitored trading account?",
@@ -148,7 +148,7 @@ export default function PricingPage() {
         body: JSON.stringify({ plan, interval: "monthly" }),
       });
       if (res.status === 401) {
-        router.push(`/login?mode=register&redirect=/pricing`);
+        router.push(`/login?mode=register&redirect=/app/onboarding`);
         return;
       }
       const data = await res.json();
@@ -368,7 +368,11 @@ export default function PricingPage() {
             Plan comparison
           </h2>
 
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto"
+            role="region"
+            aria-label="Feature comparison table — scroll horizontally on mobile"
+          >
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[rgba(255,255,255,0.06)]">

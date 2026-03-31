@@ -8,7 +8,7 @@ import { Footer } from "@/components/marketing/footer";
 export const metadata: Metadata = {
   title: "AlgoStudio — Know When Your Strategy Starts Losing Its Edge",
   description:
-    "Continuously compare live algorithmic trading strategies against baseline backtests. Detect statistical drift before losses compound. CUSUM monitoring, health scoring, governed intervention.",
+    "Real-time MT5 strategy monitoring with statistical drift detection. Compare live forex EA performance against backtests. Detect edge degradation before losses compound. Free to start.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "AlgoStudio — Know When Your Strategy Starts Losing Its Edge",
@@ -39,7 +39,7 @@ export default async function HomePage() {
               <br />
               starts losing its edge.
             </h1>
-            <p className="mt-6 text-sm md:text-base text-[#A1A1AA] max-w-xl mx-auto leading-relaxed">
+            <p className="mt-6 text-base md:text-lg text-[#A1A1AA] max-w-xl mx-auto leading-relaxed">
               Monitor your trading strategies 24/7 and get alerted before they start losing money.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -64,7 +64,7 @@ export default async function HomePage() {
                   clipRule="evenodd"
                 />
               </svg>
-              Free plan available — no credit card required
+              Start free: 1 account, all features included — no credit card required
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export default async function HomePage() {
             1b. SOCIAL PROOF
             ════════════════════════════════════════════════════════════ */}
         <section className="pb-10 px-6">
-          <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-[#52525B]">
+          <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-[#71717A]">
             <span className="flex items-center gap-1.5">
               <span className="w-1 h-1 rounded-full bg-[#6366F1]" />
               Live strategy monitoring
@@ -296,9 +296,9 @@ export default async function HomePage() {
             <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
               {/* LEFT: Copy */}
               <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
                   Anomaly Detection
-                </p>
+                </h3>
                 <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight leading-tight mb-4">
                   Detect edge drift before it becomes drawdown
                 </h2>
@@ -566,9 +566,9 @@ export default async function HomePage() {
 
               {/* RIGHT: Copy */}
               <div className="order-1 md:order-2">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4">
                   Strategy Governance
-                </p>
+                </h3>
                 <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight leading-tight mb-4">
                   Govern live strategies with automatic intervention
                 </h2>
@@ -612,9 +612,9 @@ export default async function HomePage() {
             ════════════════════════════════════════════════════════════ */}
         <section className="py-16 md:py-20 px-6">
           <div className="max-w-3xl mx-auto">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4 text-center">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#6366F1] font-semibold mb-4 text-center">
               Verified Performance
-            </p>
+            </h3>
             <h2 className="text-xl md:text-2xl font-bold text-[#FAFAFA] tracking-tight text-center">
               Track records built from real execution
             </h2>
@@ -671,7 +671,7 @@ export default async function HomePage() {
             <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA] tracking-tight">
               Stop flying blind.
             </h2>
-            <p className="mt-4 text-sm md:text-base text-[#A1A1AA]">
+            <p className="mt-4 text-base md:text-lg text-[#A1A1AA]">
               Connect your MT5 terminal and know within days whether your strategies are performing
               as expected — or drifting.
             </p>
@@ -697,7 +697,7 @@ export default async function HomePage() {
                   clipRule="evenodd"
                 />
               </svg>
-              Free plan available — no credit card required
+              Start free: 1 account, all features included — no credit card required
             </p>
           </div>
         </section>

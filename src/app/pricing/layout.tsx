@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — Choose Your Governance Depth",
+  title: "Pricing — MT5 Strategy Monitoring Plans | AlgoStudio",
   description:
-    "From validation to full lifecycle authority. Compare Baseline, Control, and Authority tiers. No hidden fees. Cancel anytime.",
+    "Monitor MetaTrader 5 strategies from €0/month. Baseline (free, 1 account), Control (€39, 3 accounts), Authority (€79, 10 accounts). All features included. No hidden fees.",
   alternates: { canonical: "/pricing" },
 };
 
@@ -11,7 +11,7 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "AlgoStudio Pricing",
-  description: "Governance depth tiers for AlgoStudio. Baseline, Control, and Authority.",
+  description: "MT5 strategy monitoring plans. Baseline, Control, and Authority tiers.",
   mainEntity: {
     "@type": "SoftwareApplication",
     name: "AlgoStudio",
@@ -19,7 +19,7 @@ const jsonLd = {
     offers: [
       {
         "@type": "Offer",
-        name: "Free",
+        name: "Baseline",
         price: "0",
         priceCurrency: "EUR",
         description: "All features included, 1 monitored trading account",
@@ -29,7 +29,7 @@ const jsonLd = {
         name: "Control",
         price: "39",
         priceCurrency: "EUR",
-        description: "All features included, up to 5 monitored trading accounts, priority support",
+        description: "All features included, up to 3 monitored trading accounts, priority support",
       },
       {
         "@type": "Offer",
@@ -37,7 +37,7 @@ const jsonLd = {
         price: "79",
         priceCurrency: "EUR",
         description:
-          "All features included, up to 15 monitored trading accounts, early feature access, direct developer support",
+          "All features included, up to 10 monitored trading accounts, early feature access, direct developer support",
       },
     ],
   },

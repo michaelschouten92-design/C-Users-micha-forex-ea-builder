@@ -123,7 +123,7 @@ function MobileNavMenu() {
                 onClick={close}
                 className="text-sm bg-[#6366F1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818CF8] transition-colors text-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
               >
-                Get started
+                Sign up free
               </Link>
             </div>
           </div>
@@ -183,7 +183,7 @@ export function SiteNav() {
               href="/register"
               className="text-sm bg-[#6366F1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818CF8] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
             >
-              Get started
+              Sign up free
             </Link>
           </div>
         </div>
