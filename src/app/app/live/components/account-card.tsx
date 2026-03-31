@@ -284,17 +284,41 @@ export function AccountCard({
     .sort()
     .pop();
 
+  // Derive worst health across all instances for accent bar
+  const accentColor = (() => {
+    let worst: StrategyHealthLabel = "Pending";
+    for (const ea of instances) {
+      const h = deriveStrategyHealth(ea);
+      if (h === "Edge at Risk") return "#EF4444";
+      if (h === "Elevated") worst = "Elevated";
+      else if (h === "Healthy" && worst === "Pending") worst = "Healthy";
+    }
+    if (worst === "Elevated") return "#F59E0B";
+    if (worst === "Healthy") return "#10B981";
+    return "#A78BFA";
+  })();
+
+  // Determine mode-based left border
+  const isLiveMode = instances.every((ea) => ea.mode !== "PAPER");
+  const modeBorderClass = isLiveMode
+    ? "border-l-2 border-l-[#10B981]"
+    : "border-l-2 border-l-[#F59E0B]";
+
   return (
     <div
       id={`account-card-${primary.id}`}
-      className={`bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${
+      className={`relative overflow-hidden bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${modeBorderClass} ${
         healthCounts["Edge at Risk"] > 0
-          ? "border-l-2 border-l-[#EF4444]/60 border-[#1E293B]"
+          ? "border-[#1E293B]"
           : statusChanged
             ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
             : "border-[#1E293B]/80 hover:border-[#334155]"
       }`}
     >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ backgroundColor: accentColor, opacity: 0.4 }}
+      />
       {/* Header zone */}
       <div className="px-5 pt-4 pb-3">
         <div className="flex justify-between items-start">
@@ -332,7 +356,7 @@ export function AccountCard({
                 );
               })()}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-[#525B6B]">
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-sm text-[#525B6B]">
               {account.broker && <span>{account.broker}</span>}
               {account.accountNumber && (
                 <>
@@ -454,20 +478,16 @@ export function AccountCard({
       <div className="grid grid-cols-3 gap-3 px-5 py-3 border-y border-[#1E293B]/40">
         <div>
           <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Balance</p>
-          <p className="text-base font-semibold text-white tabular-nums">
-            {formatCurrency(balance)}
-          </p>
+          <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(balance)}</p>
         </div>
         <div>
           <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Equity</p>
-          <p className="text-base font-semibold text-white tabular-nums">
-            {formatCurrency(equity)}
-          </p>
+          <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(equity)}</p>
         </div>
         <div>
           <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Profit</p>
           <p
-            className={`text-base font-semibold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+            className={`text-xl font-bold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
             {formatCurrency(totalProfit)}
           </p>

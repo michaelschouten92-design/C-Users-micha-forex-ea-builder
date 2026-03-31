@@ -179,16 +179,6 @@ function renderDashboard(
               Monitor live trading strategies and detect edge drift, instability and risk anomalies
               before they damage performance.
             </p>
-
-            {/* System State Board */}
-            {eaInstances.length > 0 && (
-              <div className="rounded-lg bg-[rgba(10,1,24,0.5)] border border-[#1E293B]/40 px-4 py-4">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
-                  System State
-                </p>
-                <SystemStatusStrip instances={eaInstances} authority={authority} />
-              </div>
-            )}
           </div>
         </div>
 
@@ -355,61 +345,3 @@ const AUTHORITY_COLORS: Record<string, { bg: string; border: string; text: strin
       dot: "#EF4444",
     },
   };
-
-function SystemStatusStrip({
-  instances,
-  authority,
-}: {
-  instances: {
-    status: string;
-    operatorHold: string | null;
-    healthSnapshots?: { driftDetected: boolean }[];
-  }[];
-  authority: AuthorityDecision | null;
-}) {
-  const action = authority?.action ?? "PAUSE";
-  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-  const halted = instances.filter((i) => i.operatorHold !== "NONE").length;
-  const online = instances.filter((i) => i.status === "ONLINE").length;
-
-  // Count instances where CUSUM detected drift (latest snapshot)
-  const driftCount = instances.filter((i) => i.healthSnapshots?.[0]?.driftDetected === true).length;
-
-  const items: { label: string; value: string; color?: string }[] = [
-    { label: "Execution", value: action, color: colors.text },
-    { label: "Online", value: `${online}/${instances.length}` },
-    { label: "Halted", value: String(halted), color: halted > 0 ? "#EF4444" : undefined },
-    { label: "Drift", value: String(driftCount), color: driftCount > 0 ? "#F59E0B" : undefined },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {items.map((item) => {
-        const hasActiveColor = item.color && item.color !== "#CBD5E1";
-        return (
-          <div
-            key={item.label}
-            className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden"
-            style={hasActiveColor ? { boxShadow: `0 0 16px ${item.color}10` } : undefined}
-          >
-            {hasActiveColor && (
-              <div
-                className="absolute top-0 left-0 right-0 h-[2px]"
-                style={{ backgroundColor: item.color, opacity: 0.5 }}
-              />
-            )}
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
-              {item.label}
-            </p>
-            <p
-              className="text-2xl font-bold font-mono tabular-nums leading-none"
-              style={{ color: item.color ?? "#CBD5E1" }}
-            >
-              {item.value}
-            </p>
-          </div>
-        );
-      })}
-    </div>
-  );
-}

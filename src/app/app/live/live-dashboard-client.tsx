@@ -518,16 +518,16 @@ export function LiveDashboardClient({
       {/* Controls bar */}
       <div className="flex flex-wrap items-center justify-end gap-2.5 px-3 py-2 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/30">
         {/* Mode filter */}
-        <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
+        <div className="flex items-center rounded-full bg-[#0A0118]/60 p-0.5">
           {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => setModeFilter(mode)}
-              className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+              className={`px-3 py-1.5 text-[11px] font-medium transition-colors rounded-full ${
                 modeFilter === mode
                   ? mode === "PAPER"
                     ? "bg-[#F59E0B]/15 text-[#F59E0B]"
-                    : "bg-white/5 text-white"
+                    : "bg-white/10 text-white"
                   : "text-[#64748B] hover:text-[#94A3B8]"
               }`}
             >
@@ -535,6 +535,9 @@ export function LiveDashboardClient({
             </button>
           ))}
         </div>
+
+        {/* Vertical separator */}
+        <div className="w-px h-5 bg-[#1E293B]/40" />
 
         {/* Connection status indicator */}
         <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
@@ -587,14 +590,6 @@ export function LiveDashboardClient({
 
         {/* Connect external EA */}
         <RegisterEADialog onSuccess={fetchUpdate} />
-
-        {/* Manual refresh */}
-        <button
-          onClick={fetchUpdate}
-          className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
-        >
-          Refresh Now
-        </button>
       </div>
 
       {/* ── Hero: Equity Curve + KPI Sidebar ── */}
