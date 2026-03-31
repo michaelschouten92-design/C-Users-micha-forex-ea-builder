@@ -615,7 +615,7 @@ export function LiveDashboardClient({
                 Floating P&L
               </p>
               <p
-                className={`text-xl font-bold tabular-nums ${floatingPnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                className={`text-xl font-bold tabular-nums ${floatingPnl > 0 ? "text-[#10B981]" : floatingPnl < 0 ? "text-[#EF4444]" : "text-[#A1A1AA]"}`}
               >
                 {formatCurrency(floatingPnl)}
               </p>
@@ -625,7 +625,7 @@ export function LiveDashboardClient({
                 Total Profit
               </p>
               <p
-                className={`text-xl font-bold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                className={`text-xl font-bold tabular-nums ${totalProfit > 0 ? "text-[#10B981]" : totalProfit < 0 ? "text-[#EF4444]" : "text-[#A1A1AA]"}`}
               >
                 {formatCurrency(totalProfit)}
               </p>
@@ -637,7 +637,9 @@ export function LiveDashboardClient({
                 <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">
                   Win Rate
                 </p>
-                <p className="text-xl font-bold tabular-nums text-white">{winRate.toFixed(1)}%</p>
+                <p className="text-xl font-bold tabular-nums text-white">
+                  {wins + losses === 0 ? "N/A" : `${winRate.toFixed(1)}%`}
+                </p>
               </div>
               <WinRateDonut winRate={winRate} wins={wins} losses={losses} size={52} />
             </div>
@@ -670,8 +672,15 @@ export function LiveDashboardClient({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[#64748B]">Profit Factor</span>
-                <span className="text-[11px] font-semibold tabular-nums text-white">
-                  {profitFactor === Infinity ? "\u221E" : profitFactor.toFixed(2)}
+                <span
+                  className="text-[11px] font-semibold tabular-nums text-white"
+                  title={profitFactor === Infinity ? "No losing trades" : undefined}
+                >
+                  {wins + losses === 0
+                    ? "N/A"
+                    : profitFactor === Infinity
+                      ? "∞ (no losses)"
+                      : profitFactor.toFixed(2)}
                 </span>
               </div>
             </div>

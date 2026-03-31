@@ -52,6 +52,15 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
     cumulative.push(running);
   }
 
+  // Guard against corrupted data
+  if (cumulative.some((v) => !isFinite(v))) {
+    return (
+      <div className="h-60 flex items-center justify-center text-xs text-[#475569]">
+        Chart data contains invalid values
+      </div>
+    );
+  }
+
   const width = 600;
   const height = 240;
   const padX = 40;

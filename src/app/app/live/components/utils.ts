@@ -18,7 +18,8 @@ export function formatRelativeTime(dateStr: string | null): string {
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 60) return "Just now";
+  if (diffSec < 5) return "Just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
   if (diffSec < 3600) {
     const mins = Math.floor(diffSec / 60);
     return `${mins} min ago`;

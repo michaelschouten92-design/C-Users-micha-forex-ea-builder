@@ -58,11 +58,11 @@ export function WinRateDonut({
           textAnchor="middle"
           dominantBaseline="central"
           fill="#CBD5E1"
-          fontSize={size * 0.22}
+          fontSize={wins + losses === 0 ? size * 0.18 : size * 0.22}
           fontWeight="bold"
           fontFamily="ui-monospace, monospace"
         >
-          {clampedRate.toFixed(1)}%
+          {wins + losses === 0 ? "N/A" : `${clampedRate.toFixed(1)}%`}
         </text>
       </svg>
       <span className="text-[9px] text-[#475569] tabular-nums">
