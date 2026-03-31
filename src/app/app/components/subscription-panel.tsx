@@ -375,14 +375,22 @@ export function SubscriptionPanel({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => !loading && setConfirmAction(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !loading) setConfirmAction(null);
+          }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
             className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {confirmAction === "downgrade" ? (
               <>
-                <h3 className="text-lg font-semibold text-white mb-3">Downgrade Plan?</h3>
+                <h3 id="confirm-dialog-title" className="text-lg font-semibold text-white mb-3">
+                  Downgrade Plan?
+                </h3>
                 <p className="text-sm text-[#A1A1AA] mb-4">
                   Your plan will change to{" "}
                   <span className="font-medium text-white">

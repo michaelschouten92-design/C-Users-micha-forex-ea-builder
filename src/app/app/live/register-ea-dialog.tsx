@@ -92,15 +92,25 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") handleClose();
+          }}
+        >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
           {/* Dialog */}
-          <div className="relative bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-lg shadow-2xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="register-ea-title"
+            className="relative bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-lg shadow-2xl"
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
-              <h3 className="text-lg font-semibold text-white">
+              <h3 id="register-ea-title" className="text-lg font-semibold text-white">
                 {result ? "EA Registered" : "Connect External EA"}
               </h3>
               <button
@@ -126,8 +136,14 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
                   your chart and it will send live telemetry to your dashboard.
                 </p>
 
-                <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">EA Name</label>
+                <label
+                  htmlFor="ea-name-input"
+                  className="block text-sm font-medium text-[#CBD5E1] mb-1.5"
+                >
+                  EA Name
+                </label>
                 <input
+                  id="ea-name-input"
                   type="text"
                   value={eaName}
                   onChange={(e) => setEaName(e.target.value)}
@@ -137,7 +153,11 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
                   autoFocus
                 />
 
-                {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+                {error && (
+                  <p role="alert" className="mt-2 text-sm text-[#EF4444]">
+                    {error}
+                  </p>
+                )}
 
                 <button
                   type="submit"

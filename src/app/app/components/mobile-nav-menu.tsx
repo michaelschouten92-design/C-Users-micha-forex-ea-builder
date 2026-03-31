@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-export function MobileNavMenu() {
+type NavItem = "evaluate" | "monitor" | "risk" | "settings";
+
+const NAV_ITEMS: { key: NavItem; label: string; href: string }[] = [
+  { key: "evaluate", label: "Evaluate", href: "/app/evaluate" },
+  { key: "monitor", label: "Command Center", href: "/app/live" },
+  { key: "risk", label: "Risk", href: "/app/risk" },
+  { key: "settings", label: "Settings", href: "/app/settings" },
+];
+
+export function MobileNavMenu({ activeItem }: { activeItem?: NavItem }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +76,7 @@ export function MobileNavMenu() {
           <Link
             href="/app/evaluate"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "evaluate" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -82,7 +91,7 @@ export function MobileNavMenu() {
           <Link
             href="/app/live"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "monitor" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -97,7 +106,7 @@ export function MobileNavMenu() {
           <Link
             href="/app/risk"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "risk" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -112,7 +121,7 @@ export function MobileNavMenu() {
           <Link
             href="/app/settings"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "settings" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path

@@ -6,11 +6,23 @@ import type { EAInstanceData, InstanceAttention, AccountGroup, StrategyHealthLab
 // ============================================
 
 export function formatCurrency(value: number | null): string {
-  if (value === null || value === undefined) return "$0.00";
+  if (value === null || value === undefined) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
   }).format(value);
+}
+
+/** Format P&L with explicit +/- sign for clarity */
+export function formatPnl(value: number | null): string {
+  if (value === null || value === undefined) return "—";
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Math.abs(value));
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
 }
 
 export function formatRelativeTime(dateStr: string | null): string {

@@ -140,7 +140,14 @@ function StepIndicator({ step, currentStep }: { step: number; currentStep: numbe
 
 function ProgressBar({ currentStep }: { currentStep: number }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div
+      className="flex items-center justify-center gap-0 mb-8"
+      role="progressbar"
+      aria-valuenow={currentStep}
+      aria-valuemin={1}
+      aria-valuemax={5}
+      aria-label={`Onboarding progress: step ${currentStep} of 5`}
+    >
       {[1, 2, 3, 4, 5].map((step) => (
         <StepIndicator key={step} step={step} currentStep={currentStep} />
       ))}

@@ -325,7 +325,9 @@ export function AccountCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <StatusBadge status={accountStatus} animate={statusChanged} />
-              <h3 className="font-semibold text-white truncate text-[15px]">{primary.eaName}</h3>
+              <h3 className="font-semibold text-white truncate text-[15px]" title={primary.eaName}>
+                {primary.eaName}
+              </h3>
               {(() => {
                 const overridePending = instances.some(
                   (ea) => (ea.operatorHold ?? "NONE") === "OVERRIDE_PENDING"
@@ -735,7 +737,7 @@ export function AccountCard({
             ) : (
               <div>
                 {/* Header row */}
-                <div className="grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px_150px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
                   <span>Symbol</span>
                   <span>Edge Status</span>
                   <span>Baseline</span>
@@ -764,7 +766,7 @@ export function AccountCard({
                     <div key={rowKey}>
                       <div
                         onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
-                        className={`grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
+                        className={`grid grid-cols-1 sm:grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
                           isHighlighted
                             ? "border-[#F59E0B]/40 bg-[#F59E0B]/5"
                             : isExpanded

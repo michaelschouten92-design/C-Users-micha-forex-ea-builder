@@ -681,6 +681,7 @@ export function LiveDashboardClient({
                             onClick={() => setDismissedAlerts((prev) => new Set([...prev, m.id]))}
                             className="text-[10px] px-1 py-0.5 rounded-r-md border border-l-0 border-[#1E293B] text-[#475569] hover:text-[#EF4444] hover:border-[#475569] transition-colors"
                             title="Dismiss alert"
+                            aria-label={`Dismiss alert for ${m.identity}`}
                           >
                             ×
                           </button>
@@ -1002,7 +1003,7 @@ export function LiveDashboardClient({
                 balance-equity gap, all EAs)
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] text-[#64748B]">Alert at</span>
               <input
                 type="number"

@@ -107,8 +107,8 @@ export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaNa
             >
               Prev
             </button>
-            <span className="text-[10px] text-[#7C8DB0]">
-              {page}/{totalPages}
+            <span className="text-[10px] tabular-nums text-[#7C8DB0]">
+              Page {page} of {totalPages}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -123,7 +123,7 @@ export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaNa
 
       {loading ? (
         <div className="flex items-center justify-center gap-2 text-xs text-[#7C8DB0] py-4">
-          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle
               className="opacity-25"
               cx="12"
@@ -177,15 +177,17 @@ export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaNa
                     </span>
                   </td>
                   <td className="py-1.5 pr-2 text-[#CBD5E1]">{trade.symbol}</td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">{trade.lots.toFixed(2)}</td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
+                    {trade.lots.toFixed(2)}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
                     {trade.openPrice.toFixed(5)}
                   </td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
                     {trade.closePrice !== null ? trade.closePrice.toFixed(5) : "---"}
                   </td>
                   <td
-                    className={`py-1.5 pr-2 text-right font-medium ${
+                    className={`py-1.5 pr-2 text-right tabular-nums font-medium ${
                       trade.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
                     }`}
                   >

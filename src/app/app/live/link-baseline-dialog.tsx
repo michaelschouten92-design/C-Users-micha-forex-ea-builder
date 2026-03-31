@@ -209,11 +209,21 @@ export function LinkBaselineDialog({
   const showSuggestion = suggestion && !suggestionDismissed;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && !linking) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="link-baseline-title"
+        className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
+      >
         {/* Header */}
         <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 id="link-baseline-title" className="text-lg font-semibold text-white">
             {isRelink ? "Restore Baseline Trust" : "Link Strategy Baseline"}
           </h2>
           <p className="text-xs text-[#7C8DB0] mt-1">

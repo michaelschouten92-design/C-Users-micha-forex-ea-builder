@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { formatCurrency } from "./utils";
+import { formatCurrency, formatPnl } from "./utils";
 
 type Period = "7D" | "30D" | "90D";
 
@@ -145,13 +145,12 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
               isPositive ? "text-[#10B981]" : "text-[#EF4444]"
             }`}
           >
-            {lastVal >= 0 ? "+" : ""}
-            {formatCurrency(lastVal)}
+            {formatPnl(lastVal)}
           </p>
           {pctChange !== null && (
             <p
               className={`text-xs tabular-nums ${
-                pctChange >= 0 ? "text-[#10B981]/70" : "text-[#EF4444]/70"
+                pctChange >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
               }`}
             >
               {pctChange >= 0 ? "+" : ""}
@@ -179,6 +178,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="w-full h-60"
+        style={{ fontVariantNumeric: "tabular-nums" }}
         onMouseLeave={() => setHoverIndex(null)}
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -307,16 +307,13 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
           <p
             className={`font-semibold tabular-nums ${hoverPoint.val >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
-            {formatCurrency(hoverPoint.val)}
+            {formatPnl(hoverPoint.val)}
           </p>
-          <p className="text-[#475569]">
-            Day: {hoverPoint.dayPnl >= 0 ? "+" : ""}
-            {formatCurrency(hoverPoint.dayPnl)}
-          </p>
+          <p className="text-[#475569]">Day: {formatPnl(hoverPoint.dayPnl)}</p>
           {hoverPctFromStart !== null && (
             <p
               className={`tabular-nums ${
-                hoverPctFromStart >= 0 ? "text-[#10B981]/70" : "text-[#EF4444]/70"
+                hoverPctFromStart >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
               }`}
             >
               {hoverPctFromStart >= 0 ? "+" : ""}

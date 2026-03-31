@@ -105,7 +105,7 @@ export function AppNav({ activeItem, session, tier, monitorStatus }: AppNavProps
                 Sign Out
               </button>
             </form>
-            <MobileNavMenu />
+            <MobileNavMenu activeItem={activeItem} />
           </div>
         </div>
       </div>
