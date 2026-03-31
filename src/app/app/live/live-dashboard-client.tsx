@@ -414,7 +414,6 @@ export function LiveDashboardClient({
   const containers = eaInstances.filter(isAccountContainer);
   const metricsSource =
     containers.length > 0 ? containers : eaInstances.filter((ea) => ea.mode === "LIVE");
-  const totalBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
   const floatingPnl = metricsSource
     .filter((ea) => ea.equity != null && ea.balance != null)
     .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0);
@@ -604,9 +603,11 @@ export function LiveDashboardClient({
           <div className="lg:col-span-1 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4 space-y-4">
             {/* Financial metrics */}
             <div>
-              <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">Balance</p>
-              <p className="text-xl font-bold tabular-nums text-[#10B981]">
-                {formatCurrency(totalBalance)}
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">
+                Open Trades
+              </p>
+              <p className="text-xl font-bold tabular-nums text-[#818CF8]">
+                {metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0)}
               </p>
             </div>
             <div>
