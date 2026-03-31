@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { OpenTrade, EAInstanceData } from "./types";
-import { formatCurrency } from "./utils";
+import { formatCurrency, formatPnl } from "./utils";
 
 export function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) {
   const [openTrades, setOpenTrades] = useState<Map<string, OpenTrade[]>>(new Map());
@@ -173,7 +173,7 @@ export function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) 
                             <td
                               className={`py-0.5 text-right tabular-nums font-semibold ${t.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
                             >
-                              {formatCurrency(t.profit)}
+                              {formatPnl(t.profit)}
                             </td>
                           </tr>
                         ))}

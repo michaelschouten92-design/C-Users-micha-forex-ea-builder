@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { formatCurrency } from "./utils";
+import { formatCurrency, formatPnl } from "./utils";
 
 interface DailyPnlEntry {
   date: string;
@@ -239,8 +239,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
                         pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
                       }`}
                     >
-                      {pnl >= 0 ? "+" : ""}
-                      {formatCurrency(pnl).replace("$", "$\u200B")}
+                      {formatPnl(pnl).replace("$", "$\u200B")}
                     </span>
                   )}
                 </>
@@ -276,7 +275,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
             <div>
               <span className="text-[10px] text-[#475569]">Best day </span>
               <span className="text-[10px] text-white">
-                {formatCurrency(summary.best.pnl)}{" "}
+                {formatPnl(summary.best.pnl)}{" "}
                 <span className="text-[#475569]">({formatShortDate(summary.best.date)})</span>
               </span>
             </div>
@@ -285,7 +284,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
             <div>
               <span className="text-[10px] text-[#475569]">Worst day </span>
               <span className="text-[10px] text-white">
-                {formatCurrency(summary.worst.pnl)}{" "}
+                {formatPnl(summary.worst.pnl)}{" "}
                 <span className="text-[#475569]">({formatShortDate(summary.worst.date)})</span>
               </span>
             </div>

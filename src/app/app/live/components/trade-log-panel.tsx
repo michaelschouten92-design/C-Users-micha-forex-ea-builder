@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { TradeRecord } from "./types";
-import { formatCurrency, formatDateTime } from "./utils";
+import { formatCurrency, formatPnl, formatDateTime } from "./utils";
 
 export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
   const [trades, setTrades] = useState<TradeRecord[]>([]);
@@ -191,7 +191,7 @@ export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaNa
                       trade.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
                     }`}
                   >
-                    {formatCurrency(trade.profit)}
+                    {formatPnl(trade.profit)}
                   </td>
                   <td className="py-1.5 pr-2 text-right text-[#7C8DB0]">
                     {formatDateTime(trade.openTime)}

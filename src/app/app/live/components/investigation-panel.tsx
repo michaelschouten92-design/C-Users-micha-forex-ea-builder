@@ -5,6 +5,7 @@ import {
   HEALTH_STYLES,
   deriveSignalSummary,
   formatCurrency,
+  formatPnl,
   formatRelativeTime,
   formatDateTime,
 } from "./utils";
@@ -83,7 +84,7 @@ export function InvestigationPanel({
                 : "text-[#EF4444]"
             }
           >
-            {formatCurrency(recentTrades.reduce((s, t) => s + t.profit, 0))}
+            {formatPnl(recentTrades.reduce((s, t) => s + t.profit, 0))}
           </span>
         </div>
       )}

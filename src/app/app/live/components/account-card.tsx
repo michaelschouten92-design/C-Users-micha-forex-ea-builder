@@ -9,6 +9,7 @@ import { InvestigationPanel } from "./investigation-panel";
 import type { EAInstanceData, AccountGroup, StrategyHealthLabel } from "./types";
 import {
   formatCurrency,
+  formatPnl,
   formatRelativeTime,
   calculateWinRate,
   calculateProfitFactor,
@@ -491,7 +492,10 @@ export function AccountCard({
           <p
             className={`text-xl font-bold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
-            {formatCurrency(totalProfit)}
+            {totalProfit !== 0 && (
+              <span className="text-sm mr-0.5">{totalProfit > 0 ? "▲" : "▼"}</span>
+            )}
+            {formatPnl(totalProfit)}
           </p>
         </div>
       </div>

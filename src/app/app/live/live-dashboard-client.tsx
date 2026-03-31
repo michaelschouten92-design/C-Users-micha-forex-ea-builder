@@ -27,6 +27,7 @@ import type {
 } from "./components/types";
 import {
   formatCurrency,
+  formatPnl,
   resolveInstanceAttention,
   groupByAccount,
   sortByPriority,
@@ -342,6 +343,23 @@ export function LiveDashboardClient({
       setEaInstances(previousInstances);
       showError("Failed to save order", "Your changes were reverted.");
     }
+  }
+
+  function handleKeyboardReorder(e: React.KeyboardEvent, accountKey: string) {
+    if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault();
+
+    const sorted = sortByPriority(groupByAccount(eaInstances));
+    const fromIdx = sorted.findIndex((g) => g.key === accountKey);
+    if (fromIdx < 0) return;
+
+    const toIdx = e.key === "ArrowUp" ? fromIdx - 1 : fromIdx + 1;
+    if (toIdx < 0 || toIdx >= sorted.length) return;
+
+    // Reuse the same reorder logic as drag-drop
+    const targetKey = sorted[toIdx].key;
+    setDraggedAccountKey(accountKey);
+    handleDrop(targetKey);
   }
 
   async function handleUnlinkBaseline(instanceId: string): Promise<void> {
@@ -722,7 +740,10 @@ export function LiveDashboardClient({
               <p
                 className={`text-xl font-bold tabular-nums ${floatingPnl > 0 ? "text-[#10B981]" : floatingPnl < 0 ? "text-[#EF4444]" : "text-[#A1A1AA]"}`}
               >
-                {formatCurrency(floatingPnl)}
+                {floatingPnl !== 0 && (
+                  <span className="text-sm mr-0.5">{floatingPnl > 0 ? "▲" : "▼"}</span>
+                )}
+                {formatPnl(floatingPnl)}
               </p>
             </div>
             <div>
@@ -732,7 +753,10 @@ export function LiveDashboardClient({
               <p
                 className={`text-xl font-bold tabular-nums ${totalProfit > 0 ? "text-[#10B981]" : totalProfit < 0 ? "text-[#EF4444]" : "text-[#A1A1AA]"}`}
               >
-                {formatCurrency(totalProfit)}
+                {totalProfit !== 0 && (
+                  <span className="text-sm mr-0.5">{totalProfit > 0 ? "▲" : "▼"}</span>
+                )}
+                {formatPnl(totalProfit)}
               </p>
             </div>
 
@@ -885,7 +909,7 @@ export function LiveDashboardClient({
                           <span key={sym} className="text-[11px] tabular-nums">
                             <span className="text-[#818CF8] font-semibold">{sym}</span>{" "}
                             <span className={d.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}>
-                              {formatCurrency(d.pnl)}
+                              {formatPnl(d.pnl)}
                             </span>
                           </span>
                         ))}
@@ -904,7 +928,7 @@ export function LiveDashboardClient({
                     <span
                       className={`text-xs font-semibold tabular-nums ${eaInstances.filter((ea) => ea.mode === "PAPER").reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
                     >
-                      {formatCurrency(
+                      {formatPnl(
                         eaInstances
                           .filter((ea) => ea.mode === "PAPER")
                           .reduce((sum, ea) => sum + ea.totalProfit, 0)
@@ -919,7 +943,11 @@ export function LiveDashboardClient({
         >
           {/* ── Accounts tab content (default) ── */}
           <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div
+              role="list"
+              aria-label="Trading accounts — Alt+Arrow Up/Down to reorder"
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            >
               {sortByPriority(
                 groupByAccount(
                   modeFilter === "ALL"
@@ -930,11 +958,15 @@ export function LiveDashboardClient({
                 <div
                   key={account.key}
                   draggable
+                  tabIndex={0}
+                  role="listitem"
+                  aria-label={`${account.primary.eaName ?? account.broker ?? "Account"} — Alt+Arrow to reorder`}
                   onDragStart={() => handleDragStart(account.key)}
                   onDragOver={(e) => handleDragOver(e, account.key)}
                   onDragEnd={handleDragEnd}
                   onDrop={() => handleDrop(account.key)}
-                  className={`transition-opacity ${
+                  onKeyDown={(e) => handleKeyboardReorder(e, account.key)}
+                  className={`transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:rounded-lg ${
                     draggedAccountKey === account.key ? "opacity-40" : ""
                   } ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-lg" : ""}`}
                 >
