@@ -312,7 +312,7 @@ export default function PricingPage() {
           </div>
 
           {/* Institutional */}
-          <div className="rounded-xl border border-[rgba(245,158,11,0.25)] bg-[#111114] p-6 flex flex-col">
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6 flex flex-col">
             <h3 className="text-lg font-semibold text-[#FAFAFA]">Institutional</h3>
             <p className="text-xs text-[#71717A] mt-1">
               Unlimited capacity with dedicated onboarding.
@@ -330,7 +330,7 @@ export default function PricingPage() {
               )}
             </div>
 
-            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.20)]">
+            <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
               <p className="text-sm font-medium text-[#FAFAFA]">
                 Unlimited monitored trading accounts
               </p>
@@ -348,7 +348,7 @@ export default function PricingPage() {
             <button
               onClick={() => handleSubscribe("INSTITUTIONAL")}
               disabled={loadingPlan !== null || !institutionalPrice}
-              className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(245,158,11,0.30)] text-[#FAFAFA] hover:border-[rgba(245,158,11,0.50)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="mt-6 w-full py-3 rounded-lg font-medium border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] hover:border-[rgba(255,255,255,0.20)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               {loadingPlan === "INSTITUTIONAL" ? "Loading..." : "Start monitoring"}
             </button>
@@ -407,15 +407,15 @@ export default function PricingPage() {
                       >
                         <td className="py-2.5 px-4 text-[#A1A1AA] text-[13px]">{label}</td>
                         {[baseline, control, authority, institutional].map((val, i) => (
-                          <td key={i} className="py-2.5 px-4 text-center">
+                          <td key={i} className="py-2.5 px-4">
                             {typeof val === "boolean" ? (
-                              val ? (
-                                <CheckIcon />
-                              ) : (
-                                <DashIcon />
-                              )
+                              <div className="flex justify-center">
+                                {val ? <CheckIcon /> : <DashIcon />}
+                              </div>
                             ) : (
-                              <span className="text-[#A1A1AA] text-[13px]">{val}</span>
+                              <span className="block text-center text-[#A1A1AA] text-[13px]">
+                                {val}
+                              </span>
                             )}
                           </td>
                         ))}
