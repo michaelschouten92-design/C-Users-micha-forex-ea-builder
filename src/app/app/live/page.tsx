@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
-import { MonitorTabs } from "./monitor-tabs";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
 import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
@@ -263,13 +262,11 @@ function renderDashboard(
 
         {/* ── Strategies, Terminals, Journal ── */}
         <section>
-          <MonitorTabs>
-            <LiveDashboardClient
-              initialData={serializedInstances}
-              tier={tier}
-              initialRelinkInstanceId={relinkInstanceId}
-            />
-          </MonitorTabs>
+          <LiveDashboardClient
+            initialData={serializedInstances}
+            tier={tier}
+            initialRelinkInstanceId={relinkInstanceId}
+          />
         </section>
       </main>
     </div>

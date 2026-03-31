@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { useLiveStream } from "./use-live-stream";
@@ -14,12 +13,13 @@ import {
   applyHeartbeatPatch,
 } from "@/lib/live/live-instance-dto";
 import { AccountCard } from "./components/account-card";
-import { PortfolioSummaryStrip } from "./components/portfolio-summary-strip";
 import { TradingCalendar } from "./components/trading-calendar";
 import { EquityCurveChart } from "./components/equity-curve-chart";
 import { ConnectionIndicator } from "./components/connection-indicator";
 import { OpenTradesPanel } from "./components/open-trades-panel";
 import { AlertsModal } from "./components/alerts-modal";
+import { MonitorTabs } from "./monitor-tabs";
+import { WinRateDonut } from "./components/win-rate-donut";
 import type {
   EAInstanceData,
   LiveDashboardClientProps,
@@ -32,6 +32,8 @@ import {
   sortByPriority,
   deriveStrategyHealth,
   HEALTH_STYLES,
+  calculateWinRate,
+  calculateProfitFactor,
 } from "./components/utils";
 
 // ============================================
@@ -40,7 +42,7 @@ import {
 
 export function LiveDashboardClient({
   initialData,
-  tier,
+  tier: _tier,
   initialRelinkInstanceId,
 }: LiveDashboardClientProps) {
   const [eaInstances, setEaInstances] = useState<EAInstanceData[]>(initialData);
@@ -58,7 +60,7 @@ export function LiveDashboardClient({
     }
     return null;
   });
-  const [linkingInstanceId, setLinkingInstanceId] = useState<string | null>(null);
+  const [, setLinkingInstanceId] = useState<string | null>(null);
   const [activatingInstanceId, setActivatingInstanceId] = useState<string | null>(null);
   const [linkedSuccessBanner, setLinkedSuccessBanner] = useState(false);
   const linkedSuccessBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,7 +77,7 @@ export function LiveDashboardClient({
       }
     }
   }, [initialRelinkInstanceId]);
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [dismissedAlerts] = useState<Set<string>>(new Set());
   const [showRestoreGuide] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -85,6 +87,7 @@ export function LiveDashboardClient({
     }
   });
   const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
+  const [activeTab, setActiveTab] = useState<"accounts" | "monitoring" | "journal">("accounts");
   const [dailyPnl, setDailyPnl] = useState<{ date: string; pnl: number }[]>([]);
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -407,6 +410,109 @@ export function LiveDashboardClient({
     ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
   ).filter((label) => portfolioHealthCounts[label] > 0);
 
+  // ── Hoisted metrics ──
+  const containers = eaInstances.filter(isAccountContainer);
+  const metricsSource =
+    containers.length > 0 ? containers : eaInstances.filter((ea) => ea.mode === "LIVE");
+  const totalBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const floatingPnl = metricsSource
+    .filter((ea) => ea.equity != null && ea.balance != null)
+    .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0);
+  const totalProfit = metricsSource.reduce((sum, ea) => sum + ea.totalProfit, 0);
+  const allTrades = metricsSource.flatMap((ea) => ea.trades ?? []);
+  const winRate = calculateWinRate(allTrades);
+  const closedTrades = allTrades.filter((t) => t.closeTime !== null);
+  const wins = closedTrades.filter((t) => t.profit > 0).length;
+  const losses = closedTrades.filter((t) => t.profit <= 0).length;
+  const profitFactor = calculateProfitFactor(allTrades);
+
+  // ── System state counts ──
+  let sysHealthy = 0,
+    sysAttention = 0,
+    sysMonitoring = 0,
+    sysPaused = 0;
+  for (const ea of eaInstances) {
+    if (ea.tradingState === "PAUSED") {
+      sysPaused++;
+      continue;
+    }
+    const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+    if (!att) sysHealthy++;
+    else if (att.statusLabel === "Waiting for data") sysMonitoring++;
+    else sysAttention++;
+  }
+  const sysTotal = sysHealthy + sysAttention + sysMonitoring + sysPaused;
+  const allHealthy = sysAttention === 0 && sysPaused === 0 && sysMonitoring === 0;
+
+  // ── Action items for monitoring tab ──
+  const actionItems = eaInstances
+    .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
+    .map((ea) => {
+      const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+      if (!att) return null;
+      const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+      const isBaselineAction =
+        att.statusLabel === "Baseline suspended" || att.statusLabel === "No baseline linked";
+      return {
+        id: ea.id,
+        identity,
+        ...att,
+        onClick: isBaselineAction
+          ? () => setLinkBaselineInstanceId(ea.id)
+          : () => {
+              setActiveTab("accounts");
+              const cardId = ea.parentInstanceId || ea.id;
+              if (ea.parentInstanceId) setScrollExpandId(ea.id);
+              setTimeout(
+                () =>
+                  document
+                    .getElementById(`account-card-${cardId}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                100
+              );
+            },
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  // Group action items
+  const alertGroups = new Map<
+    string,
+    {
+      statusLabel: string;
+      reason: string;
+      actionLabel: string;
+      color: string;
+      members: typeof actionItems;
+    }
+  >();
+  for (const item of actionItems) {
+    const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+    const existing = alertGroups.get(groupKey);
+    if (existing) existing.members.push(item);
+    else
+      alertGroups.set(groupKey, {
+        statusLabel: item.statusLabel,
+        reason: item.reason,
+        actionLabel: item.actionLabel,
+        color: item.color,
+        members: [item],
+      });
+  }
+  const ALERT_PRIORITY: Record<string, number> = {
+    "Edge at risk": 0,
+    Unstable: 1,
+    "Connection error": 2,
+    "Baseline suspended": 3,
+    "Waiting for data": 4,
+    "No baseline linked": 5,
+  };
+  const sortedAlertGroups = [...alertGroups.values()].sort(
+    (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+  );
+  const hasRedAlert = actionItems.some((i) => i.color === "#EF4444");
+  const alertBorderColor = hasRedAlert ? "#EF4444" : "#F59E0B";
+
   return (
     <div className="space-y-5">
       {/* Controls bar */}
@@ -491,376 +597,128 @@ export function LiveDashboardClient({
         </button>
       </div>
 
-      {/* ── System Status Zone ── */}
-      {eaInstances.length > 0 &&
-        (() => {
-          let healthy = 0;
-          let attentionCount = 0;
-          let monitoring = 0;
-          let paused = 0;
-
-          for (const ea of eaInstances) {
-            if (ea.tradingState === "PAUSED") {
-              paused++;
-              continue;
-            }
-            const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!att) {
-              healthy++;
-            } else if (att.statusLabel === "Waiting for data") {
-              monitoring++;
-            } else {
-              attentionCount++;
-            }
-          }
-
-          const total = healthy + attentionCount + monitoring + paused;
-          const allHealthy = attentionCount === 0 && paused === 0 && monitoring === 0;
-
-          // Build action-required items
-          const actionItems = eaInstances
-            .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
-            .map((ea) => {
-              const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-              if (!att) return null;
-              const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-              const isBaselineAction =
-                att.statusLabel === "Baseline suspended" ||
-                att.statusLabel === "No baseline linked";
-              return {
-                id: ea.id,
-                identity,
-                ...att,
-                onClick: isBaselineAction
-                  ? () => setLinkBaselineInstanceId(ea.id)
-                  : () => {
-                      const cardId = ea.parentInstanceId || ea.id;
-                      if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                      document
-                        .getElementById(`account-card-${cardId}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    },
-              };
-            })
-            .filter((item): item is NonNullable<typeof item> => item !== null);
-
-          // Group action items
-          const groups = new Map<
-            string,
-            {
-              statusLabel: string;
-              reason: string;
-              actionLabel: string;
-              color: string;
-              members: typeof actionItems;
-            }
-          >();
-          for (const item of actionItems) {
-            const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
-            const existing = groups.get(groupKey);
-            if (existing) {
-              existing.members.push(item);
-            } else {
-              groups.set(groupKey, {
-                statusLabel: item.statusLabel,
-                reason: item.reason,
-                actionLabel: item.actionLabel,
-                color: item.color,
-                members: [item],
-              });
-            }
-          }
-
-          const ALERT_PRIORITY: Record<string, number> = {
-            "Edge at risk": 0,
-            Unstable: 1,
-            "Connection error": 2,
-            "Baseline suspended": 3,
-            "Waiting for data": 4,
-            "No baseline linked": 5,
-          };
-          const sortedGroups = [...groups.values()].sort(
-            (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
-          );
-
-          const hasRed = actionItems.some((i) => i.color === "#EF4444");
-          const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
-
-          return (
-            <div className="sticky top-0 z-20 py-2.5 px-3 border-b border-[#1E293B]/40 bg-[#0A0118]/98 backdrop-blur-sm rounded-lg">
-              {/* System pulse header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    {allHealthy && (
-                      <span
-                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
-                        style={{ backgroundColor: "#10B981" }}
-                      />
-                    )}
-                    <span
-                      className="relative inline-flex rounded-full h-2.5 w-2.5"
-                      style={{
-                        backgroundColor: allHealthy
-                          ? "#10B981"
-                          : hasRed
-                            ? "#EF4444"
-                            : attentionCount > 0
-                              ? "#F59E0B"
-                              : "#A78BFA",
-                      }}
-                    />
-                  </span>
-                  <p className="text-sm font-semibold text-[#CBD5E1]">
-                    {allHealthy
-                      ? "All systems nominal"
-                      : attentionCount > 0
-                        ? `${attentionCount} ${attentionCount === 1 ? "instance" : "instances"} need attention`
-                        : monitoring > 0
-                          ? "Collecting baseline data"
-                          : paused > 0
-                            ? "Trading paused"
-                            : "System monitoring active"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {connectionStatus === "connected" && (
-                    <span className="flex items-center gap-1.5 text-[10px] text-[#10B981]/70 font-medium">
-                      <span className="relative flex h-1 w-1">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-50" />
-                        <span className="relative inline-flex rounded-full h-1 w-1 bg-[#10B981]" />
-                      </span>
-                      Telemetry active
-                    </span>
-                  )}
-                  <p className="text-[10px] text-[#475569]">
-                    {total} instance{total !== 1 ? "s" : ""} monitored
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-      {/* ── Two-Column Control Zone ── */}
+      {/* ── Hero: Equity Curve + KPI Sidebar ── */}
       {eaInstances.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* LEFT: Operations */}
-          <div className="lg:col-span-3 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-              Portfolio Overview
-            </p>
-            {/* Portfolio Summary Strip */}
-            <PortfolioSummaryStrip instances={eaInstances} dailyPnl={dailyPnl} />
-
-            {/* Equity Curve */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Equity Curve — 3/4 width */}
+          <div className="lg:col-span-3 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
             <EquityCurveChart dailyPnl={dailyPnl} />
-
-            {/* Trading Calendar */}
-            <TradingCalendar dailyPnl={dailyPnl} />
-            {/* Open Positions detail panel */}
-            <OpenTradesPanel instances={eaInstances} />
-            {/* Secondary reading: Paper P&L (only when paper instances exist) */}
-            {eaInstances.some((ea) => ea.mode === "PAPER") && (
-              <div className="flex items-baseline gap-2 px-1">
-                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                  Paper P&L
-                </span>
-                <span
-                  className={`text-xs font-semibold tabular-nums ${
-                    eaInstances
-                      .filter((ea) => ea.mode === "PAPER")
-                      .reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0
-                      ? "text-[#10B981]"
-                      : "text-[#EF4444]"
-                  }`}
-                >
-                  {formatCurrency(
-                    eaInstances
-                      .filter((ea) => ea.mode === "PAPER")
-                      .reduce((sum, ea) => sum + ea.totalProfit, 0)
-                  )}
-                </span>
-                <span className="text-[9px] text-[#475569]">tracked total</span>
-              </div>
-            )}
-
-            {/* Secondary: health + exposure */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
-              {/* Strategy Health */}
-              {portfolioHealthParts.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                    Health
-                  </span>
-                  {portfolioHealthParts.map((label) => {
-                    const hs = HEALTH_STYLES[label];
-                    return (
-                      <span
-                        key={label}
-                        className={`inline-flex items-center gap-1 text-xs font-medium ${hs.text}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                        {portfolioHealthCounts[label]} {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-              {/* Exposure */}
-              <div className="flex items-center gap-3">
-                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                  Exposure
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
-                </span>
-              </div>
-            </div>
-
-            {/* Per-Symbol Breakdown */}
-            {(() => {
-              const symbolMap = new Map<
-                string,
-                { pnl: number; count: number; openTrades: number }
-              >();
-              const filtered = eaInstances.filter(
-                (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
-              );
-              for (const ea of filtered) {
-                const sym = ea.symbol!;
-                const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
-                existing.pnl += ea.totalProfit;
-                existing.count += 1;
-                existing.openTrades += ea.openTrades;
-                symbolMap.set(sym, existing);
-              }
-              if (symbolMap.size <= 1) return null;
-              const entries = Array.from(symbolMap.entries()).sort(
-                (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
-              );
-              return (
-                <div className="px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
-                    Symbols
-                  </p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {entries.map(([sym, data]) => (
-                      <span
-                        key={sym}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-mono"
-                      >
-                        <span className="font-medium text-[#94A3B8]">{sym}</span>
-                        <span
-                          className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-                        >
-                          {formatCurrency(data.pnl)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
           </div>
 
-          {/* RIGHT: Monitoring */}
-          <div className="lg:col-span-2 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-              Monitoring
-            </p>
-            {(() => {
-              const actionItems = eaInstances
-                .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
-                .map((ea) => {
-                  const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-                  if (!att) return null;
-                  const identity =
-                    [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-                  const isBaselineAction =
-                    att.statusLabel === "Baseline suspended" ||
-                    att.statusLabel === "No baseline linked";
-                  return {
-                    id: ea.id,
-                    identity,
-                    ...att,
-                    onClick: isBaselineAction
-                      ? () => setLinkBaselineInstanceId(ea.id)
-                      : () => {
-                          const cardId = ea.parentInstanceId || ea.id;
-                          if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                          document
-                            .getElementById(`account-card-${cardId}`)
-                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                        },
-                  };
-                })
-                .filter((item): item is NonNullable<typeof item> => item !== null);
+          {/* KPI Sidebar — 1/4 width */}
+          <div className="lg:col-span-1 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4 space-y-4">
+            {/* Financial metrics */}
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">Balance</p>
+              <p className="text-xl font-bold tabular-nums text-[#10B981]">
+                {formatCurrency(totalBalance)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">
+                Floating P&L
+              </p>
+              <p
+                className={`text-xl font-bold tabular-nums ${floatingPnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+              >
+                {formatCurrency(floatingPnl)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">
+                Total Profit
+              </p>
+              <p
+                className={`text-xl font-bold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+              >
+                {formatCurrency(totalProfit)}
+              </p>
+            </div>
 
-              if (actionItems.length === 0) return null;
+            {/* Win Rate with donut */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1">
+                  Win Rate
+                </p>
+                <p className="text-xl font-bold tabular-nums text-white">{winRate.toFixed(1)}%</p>
+              </div>
+              <WinRateDonut winRate={winRate} wins={wins} losses={losses} size={52} />
+            </div>
 
-              // Group action items
-              const groups = new Map<
-                string,
-                {
-                  statusLabel: string;
-                  reason: string;
-                  actionLabel: string;
-                  color: string;
-                  members: typeof actionItems;
-                }
-              >();
-              for (const item of actionItems) {
-                const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
-                const existing = groups.get(groupKey);
-                if (existing) {
-                  existing.members.push(item);
-                } else {
-                  groups.set(groupKey, {
-                    statusLabel: item.statusLabel,
-                    reason: item.reason,
-                    actionLabel: item.actionLabel,
-                    color: item.color,
-                    members: [item],
-                  });
-                }
-              }
+            <div className="border-t border-[#1E293B]/40 my-1" />
 
-              const ALERT_PRIORITY: Record<string, number> = {
-                "Edge at risk": 0,
-                Unstable: 1,
-                "Connection error": 2,
-                "Baseline suspended": 3,
-                "Waiting for data": 4,
-                "No baseline linked": 5,
-              };
-              const sortedGroups = [...groups.values()].sort(
-                (a, b) =>
-                  (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
-              );
+            {/* System state */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#64748B]">Online</span>
+                <span className="text-[11px] font-semibold tabular-nums text-white">
+                  {sysTotal - sysPaused}/{sysTotal}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#64748B]">Status</span>
+                <span
+                  className={`text-[11px] font-semibold ${allHealthy ? "text-[#10B981]" : sysPaused > 0 ? "text-[#F59E0B]" : "text-white"}`}
+                >
+                  {sysPaused > 0 ? "PAUSED" : allHealthy ? "NOMINAL" : "ACTIVE"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#64748B]">Attention</span>
+                <span
+                  className={`text-[11px] font-semibold tabular-nums ${sysAttention > 0 ? "text-[#F59E0B]" : "text-[#10B981]"}`}
+                >
+                  {sysAttention}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[#64748B]">Profit Factor</span>
+                <span className="text-[11px] font-semibold tabular-nums text-white">
+                  {profitFactor === Infinity ? "\u221E" : profitFactor.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              const hasRed = actionItems.some((i) => i.color === "#EF4444");
-              const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
+      {/* ── Success Banner ── */}
+      {linkedSuccessBanner && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] text-sm font-medium">
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Baseline linked successfully — monitoring will resume automatically.
+        </div>
+      )}
 
-              return (
+      {/* ── Tabbed Content: Accounts / Monitoring / Journal ── */}
+      {eaInstances.length > 0 ? (
+        <MonitorTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          monitoringContent={
+            <div className="space-y-4">
+              {/* Alerts */}
+              {actionItems.length > 0 && (
                 <div
-                  className="rounded-md px-3 py-3"
+                  className="rounded-lg p-4"
                   style={{
-                    borderColor: `${alertBorderColor}20`,
-                    borderWidth: "1px",
+                    borderWidth: 1,
                     borderStyle: "solid",
+                    borderColor: `${alertBorderColor}20`,
                     backgroundColor: `${alertBorderColor}05`,
                   }}
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <span className="relative flex h-2 w-2">
                       <span
-                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
+                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
                         style={{ backgroundColor: alertBorderColor }}
                       />
                       <span
@@ -868,149 +726,215 @@ export function LiveDashboardClient({
                         style={{ backgroundColor: alertBorderColor }}
                       />
                     </span>
-                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-                      Alerts
+                    <p className="text-xs font-semibold" style={{ color: alertBorderColor }}>
+                      {actionItems.length}{" "}
+                      {actionItems.length === 1 ? "instance needs" : "instances need"} attention
                     </p>
-                    <span
-                      className="text-[10px] font-semibold tabular-nums"
-                      style={{ color: alertBorderColor }}
-                    >
-                      {actionItems.length}
+                  </div>
+                  <div className="space-y-3">
+                    {sortedAlertGroups.map((group, gi) => (
+                      <div key={gi} className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                            style={{ color: group.color, backgroundColor: `${group.color}15` }}
+                          >
+                            {group.statusLabel}
+                          </span>
+                          <span className="text-[10px] text-[#475569]">
+                            {group.members.length} instance{group.members.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#64748B] pl-1">{group.reason}</p>
+                        <div className="flex flex-wrap gap-1.5 pl-1">
+                          {group.members.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={m.onClick}
+                              className="text-[10px] px-2 py-0.5 rounded-md border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#475569] transition-colors"
+                            >
+                              {m.identity} &rarr; {group.actionLabel}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Health Grid */}
+              <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
+                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
+                  System Health
+                </p>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { label: "Healthy", count: sysHealthy, color: "#10B981" },
+                    { label: "Attention", count: sysAttention, color: "#F59E0B" },
+                    { label: "Collecting", count: sysMonitoring, color: "#A78BFA" },
+                    { label: "Paused", count: sysPaused, color: "#64748B" },
+                  ].map((c) => (
+                    <div key={c.label} className="text-center">
+                      <p
+                        className="text-2xl font-bold tabular-nums leading-none"
+                        style={{ color: c.color }}
+                      >
+                        {c.count}
+                      </p>
+                      <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1.5">
+                        {c.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Open Trades */}
+              <OpenTradesPanel instances={eaInstances} />
+
+              {/* Health + Exposure */}
+              <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  {portfolioHealthParts.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                        Health
+                      </span>
+                      {portfolioHealthParts.map((label) => {
+                        const hs = HEALTH_STYLES[label];
+                        return (
+                          <span
+                            key={label}
+                            className={`inline-flex items-center gap-1 text-xs font-medium ${hs.text}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
+                            {portfolioHealthCounts[label]} {label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                      Exposure
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
+                      {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
+                      {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
                     </span>
                   </div>
-                  <div className="space-y-1.5">
-                    {sortedGroups.map((group) => (
-                      <div
-                        key={group.statusLabel}
-                        className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 bg-white/[0.02]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[11px] font-semibold" style={{ color: group.color }}>
-                              {group.statusLabel}
-                            </p>
-                            <span className="text-[10px] text-[#475569]">
-                              ({group.members.length})
+                </div>
+              </div>
+
+              {/* Per-Symbol Breakdown */}
+              {(() => {
+                const symbolMap = new Map<
+                  string,
+                  { pnl: number; count: number; openTrades: number }
+                >();
+                const filtered = eaInstances.filter(
+                  (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
+                );
+                for (const ea of filtered) {
+                  const sym = ea.symbol!;
+                  const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
+                  existing.pnl += ea.totalProfit;
+                  existing.count += 1;
+                  existing.openTrades += ea.openTrades;
+                  symbolMap.set(sym, existing);
+                }
+                if (symbolMap.size < 2) return null;
+                return (
+                  <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
+                      Symbols
+                    </p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {[...symbolMap.entries()]
+                        .sort((a, b) => b[1].pnl - a[1].pnl)
+                        .map(([sym, d]) => (
+                          <span key={sym} className="text-[11px] tabular-nums">
+                            <span className="text-[#818CF8] font-semibold">{sym}</span>{" "}
+                            <span className={d.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}>
+                              {formatCurrency(d.pnl)}
                             </span>
-                            <span className="text-[10px] text-[#475569]">—</span>
-                            <span className="text-[10px] text-[#64748B] truncate">
-                              {group.reason}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {group.members.map((m) => (
-                              <span
-                                key={m.id}
-                                className="inline-flex items-center gap-1.5 text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
-                              >
-                                {m.identity}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    m.onClick();
-                                  }}
-                                  disabled={
-                                    linkingInstanceId === m.id || activatingInstanceId === m.id
-                                  }
-                                  className="text-[9px] font-medium transition-colors hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                  style={{ color: group.color }}
-                                >
-                                  {activatingInstanceId === m.id
-                                    ? "Activating..."
-                                    : linkingInstanceId === m.id
-                                      ? "Linking..."
-                                      : group.actionLabel}
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDismissedAlerts(
-                                (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
-                              )
-                            }
-                            className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors p-0.5"
-                            title="Dismiss"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Paper P&L */}
+              {eaInstances.some((ea) => ea.mode === "PAPER") && (
+                <div className="rounded-lg border border-[#1E293B]/40 bg-[#0A0118]/40 p-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
+                      Paper P&L
+                    </span>
+                    <span
+                      className={`text-xs font-semibold tabular-nums ${eaInstances.filter((ea) => ea.mode === "PAPER").reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
+                    >
+                      {formatCurrency(
+                        eaInstances
+                          .filter((ea) => ea.mode === "PAPER")
+                          .reduce((sum, ea) => sum + ea.totalProfit, 0)
+                      )}
+                    </span>
+                    <span className="text-[9px] text-[#475569]">tracked total</span>
                   </div>
                 </div>
-              );
-            })()}
-            {(() => {
-              let healthy = 0;
-              let attentionCount = 0;
-              let monitoring = 0;
-              let paused = 0;
-              for (const ea of eaInstances) {
-                if (ea.tradingState === "PAUSED") {
-                  paused++;
-                  continue;
-                }
-                const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-                if (!att) {
-                  healthy++;
-                } else if (att.statusLabel === "Waiting for data") {
-                  monitoring++;
-                } else {
-                  attentionCount++;
-                }
-              }
-              return (
-                <div className="rounded-md border border-[#1E293B]/25 bg-white/[0.015] px-3 py-2.5">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
-                    Health
-                  </p>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { label: "Healthy", count: healthy, color: "#10B981" },
-                      { label: "Attention", count: attentionCount, color: "#F59E0B" },
-                      { label: "Collecting", count: monitoring, color: "#A78BFA" },
-                      { label: "Paused", count: paused, color: "#64748B" },
-                    ].map((c) => (
-                      <div key={c.label} className="text-center">
-                        <p
-                          className="text-lg font-bold font-mono tabular-nums leading-none"
-                          style={{ color: c.count > 0 ? c.color : "#27272A" }}
-                        >
-                          {c.count}
-                        </p>
-                        <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1">
-                          {c.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+              )}
+            </div>
+          }
+        >
+          {/* ── Accounts tab content (default) ── */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {sortByPriority(
+                groupByAccount(
+                  modeFilter === "ALL"
+                    ? eaInstances
+                    : eaInstances.filter((ea) => ea.mode === modeFilter)
+                )
+              ).map((account) => (
+                <div
+                  key={account.key}
+                  draggable
+                  onDragStart={() => handleDragStart(account.key)}
+                  onDragOver={(e) => handleDragOver(e, account.key)}
+                  onDragEnd={handleDragEnd}
+                  onDrop={() => handleDrop(account.key)}
+                  className={`transition-opacity ${
+                    draggedAccountKey === account.key ? "opacity-40" : ""
+                  } ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-lg" : ""}`}
+                >
+                  <AccountCard
+                    account={account}
+                    changedIds={changedIds}
+                    onTogglePause={handleTogglePause}
+                    onDelete={handleDelete}
+                    onLinkBaseline={(id) => setLinkBaselineInstanceId(id)}
+                    onUnlinkBaseline={handleUnlinkBaseline}
+                    forceExpandId={scrollExpandId}
+                  />
                 </div>
-              );
-            })()}
+              ))}
+            </div>
+            <TradingCalendar dailyPnl={dailyPnl} />
           </div>
-        </div>
-      )}
-
-      {/* Baseline linked success banner */}
-      {linkedSuccessBanner && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/20 text-xs text-[#10B981] font-medium mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] shrink-0" />
-          Baseline linked successfully
-        </div>
-      )}
-
-      {/* EA Cards Grid */}
-      {eaInstances.length === 0 ? (
-        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1E293B] flex items-center justify-center">
+        </MonitorTabs>
+      ) : (
+        /* ── Empty state ── */
+        <div className="text-center py-16 rounded-xl border border-[#1E293B]/40 bg-[#0A0118]/40">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#4F46E5]/10 flex items-center justify-center">
             <svg
-              className="w-8 h-8 text-white"
+              className="w-8 h-8 text-[#4F46E5]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1023,73 +947,22 @@ export function LiveDashboardClient({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No live EAs running</h3>
-          <div className="text-sm text-[#94A3B8] max-w-md mx-auto mb-6 space-y-2 text-left">
-            <p className="flex gap-2">
-              <span className="text-[#818CF8] font-semibold shrink-0">1.</span>
-              Export your strategy as an EA from the project builder
-            </p>
-            <p className="flex gap-2">
-              <span className="text-[#818CF8] font-semibold shrink-0">2.</span>
-              Download the AlgoStudio Monitor EA and add it to MT5
-            </p>
-            <p className="flex gap-2">
-              <span className="text-[#818CF8] font-semibold shrink-0">3.</span>
-              Your live strategies will appear here with real-time tracking
-            </p>
-          </div>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-md hover:bg-[#4338CA] transition-colors"
-          >
-            Go to Dashboard
-          </Link>
-        </div>
-      ) : (
-        <div className="rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-          <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-4">
-            Strategy Monitor
+          <h3 className="text-lg font-semibold text-white mb-2">No strategies connected yet</h3>
+          <p className="text-sm text-[#64748B] mb-6 max-w-md mx-auto">
+            Connect your MetaTrader 5 terminal to start monitoring your trading strategies in
+            real-time.
           </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {sortByPriority(
-              groupByAccount(
-                modeFilter === "ALL"
-                  ? eaInstances
-                  : eaInstances.filter((ea) => ea.mode === modeFilter)
-              )
-            ).map((account) => (
-              <div
-                key={account.key}
-                draggable
-                onDragStart={() => handleDragStart(account.key)}
-                onDragOver={(e) => handleDragOver(e, account.key)}
-                onDragEnd={handleDragEnd}
-                onDrop={() => handleDrop(account.key)}
-                className={`transition-all ${draggedAccountKey === account.key ? "opacity-40" : ""} ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-xl" : ""}`}
-                style={{ cursor: "grab" }}
-              >
-                <AccountCard
-                  account={account}
-                  changedIds={changedIds}
-                  onTogglePause={handleTogglePause}
-                  onDelete={handleDelete}
-                  onLinkBaseline={setLinkBaselineInstanceId}
-                  onUnlinkBaseline={handleUnlinkBaseline}
-                  forceExpandId={scrollExpandId}
-                />
-              </div>
-            ))}
-          </div>
+          <RegisterEADialog onSuccess={fetchUpdate} />
         </div>
       )}
 
-      {/* Settings — drawdown alert (secondary, below accounts) */}
+      {/* ── Drawdown Alert Settings ── */}
       {eaInstances.length > 0 && (
         <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-1">
               <svg
-                className="w-4 h-4 text-[#F59E0B] shrink-0"
+                className="w-4 h-4 text-[#F59E0B] flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1101,25 +974,26 @@ export function LiveDashboardClient({
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
                 />
               </svg>
-              <p className="text-xs text-[#CBD5E1]">
-                Floating drawdown alert (current balance-equity gap, all EAs)
-              </p>
+              <span className="text-[11px] text-[#A1A1AA]">
+                <span className="font-medium text-[#F59E0B]">Floating drawdown alert</span> (current
+                balance-equity gap, all EAs)
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#7C8DB0]">Alert at</span>
+              <span className="text-[10px] text-[#64748B]">Alert at</span>
               <input
                 type="number"
-                value={globalDrawdownThreshold}
-                onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
                 min="0.1"
                 max="100"
                 step="0.1"
-                className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
+                value={globalDrawdownThreshold}
+                onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
+                className="w-16 px-2 py-1 text-xs text-white bg-[#09090B] border border-[#1E293B] rounded focus:outline-none focus:border-[#4F46E5] tabular-nums text-center"
               />
-              <span className="text-xs text-[#7C8DB0]">% floating DD</span>
+              <span className="text-[10px] text-[#64748B]">% floating DD</span>
               <button
                 onClick={handleSaveGlobalDrawdown}
-                className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
+                className="px-3 py-1 text-[10px] font-medium bg-[#4F46E5] text-white rounded hover:bg-[#6366F1] transition-colors"
               >
                 Save
               </button>
@@ -1128,24 +1002,24 @@ export function LiveDashboardClient({
         </div>
       )}
 
-      {/* Restore onboarding guide */}
-      {eaInstances.length > 0 && showRestoreGuide && (
-        <button
-          onClick={() => {
-            try {
-              localStorage.removeItem("algostudio:onboarding-dismissed");
-            } catch {
-              /* private browsing */
-            }
-            window.location.reload();
-          }}
-          className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"
-        >
-          Show setup guide again
-        </button>
+      {/* Restore onboarding guide link */}
+      {showRestoreGuide && eaInstances.length > 0 && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => {
+              try {
+                localStorage.removeItem("algostudio:onboarding-dismissed");
+              } catch {}
+              window.location.reload();
+            }}
+            className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors underline"
+          >
+            Show setup guide again
+          </button>
+        </div>
       )}
 
-      {/* Alerts Modal */}
+      {/* ── Modals ── */}
       {showAlertsModal && (
         <AlertsModal instances={eaInstances} onClose={() => setShowAlertsModal(false)} />
       )}

@@ -3,18 +3,38 @@
 import { useState } from "react";
 import { JournalContent } from "../journal/page";
 
-type Tab = "accounts" | "journal";
+type Tab = "accounts" | "monitoring" | "journal";
 
 interface MonitorTabsProps {
   defaultTab?: Tab;
+  /** Controlled mode: external tab state */
+  activeTab?: Tab;
+  /** Controlled mode: callback when tab changes */
+  onTabChange?: (tab: Tab) => void;
+  /** Content for the Monitoring tab */
+  monitoringContent?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function MonitorTabs({ defaultTab = "accounts", children }: MonitorTabsProps) {
-  const [tab, setTab] = useState<Tab>(defaultTab);
+export function MonitorTabs({
+  defaultTab = "accounts",
+  activeTab,
+  onTabChange,
+  monitoringContent,
+  children,
+}: MonitorTabsProps) {
+  const [internalTab, setInternalTab] = useState<Tab>(defaultTab);
+
+  // Controlled mode: use external state; uncontrolled: use internal state
+  const tab = activeTab ?? internalTab;
+  const setTab = (t: Tab) => {
+    if (onTabChange) onTabChange(t);
+    else setInternalTab(t);
+  };
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "accounts", label: "Accounts" },
+    { key: "monitoring", label: "Monitoring" },
     { key: "journal", label: "Journal" },
   ];
 
@@ -37,6 +57,7 @@ export function MonitorTabs({ defaultTab = "accounts", children }: MonitorTabsPr
       </div>
 
       {tab === "accounts" && <>{children}</>}
+      {tab === "monitoring" && <>{monitoringContent}</>}
       {tab === "journal" && <JournalContent />}
     </div>
   );
