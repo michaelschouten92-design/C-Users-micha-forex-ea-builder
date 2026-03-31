@@ -6,7 +6,6 @@ import { AppNav } from "@/components/app/app-nav";
 import { SubscriptionPanel } from "../components/subscription-panel";
 import { SettingsContent } from "./settings-content";
 import { resolveTier } from "@/lib/plan-limits";
-import { getEffectiveLimits } from "@/lib/plans";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -15,23 +14,9 @@ export default async function SettingsPage() {
     redirect("/login?expired=true");
   }
 
-  const startOfMonth = new Date();
-  startOfMonth.setUTCDate(1);
-  startOfMonth.setUTCHours(0, 0, 0, 0);
-
-  const [subscription, projectCount, exportCount, user, monitoredAccountCount] = await Promise.all([
+  const [subscription, user, monitoredAccountCount] = await Promise.all([
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
-    }),
-    prisma.project.count({
-      where: { userId: session.user.id, deletedAt: null },
-    }),
-    prisma.exportJob.count({
-      where: {
-        userId: session.user.id,
-        createdAt: { gte: startOfMonth },
-        deletedAt: null,
-      },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -43,7 +28,6 @@ export default async function SettingsPage() {
   ]);
 
   const tier = resolveTier(subscription);
-  const effectiveLimits = await getEffectiveLimits(tier);
 
   return (
     <div className="min-h-screen">
@@ -56,8 +40,6 @@ export default async function SettingsPage() {
         <SubscriptionPanel
           tier={tier}
           subscriptionStatus={subscription?.status ?? undefined}
-          projectCount={projectCount}
-          exportCount={exportCount}
           monitoredAccountCount={monitoredAccountCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
@@ -66,10 +48,6 @@ export default async function SettingsPage() {
               ? (subscription.scheduledDowngradeTier as string)
               : null
           }
-          effectiveLimits={{
-            maxProjects: effectiveLimits.maxProjects,
-            maxExportsPerMonth: effectiveLimits.maxExportsPerMonth,
-          }}
         />
 
         <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />

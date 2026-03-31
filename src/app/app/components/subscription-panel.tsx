@@ -2,36 +2,26 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLANS, TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
+import { PLANS, type PlanTier } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError, showSuccess } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
   tier: PlanTier;
   subscriptionStatus?: string;
-  projectCount: number;
-  exportCount: number;
   monitoredAccountCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
-  /** Server-resolved dynamic limits from DB (overrides hardcoded PLANS) */
-  effectiveLimits?: {
-    maxProjects: number;
-    maxExportsPerMonth: number;
-  };
 };
 
 export function SubscriptionPanel({
   tier,
   subscriptionStatus,
-  projectCount,
-  exportCount,
   monitoredAccountCount,
   hasStripeSubscription,
   currentPeriodEnd,
   scheduledDowngradeTier,
-  effectiveLimits,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
@@ -46,14 +36,7 @@ export function SubscriptionPanel({
   const currentIndex = tierOrder.indexOf(tier);
   const downgradeTier: PlanTier | null = currentIndex > 1 ? tierOrder[currentIndex - 1] : null;
 
-  const projectLimit = effectiveLimits?.maxProjects ?? plan.limits.maxProjects;
-  const exportLimit = effectiveLimits?.maxExportsPerMonth ?? plan.limits.maxExportsPerMonth;
   const accountLimit = plan.limits.maxMonitoredTradingAccounts;
-
-  const projectPercentage =
-    projectLimit === Infinity || projectLimit <= 0 ? 0 : (projectCount / projectLimit) * 100;
-  const exportPercentage =
-    exportLimit === Infinity || exportLimit <= 0 ? 0 : (exportCount / exportLimit) * 100;
   const accountPercentage =
     accountLimit === Infinity || accountLimit <= 0
       ? 0
@@ -323,103 +306,7 @@ export function SubscriptionPanel({
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-          {/* Projects Usage */}
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#A1A1AA]">Projects</span>
-              <span className="text-white">
-                {projectCount} / {projectLimit === Infinity ? "\u221E" : projectLimit}
-              </span>
-            </div>
-            {projectLimit !== Infinity && (
-              <div
-                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={projectCount}
-                aria-valuemin={0}
-                aria-valuemax={projectLimit}
-                aria-label={`Projects: ${projectCount} of ${projectLimit}`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    projectPercentage >= 100
-                      ? "bg-[#EF4444]"
-                      : projectPercentage >= 80
-                        ? "bg-[#F59E0B]"
-                        : "bg-[#6366F1]"
-                  }`}
-                  style={{ width: `${Math.min(projectPercentage, 100)}%` }}
-                />
-              </div>
-            )}
-            {projectLimit !== Infinity && projectPercentage >= 80 && projectPercentage < 100 && (
-              <p className="text-xs text-[#F59E0B] mt-1">
-                {projectLimit - projectCount} project{projectLimit - projectCount !== 1 ? "s" : ""}{" "}
-                remaining
-              </p>
-            )}
-            {projectLimit !== Infinity && projectPercentage >= 100 && (
-              <p className="text-xs text-[#EF4444] mt-1">
-                Project limit reached —{" "}
-                <Link href="/pricing" className="underline hover:text-white">
-                  upgrade
-                </Link>
-              </p>
-            )}
-            {projectLimit === Infinity && (
-              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
-            )}
-          </div>
-
-          {/* Exports Usage */}
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#A1A1AA]">Exports this month</span>
-              <span className="text-white">
-                {exportCount} / {exportLimit === Infinity ? "\u221E" : exportLimit}
-              </span>
-            </div>
-            {exportLimit !== Infinity && (
-              <div
-                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={exportCount}
-                aria-valuemin={0}
-                aria-valuemax={exportLimit}
-                aria-label={`Exports: ${exportCount} of ${exportLimit}`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    exportPercentage >= 100
-                      ? "bg-[#EF4444]"
-                      : exportPercentage >= 80
-                        ? "bg-[#F59E0B]"
-                        : "bg-[#6366F1]"
-                  }`}
-                  style={{ width: `${Math.min(exportPercentage, 100)}%` }}
-                />
-              </div>
-            )}
-            {exportLimit !== Infinity && exportPercentage >= 80 && exportPercentage < 100 && (
-              <p className="text-xs text-[#F59E0B] mt-1">
-                {exportLimit - exportCount} export{exportLimit - exportCount !== 1 ? "s" : ""}{" "}
-                remaining this month
-              </p>
-            )}
-            {exportLimit !== Infinity && exportPercentage >= 100 && (
-              <p className="text-xs text-[#EF4444] mt-1">
-                Export limit reached —{" "}
-                <Link href="/pricing" className="underline hover:text-white">
-                  upgrade
-                </Link>
-              </p>
-            )}
-            {exportLimit === Infinity && (
-              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
-            )}
-          </div>
-
+        <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
           {/* Monitored Accounts Usage */}
           <div>
             <div className="flex justify-between text-sm mb-2">
