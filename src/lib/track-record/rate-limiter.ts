@@ -1,65 +1,47 @@
 /**
- * Per-instance event rate limiter using in-memory sliding window.
+ * Per-instance event rate limiter using database-backed sliding window.
  *
  * Limits each EA instance to a configurable number of events per minute
  * to prevent abuse, runaway EAs, or replay attacks from flooding the ledger.
+ *
+ * Uses a lightweight DB query (COUNT with timestamp filter) instead of
+ * in-memory state. Survives process restarts and rolling deploys.
  */
+
+import { prisma } from "@/lib/prisma";
 
 const DEFAULT_MAX_EVENTS_PER_MINUTE = 100;
 const WINDOW_MS = 60_000; // 1 minute
-
-interface WindowEntry {
-  timestamps: number[];
-}
-
-const windows = new Map<string, WindowEntry>();
-
-const CLEANUP_INTERVAL_MS = 5 * 60_000; // 5 minutes
-let lastCleanup = Date.now();
-
-function cleanupStaleEntries(): void {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
-  lastCleanup = now;
-
-  const cutoff = now - WINDOW_MS * 2;
-  for (const [key, entry] of windows) {
-    if (entry.timestamps.length === 0 || entry.timestamps[entry.timestamps.length - 1] < cutoff) {
-      windows.delete(key);
-    }
-  }
-}
 
 /**
  * Check if an instance has exceeded its rate limit.
  * Returns null if allowed, or an error message string if rate limited.
  *
- * Call this BEFORE processing the event. If allowed, the event is
- * automatically counted toward the window.
+ * Uses TrackRecordEvent count within the last 60 seconds as the
+ * authoritative rate measurement. This is durable across deploys.
  */
 export async function checkRateLimit(
   instanceId: string,
   maxPerMinute: number = DEFAULT_MAX_EVENTS_PER_MINUTE
 ): Promise<string | null> {
-  cleanupStaleEntries();
+  const windowStart = new Date(Date.now() - WINDOW_MS);
 
-  const now = Date.now();
-  const windowStart = now - WINDOW_MS;
+  try {
+    const recentCount = await prisma.trackRecordEvent.count({
+      where: {
+        instanceId,
+        receivedAt: { gte: windowStart },
+      },
+    });
 
-  let entry = windows.get(instanceId);
-  if (!entry) {
-    entry = { timestamps: [] };
-    windows.set(instanceId, entry);
+    if (recentCount >= maxPerMinute) {
+      return `Rate limited: ${maxPerMinute} events/minute exceeded for this instance`;
+    }
+
+    return null;
+  } catch {
+    // If DB query fails, fail open (allow the event) to prevent
+    // rate limiter failures from blocking legitimate telemetry.
+    return null;
   }
-
-  // Trim timestamps outside the window
-  entry.timestamps = entry.timestamps.filter((t) => t > windowStart);
-
-  if (entry.timestamps.length >= maxPerMinute) {
-    return `Rate limited: ${maxPerMinute} events/minute exceeded for this instance`;
-  }
-
-  // Record this event
-  entry.timestamps.push(now);
-  return null;
 }
