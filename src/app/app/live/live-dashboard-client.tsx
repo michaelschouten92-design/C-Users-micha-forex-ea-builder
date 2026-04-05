@@ -464,10 +464,22 @@ export function LiveDashboardClient({
   const totalStrategies = filteredInstances.filter((ea) => ea.symbol !== null).length;
   const totalOpenTrades = metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0);
 
-  // ── Portfolio totals ──
-  const totalBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
-  const totalEquity = metricsSource.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
-  const totalFloatingPnl = totalEquity - totalBalance;
+  // ── Portfolio totals (split by mode) ──
+  // Live: from containers (account-wide aggregates) which only include mode=LIVE
+  const liveBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const liveEquity = metricsSource.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
+  const totalFloatingPnl = liveEquity - liveBalance;
+  // Paper: from paper account primaries (not containers since isAccountContainer checks mode=LIVE)
+  const paperPrimaries = eaInstances.filter(
+    (ea) => ea.mode === "PAPER" && !ea.parentInstanceId && !ea.symbol
+  );
+  // Fallback: if no paper primaries, sum all paper instances without parents
+  const paperBalance =
+    paperPrimaries.length > 0
+      ? paperPrimaries.reduce((sum, ea) => sum + (ea.balance ?? 0), 0)
+      : eaInstances
+          .filter((ea) => ea.mode === "PAPER" && !ea.parentInstanceId)
+          .reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
 
   // ── Activity feed: merge live SSE trades with recent historical trades ──
   const feedItems: FeedItem[] = (() => {
@@ -518,10 +530,14 @@ export function LiveDashboardClient({
           {/* ── Stat Cards Row ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard
-              label="Portfolio Balance"
-              value={formatCurrency(totalBalance)}
+              label="Live Balance"
+              value={formatCurrency(liveBalance)}
               accentColor="#10B981"
-              subValue={`Equity: ${formatCurrency(totalEquity)}`}
+              subValue={
+                paperBalance > 0
+                  ? `Paper: ${formatCurrency(paperBalance)}`
+                  : `Equity: ${formatCurrency(liveEquity)}`
+              }
               subColor="#64748B"
               icon={
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -574,7 +590,7 @@ export function LiveDashboardClient({
                 connectionStatus === "connected"
                   ? "Live"
                   : connectionStatus === "fallback-polling"
-                    ? "Polling"
+                    ? "Delayed"
                     : "Offline"
               }
               accentColor={
@@ -605,17 +621,11 @@ export function LiveDashboardClient({
             />
           </div>
 
-          {/* ── Connection warning banner (shown when not live-connected) ── */}
+          {/* ── Connection warning (only for disconnected — polling is shown inline) ── */}
           {connectionStatus === "disconnected" && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20 text-xs text-[#EF4444]">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20 text-[10px] text-[#EF4444]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0" />
-              Connection lost. Data may be stale. Reconnecting...
-            </div>
-          )}
-          {connectionStatus === "fallback-polling" && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-xs text-[#F59E0B]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] flex-shrink-0" />
-              Live stream unavailable. Polling for updates every 30 seconds.
+              Connection lost. Reconnecting...
             </div>
           )}
 
@@ -670,11 +680,30 @@ export function LiveDashboardClient({
             </button>
 
             <div className="ml-auto flex items-center gap-2">
+              {connectionStatus === "fallback-polling" && (
+                <span className="flex items-center gap-1.5 text-[10px] text-[#F59E0B]">
+                  <span className="w-1 h-1 rounded-full bg-[#F59E0B] animate-pulse" />
+                  Delayed updates
+                </span>
+              )}
               {accountGroups.length >= 2 && (
                 <Link
                   href="/app/compare"
-                  className="px-2.5 py-1 text-[10px] font-medium text-[#64748B] hover:text-white border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] rounded-md transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-[#CBD5E1] hover:text-white border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] rounded-md transition-colors"
                 >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+                    />
+                  </svg>
                   Compare Accounts
                 </Link>
               )}
