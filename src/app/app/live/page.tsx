@@ -6,7 +6,6 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
-import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 import { resolveTier } from "@/lib/plan-limits";
 
@@ -62,7 +61,7 @@ function renderDashboard(
   params: { decision?: string; relink?: string },
   tier: import("@/lib/plans").PlanTier
 ) {
-  const { eaInstances, authority } = data;
+  const { eaInstances } = data;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -159,91 +158,20 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── System Command Board ── */}
-        <div className="mt-5 mb-4">
-          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-3">
-            {/* Title row */}
-            <div className="flex items-baseline justify-between gap-4">
-              <div className="flex items-baseline gap-3">
-                <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
-                {eaInstances.length > 0 && (
-                  <span className="text-xs text-[#64748B] font-medium tabular-nums">
-                    {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}{" "}
-                    monitored
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* ── Title ── */}
+        <div className="mt-4 mb-3 flex items-baseline gap-3">
+          <h1 className="text-xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
+          {eaInstances.length > 0 && (
+            <span className="text-xs text-[#64748B] font-medium tabular-nums">
+              {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"} monitored
+            </span>
+          )}
         </div>
 
         {/* ══════════════════════════════════════════════════════
             ONBOARDING — Activation checklist (auto-hides)
             ══════════════════════════════════════════════════════ */}
         <ActivationPanel />
-
-        {/* ── Governance Alerts (compact — only shown when action needed) ── */}
-        {eaInstances.length > 0 &&
-          (() => {
-            const action = authority?.action ?? "PAUSE";
-            const isSetupRequired = !authority;
-            const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-            const halted = eaInstances.filter((ea) => ea.operatorHold !== "NONE");
-
-            const showAuthority = action !== "RUN";
-            const showHalted = halted.length > 0;
-
-            if (!showAuthority && !showHalted) return null;
-
-            const explanation = isSetupRequired
-              ? "Monitoring is paused until required baselines are linked."
-              : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
-
-            return (
-              <section className="mb-4 space-y-2">
-                {showAuthority && (
-                  <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg"
-                    style={{
-                      backgroundColor: colors.bg,
-                      border: `1px solid ${colors.border}`,
-                    }}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: colors.dot }}
-                    />
-                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
-                      Governance
-                    </span>
-                    <span className="text-sm font-bold" style={{ color: colors.text }}>
-                      {action}
-                    </span>
-                    {isSetupRequired && (
-                      <span className="text-xs font-semibold text-[#F59E0B]">Setup required</span>
-                    )}
-                    <span className="text-xs text-[#94A3B8] leading-relaxed">{explanation}</span>
-                  </div>
-                )}
-                {showHalted && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
-                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
-                      Operator Hold
-                    </span>
-                    <span className="text-sm font-bold text-[#EF4444]">{halted.length} halted</span>
-                    <span className="text-xs text-[#94A3B8]">
-                      {halted
-                        .slice(0, 3)
-                        .map((h) => h.eaName || h.symbol || h.id.slice(0, 8))
-                        .join(", ")}
-                      {halted.length > 3 && ` +${halted.length - 3} more`}
-                    </span>
-                  </div>
-                )}
-              </section>
-            );
-          })()}
 
         {/* ── Strategies, Terminals, Journal ── */}
         <section>
@@ -316,27 +244,3 @@ function DegradedFallback({
     </div>
   );
 }
-
-// ── Server-rendered Control Cards ────────────────────────
-
-const AUTHORITY_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> =
-  {
-    RUN: {
-      bg: "rgba(16,185,129,0.08)",
-      border: "rgba(16,185,129,0.25)",
-      text: "#10B981",
-      dot: "#10B981",
-    },
-    PAUSE: {
-      bg: "rgba(245,158,11,0.08)",
-      border: "rgba(245,158,11,0.25)",
-      text: "#F59E0B",
-      dot: "#F59E0B",
-    },
-    STOP: {
-      bg: "rgba(239,68,68,0.08)",
-      border: "rgba(239,68,68,0.25)",
-      text: "#EF4444",
-      dot: "#EF4444",
-    },
-  };

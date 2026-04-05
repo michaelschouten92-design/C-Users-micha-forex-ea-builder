@@ -5,9 +5,10 @@ import { getCsrfHeaders } from "@/lib/api-client";
 
 interface RegisterEADialogProps {
   onSuccess: () => void;
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
-export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
+export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProps) {
   const [open, setOpen] = useState(false);
   const [eaName, setEaName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,12 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select text in the input
+      // Fallback: select the input text so user can manually copy
+      const input = document.querySelector<HTMLInputElement>("input[readonly][value]");
+      if (input) {
+        input.select();
+        input.setSelectionRange(0, 99999);
+      }
     }
   };
 
@@ -77,8 +83,9 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
   return (
     <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#4F46E5]/20 border border-[#4F46E5]/50 text-white hover:bg-[#4F46E5]/30 hover:border-[#4F46E5]/70 transition-all duration-200"
+        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-all duration-200 shadow-[0_0_12px_rgba(79,70,229,0.3)]"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
@@ -88,7 +95,7 @@ export function RegisterEADialog({ onSuccess }: RegisterEADialogProps) {
             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
           />
         </svg>
-        Connect External EA
+        Connect Account
       </button>
 
       {open && (
