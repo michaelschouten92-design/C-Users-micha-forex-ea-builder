@@ -124,7 +124,7 @@ describe("decideMonitoringTransition", () => {
           from: "EDGE_AT_RISK",
           to: "LIVE_MONITORING",
           reason: expect.stringContaining("Auto-recovery"),
-          proofEventType: "STRATEGY_EDGE_RECOVERED",
+          proofEventType: "STRATEGY_RECOVERED",
         });
       }
     });

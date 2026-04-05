@@ -12,6 +12,7 @@
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { computeEdgeScore, type EdgeScoreResult } from "@/domain/monitoring/edge-score";
+import { computeEdgeProjection, type EdgeProjection } from "@/domain/monitoring/edge-projection";
 import {
   resolveInstanceMonitoringStatus,
   resolveDeploymentCurrency,
@@ -179,6 +180,8 @@ export interface StrategyDetailData {
 
   /** Edge Score — live performance vs backtest baseline. Null when no baseline or track record. */
   edgeScore: EdgeScoreResult | null;
+  /** Edge decay projection — predicts future performance from health trends. Null when insufficient data. */
+  edgeProjection: EdgeProjection | null;
 }
 
 // ── Monitoring status resolution (delegates to shared semantic layer) ──
@@ -640,6 +643,26 @@ export async function loadStrategyDetail(
     }
   }
 
+  // ── Edge Projection ───────────────────────────────────
+  let edgeProjection: EdgeProjection | null = null;
+  if (healthHistory.length >= 5) {
+    const projectionInput = healthHistory.map((h) => ({
+      overallScore: h.overallScore,
+      expectancy: h.expectancy ?? null,
+      createdAt: h.createdAt,
+    }));
+    const latestExpectancy = healthHistory[0]?.expectancy ?? null;
+    edgeProjection = computeEdgeProjection(
+      projectionInput,
+      instance.balance ?? 0,
+      latestExpectancy
+    );
+    // Only include if actually declining — don't show stable/improving projections
+    if (edgeProjection.trend !== "declining") {
+      edgeProjection = null;
+    }
+  }
+
   return {
     id: instance.id,
     eaName: instance.eaName,
@@ -679,5 +702,6 @@ export async function loadStrategyDetail(
     versionCurrency,
     strategyLineage,
     edgeScore,
+    edgeProjection,
   };
 }

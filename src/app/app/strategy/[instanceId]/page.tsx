@@ -11,6 +11,7 @@ import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
 import { EdgeScorePanel } from "@/components/app/edge-score-panel";
+import { EdgeDecayPanel } from "@/components/app/edge-decay-panel";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
 import { GovernancePanel } from "@/components/app/governance-panel";
@@ -41,6 +42,15 @@ export default async function StrategyDetailPage({ params }: PageProps) {
 
         {/* ── Edge Score ────────────────────────────────────── */}
         {data.edgeScore && <EdgeScorePanel edgeScore={data.edgeScore} />}
+
+        {/* ── Edge Decay Projection (only shown when declining) ── */}
+        {data.edgeProjection && (
+          <EdgeDecayPanel
+            projection={data.edgeProjection}
+            eaName={data.eaName}
+            instanceId={data.id}
+          />
+        )}
 
         {/* ── Control Layer ─────────────────────────────────── */}
 

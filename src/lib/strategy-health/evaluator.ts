@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { triggerAlert } from "@/lib/alerts";
 import { emitControlLayerAlert } from "@/lib/alerts/control-layer-alerts";
+import { computeEdgeProjection, generateEdgeDecayAlert } from "@/domain/monitoring/edge-projection";
 import { collectLiveMetrics } from "./collector";
 import { computeHealth } from "./scorer";
 import { HEALTH_EVAL_COOLDOWN_MS, HEALTH_STALE_THRESHOLD_MS } from "./thresholds";
@@ -143,7 +144,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
     where: { instanceId },
     orderBy: { createdAt: "desc" },
     take: EWMA_WINDOW,
-    select: { status: true, overallScore: true },
+    select: { status: true, overallScore: true, expectancy: true, createdAt: true },
   });
 
   const previousSnapshot = recentSnapshots[0] ?? null;
@@ -290,6 +291,36 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       expectancy,
     },
   });
+
+  // ── Predictive edge decay alert ──────────────────────────
+  // After snapshot creation, check if edge is declining and alert proactively.
+  if (recentSnapshots.length >= 5) {
+    try {
+      const projectionInput = recentSnapshots.map((s) => ({
+        overallScore: s.overallScore,
+        expectancy: s.expectancy ?? null,
+        createdAt: s.createdAt.toISOString(),
+      }));
+      const projection = computeEdgeProjection(
+        projectionInput,
+        instance.balance ?? 0,
+        expectancy ?? null
+      );
+      const alertMsg = generateEdgeDecayAlert(projection, instance.eaName, result.overallScore);
+      if (alertMsg) {
+        emitControlLayerAlert(prisma, {
+          userId: instance.userId,
+          instanceId,
+          alertType: "EDGE_DECAY_WARNING",
+          reasons: [alertMsg],
+        }).catch((err) => {
+          logger.error({ err, instanceId }, "Failed to emit EDGE_DECAY_WARNING alert");
+        });
+      }
+    } catch (err) {
+      logger.warn({ err, instanceId }, "Edge projection computation failed (non-critical)");
+    }
+  }
 
   // Recompute unified strategy status after health evaluation
   await computeAndCacheStatus(instanceId).catch((err) => {

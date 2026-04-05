@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { useLiveStream } from "./use-live-stream";
@@ -668,7 +669,15 @@ export function LiveDashboardClient({
               </svg>
             </button>
 
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              {accountGroups.length >= 2 && (
+                <Link
+                  href="/app/compare"
+                  className="px-2.5 py-1 text-[10px] font-medium text-[#64748B] hover:text-white border border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] rounded-md transition-colors"
+                >
+                  Compare Accounts
+                </Link>
+              )}
               <RegisterEADialog onSuccess={fetchUpdate} triggerRef={registerDialogRef} />
             </div>
           </div>

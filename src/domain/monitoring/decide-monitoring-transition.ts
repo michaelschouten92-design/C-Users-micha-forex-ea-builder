@@ -82,7 +82,7 @@ export function decideMonitoringTransition(input: TransitionInput): TransitionDe
       from: "EDGE_AT_RISK",
       to: "LIVE_MONITORING",
       reason: `Auto-recovery: ${consecutiveHealthyRuns} consecutive healthy monitoring runs (threshold: ${recoveryRunsRequired})`,
-      proofEventType: "STRATEGY_EDGE_RECOVERED",
+      proofEventType: "STRATEGY_RECOVERED",
     };
   }
 

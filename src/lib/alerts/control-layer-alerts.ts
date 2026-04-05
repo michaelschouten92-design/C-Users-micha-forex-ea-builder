@@ -38,6 +38,8 @@ const ALERT_SUMMARIES: Record<ControlLayerAlertType, string> = {
   VERSION_OUTDATED: "Running an outdated strategy version.",
   HEALTH_DEGRADED: "Strategy edge is at risk. Performance deviating from baseline.",
   HEALTH_CRITICAL: "Strategy edge is critical. Sustained performance decline detected.",
+  EDGE_DECAY_WARNING:
+    "Edge decay detected. Performance trending below baseline — projected to break threshold.",
 };
 
 // ── Public API ───────────────────────────────────────────
@@ -111,6 +113,7 @@ const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
   "MONITOR_OFFLINE",
   "HEALTH_DEGRADED",
   "HEALTH_CRITICAL",
+  "EDGE_DECAY_WARNING",
 ]);
 
 // ── Multi-channel delivery ───────────────────────────────
