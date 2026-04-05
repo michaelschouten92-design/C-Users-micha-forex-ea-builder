@@ -650,14 +650,14 @@ export default function EvaluatePage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     {item.runId && (
                       <button
                         onClick={() => {
                           setRenamingId(item.runId);
                           setRenameValue(item.eaName || item.fileName || "");
                         }}
-                        className="text-xs text-[#71717A] hover:text-[#818CF8] transition-colors"
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md border border-[rgba(255,255,255,0.12)] text-[#CBD5E1] hover:text-white hover:border-[rgba(255,255,255,0.25)] bg-transparent transition-colors"
                         title="Rename"
                       >
                         Rename
@@ -666,7 +666,7 @@ export default function EvaluatePage() {
                     {item.runId && (
                       <Link
                         href={`/app/evaluate/${item.runId}`}
-                        className="text-xs text-[#818CF8] hover:text-white transition-colors"
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-colors"
                       >
                         View
                       </Link>
@@ -675,7 +675,7 @@ export default function EvaluatePage() {
                       <button
                         onClick={() => handleDelete(item.runId!)}
                         disabled={deletingId === item.runId}
-                        className="text-xs text-[#71717A] hover:text-[#EF4444] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md border border-[rgba(239,68,68,0.3)] text-[#EF4444] hover:bg-[rgba(239,68,68,0.1)] hover:border-[rgba(239,68,68,0.5)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {deletingId === item.runId ? (
                           <span className="flex items-center gap-1">
