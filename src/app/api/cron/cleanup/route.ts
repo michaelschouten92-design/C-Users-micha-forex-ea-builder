@@ -40,6 +40,7 @@ async function handleCleanup(request: NextRequest) {
     const BATCH_SIZE = 1000;
     const cronStartTime = Date.now();
     const CRON_TIMEOUT_MS = 55_000; // 55 seconds — Vercel free tier has 60s limit
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
@@ -96,7 +97,7 @@ async function handleCleanup(request: NextRequest) {
     // Batch 2: EA-related operations (can run in parallel)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     const [deletedHeartbeats, deletedEAErrors, staleInstances] = await Promise.all([
-      batchDelete(prisma.eAHeartbeat, { createdAt: { lt: thirtyDaysAgo } }),
+      batchDelete(prisma.eAHeartbeat, { createdAt: { lt: sevenDaysAgo } }),
       batchDelete(prisma.eAError, { createdAt: { lt: thirtyDaysAgo } }),
       prisma.liveEAInstance.updateMany({
         where: {

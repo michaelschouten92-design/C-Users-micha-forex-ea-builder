@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export interface TrackRecordData {
@@ -58,7 +59,10 @@ export interface TrackRecordData {
  * Load account-level track record data by share token.
  * Returns null if the token is invalid, unpublished, or the base instance is missing.
  */
-export async function loadTrackRecord(token: string): Promise<TrackRecordData | null> {
+export const loadTrackRecord = cache(async function loadTrackRecord(
+  token: string
+): Promise<TrackRecordData | null> {
+  // ── Q1: Token validation ──
   const share = await prisma.accountTrackRecordShare.findUnique({
     where: { token },
     select: { baseInstanceId: true, isPublic: true },
@@ -66,110 +70,113 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
 
   if (!share || !share.isPublic) return null;
 
-  const base = await prisma.liveEAInstance.findUnique({
-    where: { id: share.baseInstanceId },
-    select: {
-      id: true,
-      eaName: true,
-      broker: true,
-      accountNumber: true,
-      balance: true,
-      equity: true,
-      status: true,
-      lastHeartbeat: true,
-      trades: {
-        where: { closeTime: { not: null } },
-        orderBy: { closeTime: "desc" },
-        take: 500,
-        select: {
-          profit: true,
-          closeTime: true,
-          openTime: true,
-          symbol: true,
-          type: true,
-          lots: true,
-          openPrice: true,
-          closePrice: true,
+  const baseInstanceId = share.baseInstanceId;
+
+  // ── Q2 + Q3 + Q4 + Q5 + Q6: All in parallel ──
+  // Only Q1 is sequential (need baseInstanceId). Everything else runs concurrently.
+  const tradeSelect = {
+    profit: true,
+    closeTime: true,
+    openTime: true,
+    symbol: true,
+    type: true,
+    lots: true,
+    openPrice: true,
+    closePrice: true,
+  } as const;
+
+  const [base, children, heartbeats, ledgerEventsRaw, trackStates] = await Promise.all([
+    // Q2: Base instance (no trades — we load them separately for all instances)
+    prisma.liveEAInstance.findUnique({
+      where: { id: baseInstanceId },
+      select: {
+        id: true,
+        eaName: true,
+        broker: true,
+        accountNumber: true,
+        balance: true,
+        equity: true,
+        status: true,
+        lastHeartbeat: true,
+      },
+    }),
+    // Q3: Child instances with health/deployment metadata (no trades)
+    prisma.liveEAInstance.findMany({
+      where: { parentInstanceId: baseInstanceId, deletedAt: null },
+      select: {
+        id: true,
+        symbol: true,
+        eaName: true,
+        totalTrades: true,
+        totalProfit: true,
+        lifecycleState: true,
+        strategyStatus: true,
+        healthSnapshots: {
+          orderBy: { createdAt: "desc" as const },
+          take: 1,
+          select: { driftDetected: true, driftSeverity: true, status: true },
+        },
+        terminalDeployments: {
+          where: { ignoredAt: null },
+          take: 1,
+          select: { magicNumber: true },
         },
       },
-    },
-  });
-
-  if (!base) return null;
-
-  const children = await prisma.liveEAInstance.findMany({
-    where: { parentInstanceId: base.id, deletedAt: null },
-    select: {
-      id: true,
-      symbol: true,
-      eaName: true,
-      totalTrades: true,
-      totalProfit: true,
-      lifecycleState: true,
-      strategyStatus: true,
-      trades: {
-        where: { closeTime: { not: null } },
-        orderBy: { closeTime: "desc" },
-        take: 500,
-        select: {
-          profit: true,
-          closeTime: true,
-          openTime: true,
-          symbol: true,
-          type: true,
-          lots: true,
-          openPrice: true,
-          closePrice: true,
-        },
-      },
-      healthSnapshots: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { driftDetected: true, driftSeverity: true, status: true },
-      },
-      terminalDeployments: {
-        where: { ignoredAt: null },
-        take: 1,
-        select: { magicNumber: true },
-      },
-    },
-  });
-
-  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
-
-  const [heartbeats, ledgerEventsRaw] = await Promise.all([
-    // Only fetch a handful of heartbeats for coverage timestamps + current equity baseline
+    }),
+    // Q4: Heartbeats (only need base instance ID from Q1)
     prisma.eAHeartbeat
       .findMany({
-        where: { instanceId: base.id },
+        where: { instanceId: baseInstanceId },
         orderBy: { createdAt: "desc" },
         take: 2,
         select: { equity: true, balance: true, createdAt: true },
       })
       .then((rows) => rows.reverse()),
+    // Q5: Ledger events (use baseInstanceId; children added post-hoc if needed)
     prisma.trackRecordEvent.findMany({
-      where: { instanceId: { in: allInstanceIds } },
+      where: { instanceId: baseInstanceId },
       orderBy: { timestamp: "desc" },
       take: 50,
       select: { eventType: true, timestamp: true, seqNo: true, payload: true },
     }),
+    // Q6: Track record state (base instance)
+    prisma.trackRecordState.findMany({
+      where: { instanceId: baseInstanceId },
+      select: {
+        totalTrades: true,
+        totalProfit: true,
+        winCount: true,
+        lossCount: true,
+        maxDrawdownPct: true,
+      },
+    }),
   ]);
 
-  // Single source of truth: TrackRecordState (chain-backed) for all public metrics.
-  // Profit factor is NOT available from TrackRecordState (no grossProfit/grossLoss).
-  // Rather than mixing sources, we show null when chain-backed state exists.
-  const trackStates = await prisma.trackRecordState.findMany({
-    where: { instanceId: { in: allInstanceIds } },
-    select: {
-      totalTrades: true,
-      totalProfit: true,
-      winCount: true,
-      lossCount: true,
-      maxDrawdownPct: true,
+  if (!base) return null;
+
+  // Q7: All trades in one batch query (base + children, single IN query)
+  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
+  const allTradesRaw = await prisma.eATrade.findMany({
+    where: {
+      instanceId: { in: allInstanceIds },
+      closeTime: { not: null },
     },
+    orderBy: { closeTime: "desc" },
+    take: 500,
+    select: { ...tradeSelect, instanceId: true },
   });
 
-  const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
+  // Map trades back to base/children for strategy attribution
+  const allTrades = allTradesRaw.map((t) => ({
+    profit: t.profit,
+    closeTime: t.closeTime,
+    openTime: t.openTime,
+    symbol: t.symbol,
+    type: t.type,
+    lots: t.lots,
+    openPrice: t.openPrice,
+    closePrice: t.closePrice,
+  }));
 
   let totalTrades: number;
   let totalProfit: number;
@@ -384,4 +391,4 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     })),
     strategies,
   };
-}
+});
