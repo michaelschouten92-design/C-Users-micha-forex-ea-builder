@@ -21,7 +21,6 @@ import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/mat
 import { createHash } from "crypto";
 import { z } from "zod";
 
-
 /** Strict hex hash: 64 chars (SHA-256 output). */
 const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
 
@@ -166,7 +165,9 @@ export async function POST(request: NextRequest) {
       // Accepts if: no prior session (NULL) OR newer session (startedAt >) OR
       // same session + higher seqNo. Rejects stale heartbeats from old sessions.
       // Legacy EA (missing fields): unconditional Prisma update (backward compat).
-      ...(data.heartbeatSessionId != null && data.heartbeatSessionStartedAt != null && data.heartbeatSeqNo != null
+      ...(data.heartbeatSessionId != null &&
+      data.heartbeatSessionStartedAt != null &&
+      data.heartbeatSeqNo != null
         ? [
             prisma.$queryRaw`
               UPDATE "LiveEAInstance"
@@ -927,17 +928,19 @@ async function processDeploymentDiscovery(
     changeResult.newBaselineStatus === "RELINK_REQUIRED" &&
     existing?.instanceId
   ) {
-    suspendBaselineTrust({
-      instanceId: existing.instanceId,
-      terminalConnectionId: terminalId,
-      terminalDeploymentId: upsertedDeployment.id,
-      deploymentKey,
-      previousFingerprint: existing.materialFingerprint,
-      newFingerprint: reportedFingerprint,
-      previousBaselineStatus: existing.baselineStatus,
-    }).catch((err) => {
+    try {
+      await suspendBaselineTrust({
+        instanceId: existing.instanceId,
+        terminalConnectionId: terminalId,
+        terminalDeploymentId: upsertedDeployment.id,
+        deploymentKey,
+        previousFingerprint: existing.materialFingerprint,
+        newFingerprint: reportedFingerprint,
+        previousBaselineStatus: existing.baselineStatus,
+      });
+    } catch (err) {
       log.error({ err, instanceId, deploymentKey }, "Baseline trust suspension failed");
-    });
+    }
   }
 }
 
@@ -1040,7 +1043,11 @@ async function processDiscoveredDeployments(
   } else {
     await prisma.terminalConnection.update({
       where: { id: terminalId },
-      data: { status: "ONLINE", lastHeartbeat: now, unattributedTradeCount },
+      data: {
+        status: "ONLINE",
+        lastHeartbeat: now,
+        ...(unattributedTradeCount !== undefined && { unattributedTradeCount }),
+      },
     });
   }
 

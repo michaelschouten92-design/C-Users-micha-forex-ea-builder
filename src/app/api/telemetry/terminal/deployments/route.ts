@@ -128,15 +128,18 @@ export async function POST(request: NextRequest) {
       });
       const newBaselineStatus = changeResult.newBaselineStatus;
 
-      // Build update data
+      // Build update data — fingerprint is deferred until after trust suspension
+      // to ensure atomicity: if suspension fails, we retry on next heartbeat
       const updateData: Record<string, unknown> = {
         lastSeenAt: now,
         symbol: d.symbol.toUpperCase(),
         timeframe: d.timeframe.toUpperCase(),
         eaName: d.eaName,
       };
-      // Store fingerprint: always accept the latest reported value
-      if (reportedFingerprint !== null) {
+      const hasMaterialChange =
+        changeResult.isMaterialChange && newBaselineStatus === "RELINK_REQUIRED";
+      // Only update fingerprint immediately if there's no material change to suspend
+      if (reportedFingerprint !== null && !hasMaterialChange) {
         updateData.materialFingerprint = reportedFingerprint;
       }
       if (newBaselineStatus) {
@@ -177,17 +180,24 @@ export async function POST(request: NextRequest) {
       if (
         changeResult.isMaterialChange &&
         newBaselineStatus === "RELINK_REQUIRED" &&
-        existing!.instanceId
+        existing?.instanceId
       ) {
         await suspendBaselineTrust({
-          instanceId: existing!.instanceId,
+          instanceId: existing.instanceId,
           terminalConnectionId: terminalId,
           terminalDeploymentId: deployment.id,
           deploymentKey,
-          previousFingerprint: existing!.materialFingerprint,
+          previousFingerprint: existing.materialFingerprint,
           newFingerprint: reportedFingerprint,
-          previousBaselineStatus: existing!.baselineStatus,
+          previousBaselineStatus: existing.baselineStatus,
         });
+        // Fingerprint deferred until after successful suspension — update now
+        if (reportedFingerprint !== null) {
+          await prisma.terminalDeployment.update({
+            where: { id: deployment.id },
+            data: { materialFingerprint: reportedFingerprint },
+          });
+        }
       }
 
       return {

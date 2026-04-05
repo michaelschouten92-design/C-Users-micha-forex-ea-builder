@@ -362,7 +362,9 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
           select: { strategyVersionId: true },
         });
         if (!baselineCheck?.strategyVersionId) {
-          throw Object.assign(new Error("Baseline unlinked during monitoring run"), { code: "BASELINE_GONE" });
+          throw Object.assign(new Error("Baseline unlinked during monitoring run"), {
+            code: "BASELINE_GONE",
+          });
         }
 
         // c. Load instance lifecycle state — use the known instanceId directly,
@@ -680,9 +682,19 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
   } catch (err) {
     // Controlled exit: baseline was unlinked during the monitoring run
     if (err instanceof Error && (err as { code?: string }).code === "BASELINE_GONE") {
-      log.warn({ instanceId, strategyId, runId: run.id }, "Baseline unlinked during monitoring run — aborting cleanly");
+      log.warn(
+        { instanceId, strategyId, runId: run.id },
+        "Baseline unlinked during monitoring run — aborting cleanly"
+      );
       await failRun(run.id, recordId, strategyId, instanceId, "NO_VERIFIED_BASELINE", err.message);
-      return { runId: run.id, recordId, verdict: "HEALTHY" as const, reasons: ["NO_VERIFIED_BASELINE"], tradeSnapshotHash: "", liveFactCount: 0 };
+      return {
+        runId: run.id,
+        recordId,
+        verdict: "HEALTHY" as const,
+        reasons: ["NO_VERIFIED_BASELINE"],
+        tradeSnapshotHash: "",
+        liveFactCount: 0,
+      };
     }
 
     // Any uncaught error — mark run as FAILED
@@ -769,11 +781,14 @@ export async function isMonitoringCooldownExpired(instanceId: string): Promise<b
       status: { in: ["COMPLETED", "FAILED"] },
     },
     orderBy: { completedAt: "desc" },
-    select: { completedAt: true },
+    select: { completedAt: true, requestedAt: true },
   });
 
   if (!lastRun?.completedAt) return true;
 
-  const elapsedSeconds = (Date.now() - lastRun.completedAt.getTime()) / 1000;
+  // Use requestedAt for cooldown calculation — completedAt can be skewed
+  // when a stale run is reclaimed (completedAt set to reclaim time, not original run time)
+  const referenceTime = lastRun.requestedAt ?? lastRun.completedAt;
+  const elapsedSeconds = (Date.now() - referenceTime.getTime()) / 1000;
   return elapsedSeconds >= MONITORING.COOLDOWN_SECONDS;
 }

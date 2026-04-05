@@ -1895,14 +1895,16 @@ bool SendTradeClose(ulong dealTicket)
    double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
    long   magic     = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
 
-   // Determine close reason from comment
+   // Determine close reason from comment (case-insensitive matching)
    string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
+   string commentLower = comment;
+   StringToLower(commentLower);
    string closeReason = "EA";
-   if(StringFind(comment, "tp") >= 0 || StringFind(comment, "TP") >= 0)
+   if(StringFind(commentLower, "tp") >= 0 || StringFind(commentLower, "takeprofit") >= 0 || StringFind(commentLower, "take profit") >= 0)
       closeReason = "TP";
-   else if(StringFind(comment, "sl") >= 0 || StringFind(comment, "SL") >= 0)
+   else if(StringFind(commentLower, "sl") >= 0 || StringFind(commentLower, "stoploss") >= 0 || StringFind(commentLower, "stop loss") >= 0)
       closeReason = "SL";
-   else if(StringFind(comment, "so") >= 0 || StringFind(comment, "SO") >= 0)
+   else if(StringFind(commentLower, "so") >= 0 || StringFind(commentLower, "stop out") >= 0 || StringFind(commentLower, "stopout") >= 0)
       closeReason = "SO"; // Stop-out
 
    // Find original open deal for the position ticket
