@@ -75,6 +75,7 @@ export interface HealthHistoryPoint {
   overallScore: number;
   status: string;
   createdAt: string;
+  expectancy?: number | null;
 }
 
 export interface IncidentSummary {
@@ -445,6 +446,7 @@ export async function loadStrategyDetail(
     overallScore: s.overallScore,
     status: s.status,
     createdAt: s.createdAt.toISOString(),
+    expectancy: s.expectancy ?? null,
   }));
 
   const monitoringStatus = resolveInstanceMonitoringStatus(
