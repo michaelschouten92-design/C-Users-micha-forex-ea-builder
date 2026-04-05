@@ -166,23 +166,12 @@ export function ActivationPanel() {
       </div>
 
       <div className="mt-4 pt-3 border-t border-[rgba(79,70,229,0.12)]">
-        {activeStep === 1 && (
+        {(activeStep === 1 || activeStep === 2) && (
           <Link
-            href="/app/evaluate"
+            href="/app/onboarding"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
           >
-            Upload Backtest
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        )}
-        {activeStep === 2 && (
-          <Link
-            href="/app/settings"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
-          >
-            Setup Monitor EA
+            {activeStep === 1 ? "Start Setup" : "Setup Monitor EA"}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
