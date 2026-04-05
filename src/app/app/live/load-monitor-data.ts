@@ -53,6 +53,14 @@ export interface MonitorData {
       tradeCount: number;
     }
   >;
+  /** Recent closed trades for the activity feed (newest first, max 15). */
+  recentTrades: {
+    instanceId: string;
+    profit: number;
+    closeTime: string | null;
+    symbol: string | null;
+    magicNumber: number | null;
+  }[];
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -440,6 +448,42 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       }
     }
 
+    // ── Phase 1c: Recent trades for activity feed (non-critical) ──
+    let recentTrades: {
+      instanceId: string;
+      profit: number;
+      closeTime: string | null;
+      symbol: string | null;
+      magicNumber: number | null;
+    }[] = [];
+
+    const allIds = eaInstances.map((ea) => ea.id);
+    if (allIds.length > 0) {
+      try {
+        const trades = await prisma.eATrade.findMany({
+          where: { instanceId: { in: allIds }, closeTime: { not: null } },
+          orderBy: { closeTime: "desc" },
+          take: 15,
+          select: {
+            instanceId: true,
+            profit: true,
+            closeTime: true,
+            symbol: true,
+            magicNumber: true,
+          },
+        });
+        recentTrades = trades.map((t) => ({
+          instanceId: t.instanceId,
+          profit: t.profit,
+          closeTime: t.closeTime?.toISOString() ?? null,
+          symbol: t.symbol,
+          magicNumber: t.magicNumber,
+        }));
+      } catch {
+        // Non-critical — feed starts empty, fills from SSE
+      }
+    }
+
     return {
       eaInstances,
       subscription,
@@ -447,6 +491,7 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       analytics: null,
       recentDecisions: [],
       tradeAggregates,
+      recentTrades,
     };
   } catch (err) {
     // Outer catch for unexpected errors (non-query failures like import errors)

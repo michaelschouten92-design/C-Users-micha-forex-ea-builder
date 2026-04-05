@@ -62,7 +62,7 @@ function renderDashboard(
   params: { decision?: string; relink?: string },
   tier: import("@/lib/plans").PlanTier
 ) {
-  const { eaInstances, tradeAggregates } = data;
+  const { eaInstances, tradeAggregates, recentTrades } = data;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -118,7 +118,14 @@ function renderDashboard(
           }
         : null;
     })(),
-    trades: [],
+    trades: recentTrades
+      .filter((t) => t.instanceId === ea.id)
+      .map((t) => ({
+        profit: t.profit,
+        closeTime: t.closeTime,
+        symbol: t.symbol,
+        magicNumber: t.magicNumber,
+      })),
     heartbeats: [],
     healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
       driftDetected: hs.driftDetected,
