@@ -334,7 +334,7 @@ export default function EvaluatePage() {
           <div className="mb-10 space-y-6">
             {/* Health Score Card */}
             <div
-              className="rounded-2xl p-6 sm:p-8 border"
+              className="rounded-xl p-5 sm:p-6 border"
               style={{
                 background: getHealthBg(result.healthStatus),
                 borderColor: `${getHealthColor(result.healthStatus)}33`,

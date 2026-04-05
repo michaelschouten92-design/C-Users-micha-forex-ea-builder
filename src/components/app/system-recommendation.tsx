@@ -40,7 +40,7 @@ export function SystemRecommendation({ level, reason }: SystemRecommendationProp
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] p-4 sm:p-5"
+      className="rounded-xl bg-[#111114] p-4 sm:p-5"
       style={{
         border: `1px solid ${config.color}25`,
         borderLeft: `3px solid ${config.color}`,

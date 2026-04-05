@@ -37,10 +37,10 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
 
   if (loading) {
     return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+      <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
         <div className="animate-pulse space-y-3">
-          <div className="h-5 bg-[#1A0626] rounded w-32" />
-          <div className="h-20 bg-[#1A0626] rounded" />
+          <div className="h-5 bg-[#111114] rounded w-32" />
+          <div className="h-20 bg-[#111114] rounded" />
         </div>
       </div>
     );
@@ -48,7 +48,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
 
   if (!data) {
     return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+      <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
         <p className="text-xs text-[#7C8DB0]">
           No proof page linked to this instance. Create a verified strategy page from your project
           settings.
@@ -63,7 +63,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
   }
 
   return (
-    <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)] space-y-4">
+    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)] space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Proof Status</p>
         <span
@@ -141,7 +141,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
         )}
         <button
           onClick={copyProofUrl}
-          className="px-3 py-1.5 text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white rounded-lg transition-colors"
+          className="px-3 py-1.5 text-xs font-medium border border-[rgba(255,255,255,0.06)] text-[#7C8DB0] hover:text-white rounded-lg transition-colors"
         >
           Copy URL
         </button>

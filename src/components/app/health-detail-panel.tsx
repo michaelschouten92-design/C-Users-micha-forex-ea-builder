@@ -119,7 +119,7 @@ function MetricTooltip({ metric }: { metric: string }) {
           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[10px] leading-relaxed text-white bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg shadow-lg w-52 z-50 pointer-events-none">
+      <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[10px] leading-relaxed text-white bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg shadow-lg w-52 z-50 pointer-events-none">
         {text}
       </span>
     </span>
@@ -323,9 +323,9 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
     return (
       <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-[#1A0626] rounded w-32" />
-          <div className="h-2 bg-[#1A0626] rounded w-full" />
-          <div className="h-2 bg-[#1A0626] rounded w-3/4" />
+          <div className="h-4 bg-[#111114] rounded w-32" />
+          <div className="h-2 bg-[#111114] rounded w-full" />
+          <div className="h-2 bg-[#111114] rounded w-3/4" />
         </div>
       </div>
     );

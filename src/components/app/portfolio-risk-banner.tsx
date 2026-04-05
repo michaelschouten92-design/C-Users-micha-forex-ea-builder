@@ -72,7 +72,7 @@ export function PortfolioRiskBanner({ summary }: PortfolioRiskBannerProps) {
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] px-5 py-4"
+      className="rounded-xl bg-[#111114] px-5 py-4"
       style={{
         border: `1px solid ${banner.color}25`,
         borderLeft: `3px solid ${banner.color}`,

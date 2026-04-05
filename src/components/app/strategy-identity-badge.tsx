@@ -45,7 +45,7 @@ export function StrategyIdentityBadge({
         {strategyId}
       </span>
       {versionNo !== undefined && (
-        <span className="text-[10px] font-medium text-[#7C8DB0] bg-[#1A0626] px-1.5 py-0.5 rounded">
+        <span className="text-[10px] font-medium text-[#7C8DB0] bg-[#111114] px-1.5 py-0.5 rounded">
           v{versionNo}
         </span>
       )}

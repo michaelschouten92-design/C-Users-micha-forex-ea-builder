@@ -18,7 +18,7 @@ export function DisclosureSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)]">
+    <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)]">
       <button
         type="button"
         onClick={() => setOpen(!open)}

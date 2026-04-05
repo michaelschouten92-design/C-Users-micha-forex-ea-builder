@@ -21,7 +21,7 @@ export function EmptyState({
   secondaryAction,
 }: EmptyStateProps): React.ReactNode {
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
+    <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-12 text-center">
       {icon && (
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#4F46E5] to-[#22D3EE] flex items-center justify-center opacity-60">
           {icon}

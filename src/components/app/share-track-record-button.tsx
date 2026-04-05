@@ -111,7 +111,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
           <h3 className="text-sm font-semibold text-white mb-2">Share Track Record</h3>
           <p className="text-xs text-[#7C8DB0] mb-3">
             Generate a verified proof bundle link that anyone can view and independently verify.

@@ -49,7 +49,7 @@ export function StrategyHeader({ data }: StrategyHeaderProps) {
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] p-4 sm:p-5"
+      className="rounded-xl bg-[#111114] p-4 sm:p-5"
       style={{
         border: `1px solid ${borderColor}`,
         borderLeft: `3px solid ${borderColor}`,
@@ -82,7 +82,7 @@ export function StrategyHeader({ data }: StrategyHeaderProps) {
             {data.hasHealthData ? (
               <MonitoringStatusBadge status={data.monitoringStatus} size="md" />
             ) : (
-              <span className="text-[10px] text-[#7C8DB0] font-medium px-2 py-0.5 rounded-full border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.08)]">
+              <span className="text-[10px] text-[#7C8DB0] font-medium px-2 py-0.5 rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(79,70,229,0.08)]">
                 Awaiting Data
               </span>
             )}

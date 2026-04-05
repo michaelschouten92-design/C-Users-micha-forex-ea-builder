@@ -85,10 +85,10 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
   if (loading) {
     return (
       <div className="p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] animate-pulse">
-        <div className="h-4 bg-[#1A0626] rounded w-40 mb-3" />
+        <div className="h-4 bg-[#111114] rounded w-40 mb-3" />
         <div className="space-y-2">
-          <div className="h-8 bg-[#1A0626] rounded" />
-          <div className="h-8 bg-[#1A0626] rounded" />
+          <div className="h-8 bg-[#111114] rounded" />
+          <div className="h-8 bg-[#111114] rounded" />
         </div>
       </div>
     );
@@ -147,7 +147,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
             <select
               value={config.pinnedInstanceId || ""}
               onChange={(e) => handleSave({ pinnedInstanceId: e.target.value || null })}
-              className="w-full px-3 py-2 text-sm bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg text-white focus:border-[#4F46E5] focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-lg text-white focus:border-[#4F46E5] focus:outline-none"
             >
               <option value="">Select an instance...</option>
               {instances.map((inst) => (
@@ -163,7 +163,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
             <input
               readOnly
               value={`${typeof window !== "undefined" ? window.location.origin : ""}/strategy/${config.slug}`}
-              className="flex-1 px-3 py-2 text-xs bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg text-[#7C8DB0] font-mono"
+              className="flex-1 px-3 py-2 text-xs bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-lg text-[#7C8DB0] font-mono"
             />
             <button
               onClick={copyPublicUrl}
@@ -198,7 +198,7 @@ function ToggleRow({
       <button
         onClick={onChange}
         className={`relative w-10 h-5 rounded-full transition-colors ${
-          checked ? "bg-[#4F46E5]" : "bg-[#1A0626] border border-[rgba(79,70,229,0.2)]"
+          checked ? "bg-[#4F46E5]" : "bg-[#111114] border border-[rgba(79,70,229,0.2)]"
         }`}
       >
         <span

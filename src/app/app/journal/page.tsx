@@ -146,11 +146,11 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Total Trades</p>
         <p className="text-lg font-semibold text-white">{stats.total}</p>
       </div>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Win Rate</p>
         <p
           className={`text-lg font-semibold ${stats.winRate >= 50 ? "text-[#10B981]" : "text-[#F59E0B]"}`}
@@ -158,7 +158,7 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
           {stats.winRate.toFixed(1)}%
         </p>
       </div>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Total P&L</p>
         <p
           className={`text-lg font-semibold ${stats.totalPnL >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
@@ -166,7 +166,7 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
           {formatCurrency(stats.totalPnL)}
         </p>
       </div>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Avg P&L</p>
         <p
           className={`text-lg font-semibold ${stats.avgPnL >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
@@ -174,7 +174,7 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
           {formatCurrency(stats.avgPnL)}
         </p>
       </div>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Best Trade</p>
         <p
           className={`text-lg font-semibold ${stats.bestTrade !== null ? "text-[#10B981]" : "text-[#7C8DB0]"}`}
@@ -182,7 +182,7 @@ function SummaryStats({ entries }: { entries: JournalEntry[] }) {
           {stats.bestTrade !== null ? formatCurrency(stats.bestTrade) : "N/A"}
         </p>
       </div>
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-3">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Worst Trade</p>
         <p
           className={`text-lg font-semibold ${stats.worstTrade !== null ? "text-[#EF4444]" : "text-[#7C8DB0]"}`}
@@ -232,10 +232,10 @@ function PnLBreakdown({ entries }: { entries: JournalEntry[] }) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4 mb-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 mb-6">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-white">P&L Breakdown</h3>
-        <div className="flex items-center rounded-lg border border-[rgba(79,70,229,0.2)] overflow-hidden">
+        <div className="flex items-center rounded-lg border border-[rgba(255,255,255,0.06)] overflow-hidden">
           <button
             onClick={() => setView("monthly")}
             className={`px-3 py-1 text-xs font-medium transition-colors ${
@@ -261,7 +261,7 @@ function PnLBreakdown({ entries }: { entries: JournalEntry[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(79,70,229,0.1)]">
+            <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(255,255,255,0.04)]">
               <th className="text-left py-1.5 pr-4">Period</th>
               <th className="text-right py-1.5 pr-4">P&L</th>
               <th className="text-right py-1.5">Trades</th>
@@ -269,7 +269,7 @@ function PnLBreakdown({ entries }: { entries: JournalEntry[] }) {
           </thead>
           <tbody>
             {breakdown.map(([period, data]) => (
-              <tr key={period} className="border-b border-[rgba(79,70,229,0.05)]">
+              <tr key={period} className="border-b border-[rgba(255,255,255,0.03)]">
                 <td className="py-1.5 pr-4 text-[#CBD5E1]">{period}</td>
                 <td
                   className={`py-1.5 pr-4 text-right font-medium ${
@@ -466,7 +466,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(255,255,255,0.06)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -481,7 +481,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
         </div>
 
         {showFilters && (
-          <div className="flex items-end gap-3 flex-wrap bg-[#1A0626] border border-[rgba(79,70,229,0.15)] rounded-lg p-4">
+          <div className="flex items-end gap-3 flex-wrap bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg p-4">
             {uniqueSymbols.length > 0 && (
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
@@ -586,7 +586,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
                 className={`rounded-xl p-6 transition-all duration-200 ${
                   isEditing
                     ? "bg-[#1A0626]/80 border-2 border-[#4F46E5] shadow-[0_0_16px_rgba(79,70,229,0.2)]"
-                    : "bg-[#1A0626] border border-[rgba(79,70,229,0.2)]"
+                    : "bg-[#1A0626] border border-[rgba(255,255,255,0.06)]"
                 }`}
               >
                 {/* Header */}
@@ -652,7 +652,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
                 {!isEditing && (meta.entryReason || meta.exitReason) && (
                   <div className="flex flex-wrap gap-2 mb-3">
                     {meta.entryReason && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#A78BFA] border border-[rgba(79,70,229,0.2)]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(79,70,229,0.1)] text-[#A78BFA] border border-[rgba(255,255,255,0.06)]">
                         Entry:{" "}
                         {ENTRY_REASONS.find((r) => r.value === meta.entryReason)?.label ??
                           meta.entryReason}
@@ -873,7 +873,7 @@ function JournalInner({ embedded }: { embedded: boolean }) {
       <nav
         role="navigation"
         aria-label="App navigation"
-        className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50"
+        className="bg-[#111114]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)] sticky top-0 z-50"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">

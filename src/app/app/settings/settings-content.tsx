@@ -52,7 +52,7 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
   return (
     <div className="space-y-6">
       {/* Email */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 flex-wrap">
           <div className="flex items-center min-w-0">
@@ -75,7 +75,7 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
       <HandleSetting />
 
       {/* Push Notifications */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <h2 className="text-lg font-semibold text-white mb-2">Push Notifications</h2>
         <p className="text-sm text-[#94A3B8] mb-4">
           Receive browser push notifications for alerts (drawdown, offline, new trades, errors).
@@ -165,7 +165,7 @@ function ChangePasswordSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -289,7 +289,7 @@ function DataExportSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-2">Data & Privacy</h2>
       <p className="text-sm text-[#94A3B8] mb-4">
         Download all your projects and account data as a JSON file. Useful for backup or data
@@ -556,7 +556,7 @@ function WebhookSection() {
   if (!loaded) return null;
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-2">Webhook Alerts</h2>
       <p className="text-sm text-[#94A3B8] mb-4">
         AlgoStudio sends an HTTP POST to your endpoint when a new control-layer alert is created —

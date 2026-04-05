@@ -95,7 +95,7 @@ export function RiskDashboardClient() {
 
   if (instances.length === 0) {
     return (
-      <div className="text-center py-16 rounded-xl border border-[rgba(79,70,229,0.15)] bg-[#1A0626]/40">
+      <div className="text-center py-16 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114]/40">
         <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#4F46E5]/10 flex items-center justify-center">
           <svg
             className="w-7 h-7 text-[#4F46E5]"
@@ -131,11 +131,11 @@ export function RiskDashboardClient() {
     <div className="space-y-6">
       {/* Portfolio Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Total Equity</p>
           <p className="text-lg font-semibold text-white">{formatCurrency(totalEquity)}</p>
         </div>
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Total P&L</p>
           <p
             className={`text-lg font-semibold ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
@@ -143,11 +143,11 @@ export function RiskDashboardClient() {
             {formatCurrency(totalProfit)}
           </p>
         </div>
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Max Drawdown</p>
           <p className="text-lg font-semibold text-[#EF4444]">{totalDrawdown.toFixed(1)}%</p>
         </div>
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Active EAs</p>
           <p className="text-lg font-semibold text-white">
             {instances.filter((ea) => ea.status === "ONLINE").length}
@@ -157,12 +157,12 @@ export function RiskDashboardClient() {
 
       {/* Per-EA Risk Contribution */}
       {instances.length > 0 && (
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
           <h3 className="text-sm font-medium text-white mb-4">Per-EA Risk Contribution</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(79,70,229,0.1)]">
+                <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(255,255,255,0.04)]">
                   <th className="text-left py-2 pr-3">EA Name</th>
                   <th className="text-right py-2 pr-3">Equity</th>
                   <th className="text-right py-2 pr-3">P&L</th>
@@ -177,7 +177,7 @@ export function RiskDashboardClient() {
                   const pctOfPortfolio =
                     totalEquity > 0 ? ((ea.equity ?? 0) / totalEquity) * 100 : 0;
                   return (
-                    <tr key={ea.id} className="border-b border-[rgba(79,70,229,0.05)]">
+                    <tr key={ea.id} className="border-b border-[rgba(255,255,255,0.03)]">
                       <td className="py-2 pr-3 text-[#CBD5E1]">{ea.eaName}</td>
                       <td className="py-2 pr-3 text-right text-[#CBD5E1]">
                         {formatCurrency(ea.equity ?? 0)}
@@ -203,7 +203,7 @@ export function RiskDashboardClient() {
 
       {/* Correlation Matrix */}
       {correlation && correlation.labels.length >= 2 && (
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
           <h3 className="text-sm font-medium text-white mb-4">Correlation Matrix</h3>
           <div className="overflow-x-auto">
             <table className="text-xs">
@@ -257,7 +257,7 @@ export function RiskDashboardClient() {
       )}
 
       {/* Daily P&L Calendar */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
         <h3 className="text-sm font-medium text-white mb-4">Daily P&L (Last 90 Days)</h3>
         {dailyPnl.length > 0 ? (
           <DailyPnlCalendar data={dailyPnl} />

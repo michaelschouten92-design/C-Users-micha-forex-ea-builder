@@ -51,14 +51,14 @@ export function HandleSetting() {
 
   if (loading) {
     return (
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
         <div className="h-6 bg-[#0A0118] rounded w-40 animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-white mb-2">Public Handle</h2>
       <p className="text-sm text-[#94A3B8] mb-4">
         Your public handle is used for your trader profile URL and proof pages.

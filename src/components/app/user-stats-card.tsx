@@ -38,7 +38,7 @@ export function UserStatsCard({ tier }: UserStatsCardProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 animate-pulse">
+      <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 animate-pulse">
         <div className="h-5 bg-[#1E293B] rounded w-1/3 mb-4" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -53,7 +53,7 @@ export function UserStatsCard({ tier }: UserStatsCardProps) {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
       <h3 className="text-sm font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
         Your Activity
       </h3>
