@@ -135,6 +135,55 @@ export function parseMT5Report(html: string): ParsedReport {
     }
   }
 
+  // ========================================
+  // 7. Fallback metric derivation
+  // ========================================
+
+  // Derive profit factor from gross profit/loss if not directly parsed
+  if (metrics.profitFactor === 0 && metrics.grossProfit > 0 && metrics.grossLoss !== 0) {
+    metrics.profitFactor = metrics.grossProfit / Math.abs(metrics.grossLoss);
+    warnings.push("Profit factor derived from gross profit/loss (not from metrics table).");
+  }
+
+  // Derive total trades from deals if metrics table didn't have it
+  if (metrics.totalTrades === 0 && deals.length > 0) {
+    const tradingDeals = deals.filter((d) => d.type !== "balance" && d.profit !== 0);
+    if (tradingDeals.length > 0) {
+      metrics.totalTrades = tradingDeals.length;
+      warnings.push(
+        `Total trades derived from deal rows (${tradingDeals.length} exit deals found).`
+      );
+    }
+  }
+
+  // Derive drawdown percentage from absolute value + initial deposit
+  if (
+    metrics.maxDrawdownPct === 0 &&
+    metrics.maxDrawdownAbs != null &&
+    metrics.maxDrawdownAbs > 0 &&
+    metadata.initialDeposit > 0
+  ) {
+    metrics.maxDrawdownPct = (metrics.maxDrawdownAbs / metadata.initialDeposit) * 100;
+    warnings.push("Drawdown % estimated from absolute drawdown / initial deposit.");
+  }
+
+  // Derive win rate from long/short win rates if available
+  if (metrics.winRate === 0 && metrics.longWinRate != null && metrics.shortWinRate != null) {
+    metrics.winRate = (metrics.longWinRate + metrics.shortWinRate) / 2;
+    warnings.push("Win rate derived as average of long and short win rates.");
+  }
+
+  // Derive net profit from deals if metrics table had 0
+  if (metrics.totalNetProfit === 0 && deals.length > 0) {
+    const dealSum = deals
+      .filter((d) => d.type !== "balance" && d.profit !== 0)
+      .reduce((sum, d) => sum + d.profit, 0);
+    if (dealSum !== 0) {
+      metrics.totalNetProfit = dealSum;
+      warnings.push("Net profit derived from deal rows (not found in metrics table).");
+    }
+  }
+
   return {
     metadata,
     metrics: {
@@ -306,15 +355,16 @@ function collectNumberSamples(root: HTMLElement): string[] {
   for (const cell of cells) {
     const text = cell.text.trim();
     // Look for numeric-looking values (contains digits and potential separators)
-    // Exclude date-like strings (YYYY.MM.DD, DD.MM.YYYY, etc.) that confuse locale detection
+    // Exclude date-like strings, time-like strings, and very short numbers
     if (
-      /^-?\d[\d\s.,]*\d?(%?)$/.test(text) &&
-      text.length >= 3 &&
+      /^-?\d[\d\s.,]*\d(%?)$/.test(text) &&
+      text.length >= 4 &&
       !/^\d{4}\.\d{2}\.\d{2}/.test(text) &&
-      !/^\d{2}\.\d{2}\.\d{4}/.test(text)
+      !/^\d{2}\.\d{2}\.\d{4}/.test(text) &&
+      !/^\d{2}:\d{2}/.test(text)
     ) {
       samples.push(text);
-      if (samples.length >= 20) break; // Enough samples
+      if (samples.length >= 40) break; // Collect more samples for better confidence
     }
   }
 
@@ -409,12 +459,16 @@ function extractMetrics(
               break;
             }
 
-            // Drawdown can be: "1234.56 (12.34%)" or just "12.34%"
-            const ddMatch = valueText.match(/(-?[\d\s.,]+)\s*\(([\d\s.,]+)%?\)/);
+            // Drawdown can be: "1234.56 (12.34%)" or "1 234,56 (12,34 %)" or just "12.34%"
+            // Relaxed regex: allows spaces around %, inside parens, and locale-formatted numbers
+            const ddMatch = valueText.match(/(-?[\d\s.,]+)\s*\(\s*([\d\s.,]+)\s*%?\s*\)/);
             if (ddMatch) {
               metrics.maxDrawdownAbs = parseLocalizedNumber(ddMatch[1], locale);
               metrics.maxDrawdownPct = parseLocalizedNumber(ddMatch[2], locale);
             } else if (valueText.includes("%")) {
+              metrics.maxDrawdownPct = numValue;
+            } else if (numValue > 0 && numValue <= 100) {
+              // Heuristic: small number without % or parens is likely a percentage
               metrics.maxDrawdownPct = numValue;
             } else {
               metrics.maxDrawdownAbs = numValue;

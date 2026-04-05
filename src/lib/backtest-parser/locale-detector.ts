@@ -12,6 +12,9 @@ export type NumberLocale = "EN" | "EU" | "FR";
 /**
  * Detect the number locale from a sample of number strings found in the report.
  * Returns the most likely locale or null if undetermined.
+ *
+ * Uses a scoring system with strong/weak signals. When ambiguous (EN vs EU),
+ * applies a tiebreaker heuristic based on trailing comma patterns.
  */
 export function detectLocale(samples: string[]): NumberLocale | null {
   if (samples.length === 0) return null;
@@ -51,7 +54,11 @@ export function detectLocale(samples: string[]): NumberLocale | null {
     }
 
     // Simple decimal with comma → likely EU or FR
-    if (/^\s*-?\d+,\d+\s*$/.test(trimmed)) {
+    // Stronger signal if followed by exactly 2 digits (typical financial format)
+    if (/^\s*-?\d+,\d{2}\s*$/.test(trimmed)) {
+      euScore += 2;
+      frScore += 1;
+    } else if (/^\s*-?\d+,\d+\s*$/.test(trimmed)) {
       euScore += 1;
       frScore += 1;
     }
@@ -60,9 +67,12 @@ export function detectLocale(samples: string[]): NumberLocale | null {
   const max = Math.max(enScore, euScore, frScore);
   if (max === 0) return null;
 
-  if (enScore === max) return "EN";
-  if (frScore > euScore) return "FR";
-  return "EU";
+  // Clear winner
+  if (enScore === max && enScore > euScore + frScore) return "EN";
+  if (frScore > euScore && frScore >= enScore) return "FR";
+  if (euScore >= enScore) return "EU";
+
+  return "EN";
 }
 
 /**
@@ -72,8 +82,8 @@ export function detectLocale(samples: string[]): NumberLocale | null {
 export function parseLocalizedNumber(value: string, locale: NumberLocale | null): number {
   let cleaned = value.trim();
 
-  // Remove percentage sign if present
-  cleaned = cleaned.replace(/%$/, "").trim();
+  // Remove percentage sign (with optional preceding space)
+  cleaned = cleaned.replace(/\s*%\s*$/, "").trim();
 
   if (!cleaned || cleaned === "-" || cleaned === "") return 0;
 
@@ -95,5 +105,6 @@ export function parseLocalizedNumber(value: string, locale: NumberLocale | null)
       break;
   }
 
-  return parseFloat(cleaned);
+  const result = parseFloat(cleaned);
+  return isNaN(result) ? 0 : result;
 }

@@ -37,11 +37,19 @@ const LABEL_MAP: Record<string, MetricKey> = {};
 const TRANSLATIONS: Record<MetricKey, string[]> = {
   totalNetProfit: [
     "total net profit",
+    "net profit",
     "nettogewinn gesamt",
+    "nettogewinn",
     "beneficio neto total",
+    "beneficio neto",
     "итого чистая прибыль",
+    "чистая прибыль",
     "profit net total",
+    "profit net",
     "lucro líquido total",
+    "lucro líquido",
+    "总净利润",
+    "純利益合計",
   ],
   grossProfit: [
     "gross profit",
@@ -66,6 +74,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "прибыльность",
     "facteur de profit",
     "fator de lucro",
+    "盈利因子",
+    "プロフィットファクター",
   ],
   expectedPayoff: [
     "expected payoff",
@@ -77,17 +87,23 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
   ],
   maxDrawdown: [
     // Equity drawdown labels listed first for fuzzy match priority.
-    // Parser scans label-value rows sequentially; a later equity row will
-    // overwrite an earlier balance row because we use the same key.
     "equity drawdown maximal",
+    "maximal equity drawdown",
     "maximal drawdown",
     "maximaler drawdown",
+    "maximaler eigenkapital drawdown",
     "drawdown máximo",
+    "drawdown máximo de equidad",
     "максимальная просадка",
+    "макс. просадка",
     "drawdown maximal",
+    "drawdown maximal des capitaux",
     "drawdown máximo do saldo",
+    "最大回撤",
+    "最大ドローダウン",
     // Balance drawdown — still matched so we capture SOMETHING if equity row is absent.
     "balance drawdown maximal",
+    "maximal balance drawdown",
   ],
   sharpeRatio: [
     "sharpe ratio",
@@ -96,6 +112,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "коэффициент шарпа",
     "ratio de sharpe",
     "índice de sharpe",
+    "夏普比率",
+    "シャープレシオ",
   ],
   recoveryFactor: [
     "recovery factor",
@@ -107,11 +125,15 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
   ],
   totalTrades: [
     "total trades",
+    "total deals",
+    "deals total",
     "trades gesamt",
     "total de transacciones",
     "всего сделок",
     "total des transactions",
     "total de negociações",
+    "总交易",
+    "総取引数",
   ],
   shortPositionsWon: [
     "short positions (won %)",
@@ -200,6 +222,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "начальный депозит",
     "dépôt initial",
     "depósito inicial",
+    "初始存款",
+    "初期預金",
   ],
   symbol: ["symbol", "symbol", "símbolo", "символ", "symbole", "símbolo"],
   period: ["period", "zeitraum", "período", "период", "période", "período"],
