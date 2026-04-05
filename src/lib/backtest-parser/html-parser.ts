@@ -63,7 +63,7 @@ export function parseMT5Report(html: string): ParsedReport {
       const localeNote = `Locale auto-corrected from ${effectiveLocale} to ${altLocale} (original values were unrealistic).`;
       warnings.push(localeNote);
       // Update the detected locale for downstream use
-      (metrics as Record<string, unknown>)._correctedLocale = altLocale;
+      metrics._correctedLocale = altLocale;
     }
   }
 
@@ -75,8 +75,7 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 4. Extract deals from deals table
   // ========================================
-  const finalLocale =
-    ((metrics as Record<string, unknown>)._correctedLocale as NumberLocale | undefined) ?? locale;
+  const finalLocale = (metrics._correctedLocale as NumberLocale | undefined) ?? locale;
   const deals = extractDeals(tables, finalLocale, warnings);
 
   // ========================================
@@ -440,6 +439,7 @@ function collectNumberSamples(root: HTMLElement): string[] {
 interface InternalMetrics extends ParsedMetrics {
   _initialDeposit?: number;
   _hasEquityDrawdown?: boolean;
+  _correctedLocale?: string;
 }
 
 function extractMetrics(
