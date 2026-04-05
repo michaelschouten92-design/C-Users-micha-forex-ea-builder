@@ -94,8 +94,23 @@ describe("decideMonitoringTransition", () => {
       });
     });
 
-    it("HEALTHY with any consecutiveHealthyRuns → NO_TRANSITION (manual recovery only)", () => {
-      for (const runs of [0, 2, 3, 10]) {
+    it("HEALTHY with insufficient consecutive runs → NO_TRANSITION (recovering)", () => {
+      for (const runs of [0, 1, 2]) {
+        const result = decideMonitoringTransition(
+          makeInput({
+            currentLifecycleState: "EDGE_AT_RISK",
+            monitoringVerdict: "HEALTHY",
+            consecutiveHealthyRuns: runs,
+          })
+        );
+
+        expect(result.type).toBe("NO_TRANSITION");
+        expect((result as { reason: string }).reason).toContain("edge_at_risk_recovering");
+      }
+    });
+
+    it("HEALTHY with sufficient consecutive runs → TRANSITION to LIVE_MONITORING", () => {
+      for (const runs of [RECOVERY_RUNS, RECOVERY_RUNS + 1, 10]) {
         const result = decideMonitoringTransition(
           makeInput({
             currentLifecycleState: "EDGE_AT_RISK",
@@ -105,8 +120,11 @@ describe("decideMonitoringTransition", () => {
         );
 
         expect(result).toEqual({
-          type: "NO_TRANSITION",
-          reason: "edge_at_risk_manual_recovery_only",
+          type: "TRANSITION",
+          from: "EDGE_AT_RISK",
+          to: "LIVE_MONITORING",
+          reason: expect.stringContaining("Auto-recovery"),
+          proofEventType: "STRATEGY_EDGE_RECOVERED",
         });
       }
     });

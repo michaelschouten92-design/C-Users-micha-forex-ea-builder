@@ -149,7 +149,7 @@ export function SubscriptionPanel({
 
   function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString("en-US", {
-      month: "long",
+      month: "short",
       day: "numeric",
       year: "numeric",
     });

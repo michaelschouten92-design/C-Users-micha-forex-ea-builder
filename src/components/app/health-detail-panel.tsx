@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
 import { getStatusExplanation } from "@/lib/strategy-status/resolver";
+import { formatDateMedium } from "@/lib/format-date";
 import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
 interface HealthSnapshotData {
@@ -257,9 +258,9 @@ function LifecycleBadge({ lifecycle }: { lifecycle: LifecycleData }) {
   const config = LIFECYCLE_CONFIG[lifecycle.phase];
   const tooltip =
     lifecycle.phase === "PROVEN" && lifecycle.provenAt
-      ? `Proven since ${new Date(lifecycle.provenAt).toLocaleDateString()}`
+      ? `Proven since ${formatDateMedium(lifecycle.provenAt)}`
       : lifecycle.phase === "RETIRED" && lifecycle.retiredAt
-        ? `Retired on ${new Date(lifecycle.retiredAt).toLocaleDateString()}`
+        ? `Retired on ${formatDateMedium(lifecycle.retiredAt)}`
         : undefined;
 
   return (

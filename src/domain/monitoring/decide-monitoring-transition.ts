@@ -75,6 +75,19 @@ export function decideMonitoringTransition(input: TransitionInput): TransitionDe
     return { type: "NO_TRANSITION", reason: "already_at_risk" };
   }
 
-  // HEALTHY — no automatic recovery; manual operator action required
-  return { type: "NO_TRANSITION", reason: "edge_at_risk_manual_recovery_only" };
+  // HEALTHY — auto-recover after sufficient consecutive healthy runs
+  if (consecutiveHealthyRuns >= recoveryRunsRequired) {
+    return {
+      type: "TRANSITION",
+      from: "EDGE_AT_RISK",
+      to: "LIVE_MONITORING",
+      reason: `Auto-recovery: ${consecutiveHealthyRuns} consecutive healthy monitoring runs (threshold: ${recoveryRunsRequired})`,
+      proofEventType: "STRATEGY_EDGE_RECOVERED",
+    };
+  }
+
+  return {
+    type: "NO_TRANSITION",
+    reason: `edge_at_risk_recovering (${consecutiveHealthyRuns}/${recoveryRunsRequired} healthy runs)`,
+  };
 }

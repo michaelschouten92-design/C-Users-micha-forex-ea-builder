@@ -6,6 +6,7 @@
  */
 
 import { DisclosureSection } from "./disclosure-section";
+import { formatDateMedium } from "@/lib/format-date";
 import type { StrategyDetailData } from "@/app/app/strategy/[instanceId]/load-strategy-detail";
 
 const LIFECYCLE_LABELS: Record<string, string> = {
@@ -52,19 +53,19 @@ export function GovernanceContextPanel({ data }: GovernanceContextPanelProps) {
             </div>
             <div>
               <span className="text-[10px] text-[#7C8DB0]">Phase Entered</span>
-              <p className="text-[#CBD5E1]">{new Date(data.phaseEnteredAt).toLocaleDateString()}</p>
+              <p className="text-[#CBD5E1]">{formatDateMedium(data.phaseEnteredAt)}</p>
             </div>
             {data.provenAt && (
               <div>
                 <span className="text-[10px] text-[#7C8DB0]">Proven At</span>
-                <p className="text-[#CBD5E1]">{new Date(data.provenAt).toLocaleDateString()}</p>
+                <p className="text-[#CBD5E1]">{formatDateMedium(data.provenAt)}</p>
               </div>
             )}
             {data.retiredAt && (
               <div>
                 <span className="text-[10px] text-[#7C8DB0]">Retired</span>
                 <p className="text-[#CBD5E1]">
-                  {new Date(data.retiredAt).toLocaleDateString()}
+                  {formatDateMedium(data.retiredAt)}
                   {data.retiredReason && ` (${data.retiredReason})`}
                 </p>
               </div>

@@ -604,6 +604,20 @@ export function LiveDashboardClient({
             />
           </div>
 
+          {/* ── Connection warning banner (shown when not live-connected) ── */}
+          {connectionStatus === "disconnected" && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20 text-xs text-[#EF4444]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0" />
+              Connection lost. Data may be stale. Reconnecting...
+            </div>
+          )}
+          {connectionStatus === "fallback-polling" && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-xs text-[#F59E0B]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] flex-shrink-0" />
+              Live stream unavailable. Polling for updates every 30 seconds.
+            </div>
+          )}
+
           {/* ── Controls bar ── */}
           <div className="flex flex-wrap items-center gap-2.5 px-1">
             <div className="flex items-center rounded-full bg-[#0A0118]/60 border border-[#1E293B]/30 p-0.5">
