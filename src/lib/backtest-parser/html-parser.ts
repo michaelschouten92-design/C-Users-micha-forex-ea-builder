@@ -163,8 +163,12 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
 
   // Derive profit factor from gross profit/loss if not directly parsed
-  if (metrics.profitFactor === 0 && metrics.grossProfit > 0 && metrics.grossLoss !== 0) {
-    metrics.profitFactor = metrics.grossProfit / Math.abs(metrics.grossLoss);
+  if (
+    metrics.profitFactor === 0 &&
+    (metrics.grossProfit ?? 0) > 0 &&
+    (metrics.grossLoss ?? 0) !== 0
+  ) {
+    metrics.profitFactor = metrics.grossProfit! / Math.abs(metrics.grossLoss!);
     warnings.push("Profit factor derived from gross profit/loss (not from metrics table).");
   }
 
@@ -264,8 +268,8 @@ function metricsLookSuspicious(m: InternalMetrics): boolean {
   }
 
   // If both grossProfit and grossLoss exist but profitFactor is wildly off
-  if (m.grossProfit > 0 && m.grossLoss !== undefined && m.grossLoss !== 0) {
-    const expectedPF = m.grossProfit / Math.abs(m.grossLoss);
+  if ((m.grossProfit ?? 0) > 0 && m.grossLoss != null && m.grossLoss !== 0) {
+    const expectedPF = m.grossProfit! / Math.abs(m.grossLoss);
     if (m.profitFactor > 0 && Math.abs(m.profitFactor - expectedPF) > expectedPF * 5) {
       return true;
     }
