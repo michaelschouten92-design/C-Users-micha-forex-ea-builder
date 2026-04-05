@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
-import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
+import { loadMonitorData } from "./load-monitor-data";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 import { resolveTier } from "@/lib/plan-limits";
 

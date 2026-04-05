@@ -137,7 +137,9 @@ export function LiveDashboardClient({
   // SSE live stream with polling fallback
   const { status: connectionStatus, lastUpdated } = useLiveStream({
     onInit: (data) => {
-      processUpdate(data as EAInstanceData[]);
+      // SSE sends empty init to signal connection ready; only update if data is present
+      const arr = data as EAInstanceData[];
+      if (arr.length > 0) processUpdate(arr);
     },
     onHeartbeat: (data) => {
       const hb = data as LiveHeartbeatPatch;
@@ -209,7 +211,7 @@ export function LiveDashboardClient({
     onError: () => {
       // SSE error events handled internally
     },
-    pollingInterval: 10000,
+    pollingInterval: 30000,
     pollingUrl: "/api/live/status",
     onPollingData: (data) => {
       processUpdate(data as EAInstanceData[]);
