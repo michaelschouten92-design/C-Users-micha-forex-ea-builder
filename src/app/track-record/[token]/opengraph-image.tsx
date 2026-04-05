@@ -7,16 +7,22 @@ export const contentType = "image/png";
 
 function fmt(v: number): string {
   const abs = Math.abs(v);
-  const sign = v < 0 ? "-" : "";
+  const sign = v < 0 ? "-" : "+";
+  if (v === 0) return "$0.00";
   if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
   if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`;
   return `${sign}$${abs.toFixed(2)}`;
 }
 
+function fmtBalance(v: number): string {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
+  return `$${v.toFixed(2)}`;
+}
+
 export default async function OGImage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
-  // Fetch from the public API (same data the page uses)
   let data: Record<string, unknown> | null = null;
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
@@ -35,8 +41,8 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#0A0118",
-          color: "#7C8DB0",
+          backgroundColor: "#0B0E11",
+          color: "#64748B",
           fontSize: 24,
         }}
       >
@@ -53,33 +59,45 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
   const eaName = (account.eaName as string) || "Account";
   const broker = (account.broker as string) || "";
   const maskedAccount = (account.accountNumberMasked as string) || "";
-  const displayName = broker && maskedAccount ? `${broker} Account ${maskedAccount}` : eaName;
+  const displayName = broker && maskedAccount ? `${broker} · ${maskedAccount}` : eaName;
+  const balance = Number(account.balance ?? 0);
   const totalProfit = Number(perf.totalProfit ?? 0);
   const totalTrades = Number(perf.totalTrades ?? 0);
   const maxDD = Number(perf.maxDrawdownPct ?? 0);
   const winRate = Number(perf.winRate ?? 0);
-  const strategyCount = Number(perf.strategyCount ?? 0);
 
-  // Build sparkline SVG path
-  let sparkline = "";
+  // Growth %
+  let growthPct = 0;
+  if (curve.length >= 2) {
+    const first = curve[0].equity;
+    const last = curve[curve.length - 1].equity;
+    growthPct = first > 0 ? ((last - first) / first) * 100 : 0;
+  }
+
+  // Build sparkline path (full width)
+  let sparkPath = "";
+  let sparkAreaPath = "";
+  const chartW = 1080;
+  const chartH = 200;
   if (curve.length > 1) {
     const values = curve.map((p) => p.equity);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 1;
-    const w = 460;
-    const h = 120;
-    const step = w / (values.length - 1);
-    sparkline = values
-      .map((v, i) => {
-        const x = i * step;
-        const y = h - ((v - min) / range) * (h - 10) - 5;
-        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-      })
+    const step = chartW / (values.length - 1);
+    const pts = values.map((v, i) => ({
+      x: i * step,
+      y: chartH - ((v - min) / range) * (chartH - 16) - 8,
+    }));
+    sparkPath = pts
+      .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
       .join(" ");
+    sparkAreaPath = `${sparkPath} L${pts[pts.length - 1].x.toFixed(1)},${chartH} L0,${chartH} Z`;
   }
 
-  const pnlColor = totalProfit >= 0 ? "#10B981" : "#EF4444";
+  const isProfit = totalProfit >= 0;
+  const lineColor = isProfit ? "#10B981" : "#EF4444";
+  const fillColor = isProfit ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)";
 
   return new ImageResponse(
     <div
@@ -88,70 +106,155 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#0A0118",
-        padding: "48px 56px",
+        backgroundColor: "#0B0E11",
         fontFamily: "system-ui, sans-serif",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Badge */}
+      {/* Top gradient accent */}
       <div
         style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#818CF8",
-          letterSpacing: "0.12em",
-          textTransform: "uppercase" as const,
-          marginBottom: "8px",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "3px",
+          background: "linear-gradient(90deg, #4F46E5, #818CF8, #4F46E5)",
         }}
-      >
-        Verified Trading Record
-      </div>
+      />
 
-      {/* Account identity */}
-      <div style={{ fontSize: 28, fontWeight: 700, color: "#FAFAFA", marginBottom: "4px" }}>
-        {displayName}
-      </div>
-      {broker && maskedAccount && (
-        <div style={{ fontSize: 13, color: "#7C8DB0", marginBottom: "32px" }}>
-          Monitored by AlgoStudio
+      {/* Content */}
+      <div style={{ display: "flex", flexDirection: "column", padding: "40px 60px 0" }}>
+        {/* Header row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "28px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#818CF8",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase" as const,
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  backgroundColor: "rgba(79,70,229,0.15)",
+                  border: "1px solid rgba(79,70,229,0.3)",
+                }}
+              >
+                Verified
+              </div>
+              <div style={{ fontSize: 11, color: "#64748B", letterSpacing: "0.05em" }}>
+                TRADING RECORD
+              </div>
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: "#FAFAFA" }}>{displayName}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <div style={{ fontSize: 11, color: "#64748B", marginBottom: "4px" }}>BALANCE</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: "#FAFAFA" }}>
+              {fmtBalance(balance)}
+            </div>
+          </div>
         </div>
-      )}
-      {!(broker && maskedAccount) && broker && (
-        <div style={{ fontSize: 13, color: "#7C8DB0", marginBottom: "32px" }}>{broker}</div>
-      )}
 
-      {/* Metrics */}
-      <div style={{ display: "flex", gap: "40px", marginBottom: "36px" }}>
-        {[
-          { label: "Total P&L", value: fmt(totalProfit), color: pnlColor },
-          { label: "Trades", value: totalTrades.toLocaleString(), color: "#CBD5E1" },
-          { label: "Max Drawdown", value: `${maxDD.toFixed(1)}%`, color: "#CBD5E1" },
-          { label: "Win Rate", value: `${winRate.toFixed(1)}%`, color: "#CBD5E1" },
-          { label: "Strategies", value: String(strategyCount), color: "#CBD5E1" },
-        ].map((m) => (
-          <div key={m.label} style={{ display: "flex", flexDirection: "column" }}>
+        {/* Metrics row */}
+        <div style={{ display: "flex", gap: "48px", marginBottom: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <div
               style={{
-                fontSize: 10,
-                fontWeight: 500,
-                color: "#7C8DB0",
-                textTransform: "uppercase" as const,
-                letterSpacing: "0.08em",
+                fontSize: 11,
+                color: "#64748B",
                 marginBottom: "4px",
+                letterSpacing: "0.08em",
               }}
             >
-              {m.label}
+              TOTAL P&L
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.value}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: lineColor }}>
+              {fmt(totalProfit)}
+            </div>
           </div>
-        ))}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                marginBottom: "4px",
+                letterSpacing: "0.08em",
+              }}
+            >
+              GROWTH
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: lineColor }}>
+              {growthPct >= 0 ? "+" : ""}
+              {growthPct.toFixed(2)}%
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                marginBottom: "4px",
+                letterSpacing: "0.08em",
+              }}
+            >
+              WIN RATE
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#FAFAFA" }}>
+              {winRate.toFixed(1)}%
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                marginBottom: "4px",
+                letterSpacing: "0.08em",
+              }}
+            >
+              TRADES
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#FAFAFA" }}>
+              {totalTrades.toLocaleString()}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                marginBottom: "4px",
+                letterSpacing: "0.08em",
+              }}
+            >
+              MAX DD
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#EF4444" }}>
+              {maxDD.toFixed(2)}%
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Sparkline */}
-      {sparkline && (
-        <div style={{ display: "flex", flexGrow: 1 }}>
-          <svg width="460" height="120" viewBox="0 0 460 120">
-            <path d={sparkline} fill="none" stroke="#818CF8" strokeWidth="2" />
+      {/* Full-width chart area */}
+      {sparkPath && (
+        <div style={{ display: "flex", flexGrow: 1, padding: "0 60px" }}>
+          <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`}>
+            <path d={sparkAreaPath} fill={fillColor} />
+            <path d={sparkPath} fill="none" stroke={lineColor} strokeWidth="2.5" />
           </svg>
         </div>
       )}
@@ -161,12 +264,24 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-end",
+          alignItems: "center",
+          padding: "16px 60px 24px",
+          borderTop: "1px solid rgba(30,41,59,0.5)",
           marginTop: "auto",
         }}
       >
-        <div style={{ fontSize: 13, color: "#64748B" }}>Monitored by AlgoStudio</div>
-        <div style={{ fontSize: 13, color: "#64748B" }}>algo-studio.com</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              backgroundColor: "#4F46E5",
+            }}
+          />
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#94A3B8" }}>AlgoStudio</div>
+        </div>
+        <div style={{ fontSize: 12, color: "#475569" }}>algo-studio.com</div>
       </div>
     </div>,
     { ...size }
