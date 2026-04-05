@@ -43,7 +43,29 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 3. Extract metrics from label-value table(s)
   // ========================================
-  const metrics = extractMetrics(tables, locale, warnings);
+  let metrics = extractMetrics(tables, locale, warnings);
+
+  // ========================================
+  // 3b. Sanity check — detect likely locale errors
+  // ========================================
+  // If parsed values look unrealistic, retry with the alternative locale.
+  // A wrong locale typically makes numbers off by a factor of ~1000.
+  const effectiveLocale = locale ?? "EN";
+  if (metricsLookSuspicious(metrics)) {
+    const altLocale = effectiveLocale === "EN" ? "EU" : "EN";
+    const altWarnings: string[] = [];
+    const altMetrics = extractMetrics(tables, altLocale, altWarnings);
+
+    if (!metricsLookSuspicious(altMetrics)) {
+      // Alternative locale produces more realistic values — use it
+      metrics = altMetrics;
+      // Replace locale-related warnings
+      const localeNote = `Locale auto-corrected from ${effectiveLocale} to ${altLocale} (original values were unrealistic).`;
+      warnings.push(localeNote);
+      // Update the detected locale for downstream use
+      (metrics as Record<string, unknown>)._correctedLocale = altLocale;
+    }
+  }
 
   // Fill initialDeposit from metrics if found
   if (metadata.initialDeposit === 0 && metrics._initialDeposit !== undefined) {
@@ -53,7 +75,9 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 4. Extract deals from deals table
   // ========================================
-  const deals = extractDeals(tables, locale, warnings);
+  const finalLocale =
+    ((metrics as Record<string, unknown>)._correctedLocale as NumberLocale | undefined) ?? locale;
+  const deals = extractDeals(tables, finalLocale, warnings);
 
   // ========================================
   // 4a. Derive initialDeposit from first balance deal if still 0
@@ -208,9 +232,47 @@ export function parseMT5Report(html: string): ParsedReport {
       maxConsecutiveLosses: metrics.maxConsecutiveLosses,
     },
     deals,
-    detectedLocale: locale,
+    detectedLocale: finalLocale,
     parseWarnings: warnings,
   };
+}
+
+// ============================================
+// SANITY CHECK — detect locale parsing errors
+// ============================================
+
+/**
+ * Returns true if the parsed metrics contain values that are unrealistic
+ * and likely caused by a wrong locale (EN vs EU).
+ *
+ * A wrong locale typically makes numbers off by ~1000x:
+ * EU "1.234,56" parsed as EN → 1.23456 instead of 1234.56
+ * EN "1,234.56" parsed as EU → 1234.56 (accidentally correct in this direction)
+ */
+function metricsLookSuspicious(m: InternalMetrics): boolean {
+  // Profit factor should be between 0.01 and 50 for any realistic strategy
+  if (m.profitFactor > 100) return true;
+
+  // Drawdown percentage should be between 0 and 100
+  if (m.maxDrawdownPct > 100) return true;
+
+  // Win rate should be between 0 and 100
+  if (m.winRate > 100) return true;
+
+  // If initial deposit is suspiciously small (likely decimal misparse)
+  if (m._initialDeposit !== undefined && m._initialDeposit > 0 && m._initialDeposit < 1) {
+    return true;
+  }
+
+  // If both grossProfit and grossLoss exist but profitFactor is wildly off
+  if (m.grossProfit > 0 && m.grossLoss !== undefined && m.grossLoss !== 0) {
+    const expectedPF = m.grossProfit / Math.abs(m.grossLoss);
+    if (m.profitFactor > 0 && Math.abs(m.profitFactor - expectedPF) > expectedPF * 5) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // ============================================
