@@ -84,6 +84,7 @@ export async function evaluateHealth(instanceId: string): Promise<HealthResult> 
       status: true,
       userId: true,
       eaName: true,
+      balance: true,
       peakScore: true,
       baselineDecay: true,
     },
