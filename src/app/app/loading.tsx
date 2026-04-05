@@ -6,9 +6,6 @@ export default function DashboardLoading() {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
-              <span className="text-xs text-[#71717A] font-medium tracking-wider uppercase hidden sm:inline">
-                Admin
-              </span>
             </div>
             <div className="flex items-center gap-4">
               <div className="h-4 w-32 bg-[#18181B] rounded animate-pulse hidden sm:block" />

@@ -61,12 +61,13 @@ export async function GET(request: Request): Promise<Response> {
             strategyStatus: true,
             heartbeats: {
               orderBy: { createdAt: "desc" },
-              take: 20,
+              take: 1,
               select: { equity: true, createdAt: true },
             },
             trades: {
-              orderBy: { createdAt: "desc" },
-              take: 20,
+              where: { closeTime: { not: null } },
+              orderBy: { closeTime: "desc" },
+              take: 10,
               select: { profit: true, closeTime: true },
             },
             strategyVersion: {
@@ -85,19 +86,6 @@ export async function GET(request: Request): Promise<Response> {
             terminalDeployments: {
               select: {
                 baselineStatus: true,
-                strategyVersion: {
-                  select: {
-                    backtestBaseline: {
-                      select: {
-                        winRate: true,
-                        profitFactor: true,
-                        totalTrades: true,
-                        maxDrawdownPct: true,
-                        sharpeRatio: true,
-                      },
-                    },
-                  },
-                },
               },
             },
             incidents: {
@@ -146,10 +134,7 @@ export async function GET(request: Request): Promise<Response> {
             status: hs.status,
           })),
           baseline: (() => {
-            const depBaseline = inst.terminalDeployments?.find(
-              (d) => d.strategyVersion?.backtestBaseline
-            )?.strategyVersion?.backtestBaseline;
-            const bl = depBaseline ?? inst.strategyVersion?.backtestBaseline;
+            const bl = inst.strategyVersion?.backtestBaseline;
             return bl
               ? {
                   winRate: bl.winRate,

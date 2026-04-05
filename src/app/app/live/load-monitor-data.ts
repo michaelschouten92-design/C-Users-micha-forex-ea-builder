@@ -31,7 +31,9 @@ export interface RecentDecision {
 }
 
 export interface MonitorData {
-  eaInstances: (Awaited<ReturnType<typeof queryEaInstances>>[number] & { isAutoDiscovered: boolean })[];
+  eaInstances: (Awaited<ReturnType<typeof queryEaInstances>>[number] & {
+    isAutoDiscovered: boolean;
+  })[];
   subscription: Awaited<ReturnType<typeof querySubscription>>;
   /** Most restrictive authority across all instances. null = fail-closed PAUSE. */
   authority: AuthorityDecision | null;
@@ -207,12 +209,12 @@ function queryEaInstances(userId: string) {
       trades: {
         where: { closeTime: { not: null } },
         orderBy: { closeTime: "desc" },
-        take: 50,
+        take: 10,
         select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
       },
       heartbeats: {
         orderBy: { createdAt: "desc" },
-        take: 50,
+        take: 1,
         select: { equity: true, createdAt: true },
       },
       exportJobId: true,

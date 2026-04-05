@@ -31,12 +31,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         trades: {
           where: { closeTime: { not: null } },
           select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
-          take: 20,
+          take: 10,
           orderBy: { closeTime: "desc" },
         },
         heartbeats: {
           orderBy: { createdAt: "desc" },
-          take: 20,
+          take: 1,
           select: { equity: true, createdAt: true },
         },
         strategyVersion: {
