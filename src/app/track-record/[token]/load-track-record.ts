@@ -212,16 +212,10 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
   // Build equity curve from closed trades (running cumulative P&L after each trade)
   // This is more efficient than loading 1000 heartbeats and gives a trade-level view
   const tradesSortedAsc = [...allTrades]
-    .filter((t) => t.closeTime != null)
+    .filter((t): t is typeof t & { closeTime: Date } => t.closeTime != null)
     .sort((a, b) => {
-      const ta =
-        a.closeTime instanceof Date
-          ? a.closeTime.getTime()
-          : new Date(a.closeTime as string).getTime();
-      const tb =
-        b.closeTime instanceof Date
-          ? b.closeTime.getTime()
-          : new Date(b.closeTime as string).getTime();
+      const ta = a.closeTime.getTime();
+      const tb = b.closeTime.getTime();
       return ta - tb;
     });
 
