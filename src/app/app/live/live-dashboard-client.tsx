@@ -123,9 +123,14 @@ export function LiveDashboardClient({
     }
 
     // Merge polling data with existing static data (baseline, edgeScore, etc.)
+    // Skip stale updates: if polling data has an older heartbeat, keep existing data
     const mergedInstances = newInstances.map((ea) => {
       const prev = previousMap.get(ea.id);
       if (!prev) return ea;
+      // Freshness guard: don't downgrade to older data
+      if (prev.lastHeartbeat && ea.lastHeartbeat && ea.lastHeartbeat < prev.lastHeartbeat) {
+        return prev;
+      }
       return {
         ...prev,
         ...ea,

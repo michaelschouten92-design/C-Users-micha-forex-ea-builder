@@ -30,13 +30,24 @@ export function ActivationPanel() {
   });
 
   useEffect(() => {
-    fetch("/api/onboarding/status")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setStatus(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    function fetchStatus() {
+      fetch("/api/onboarding/status")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) setStatus(data);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+
+    fetchStatus();
+
+    // Refetch when user returns to this tab (e.g., after connecting terminal in another tab)
+    function onFocus() {
+      fetchStatus();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   if (loading || !status || panelDismissed) return null;

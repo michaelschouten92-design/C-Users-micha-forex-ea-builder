@@ -307,6 +307,9 @@ export async function loadStrategyDetail(
       peakScoreAt: true,
       monitoringSuppressedUntil: true,
       strategyVersionId: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
       balance: true,
       terminalDeployments: {
         where: { ignoredAt: null },
@@ -352,16 +355,14 @@ export async function loadStrategyDetail(
 
   // Instance-first: query incidents and monitoring runs scoped to this instance.
   // Falls back to strategyId for pre-migration data that lacks instanceId.
-  let strategyId: string | null = null;
-  if (instance.strategyVersionId) {
-    const sv = await prisma.strategyVersion.findUnique({
-      where: { id: instance.strategyVersionId },
-      select: {
-        strategyIdentity: { select: { strategyId: true } },
-      },
-    });
-    strategyId = sv?.strategyIdentity?.strategyId ?? null;
-  }
+  const strategyId =
+    (instance as Record<string, unknown>).strategyVersion != null
+      ? ((
+          (instance as Record<string, unknown>).strategyVersion as {
+            strategyIdentity?: { strategyId?: string };
+          }
+        )?.strategyIdentity?.strategyId ?? null)
+      : null;
 
   // Fetch incidents and latest monitoring run scoped to this instance
   const [incidents, latestRun] = await Promise.all([

@@ -47,6 +47,7 @@ export default async function SettingsPage() {
           monitoredAccountCount={monitoredAccountCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
+          emailVerified={!!user?.emailVerified}
           scheduledDowngradeTier={
             subscription?.scheduledDowngradeTier && subscription.scheduledDowngradeTier !== "FREE"
               ? (subscription.scheduledDowngradeTier as string)

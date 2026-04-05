@@ -83,8 +83,8 @@ function renderDashboard(
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
     sortOrder: ea.sortOrder ?? 0,
-    strategyStatus: ea.strategyStatus as string,
-    operatorHold: (ea.operatorHold ?? "NONE") as string,
+    strategyStatus: ea.strategyStatus ?? "MONITORING",
+    operatorHold: ea.operatorHold ?? "NONE",
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     parentInstanceId: ea.parentInstanceId ?? null,
     lifecycleState: ea.lifecycleState ?? null,
@@ -96,7 +96,9 @@ function renderDashboard(
     relinkRequired: ea.terminalDeployments.some(
       (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
     ),
-    monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
+    monitoringReasons: Array.isArray(ea.incidents?.[0]?.reasonCodes)
+      ? (ea.incidents[0].reasonCodes as string[]).filter((r) => typeof r === "string")
+      : [],
     monitoringSuppressedUntil: ea.monitoringSuppressedUntil?.toISOString() ?? null,
     baseline: (() => {
       const bl = ea.strategyVersion?.backtestBaseline as

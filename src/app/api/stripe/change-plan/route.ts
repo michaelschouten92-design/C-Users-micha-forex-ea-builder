@@ -218,7 +218,15 @@ export async function POST(request: NextRequest) {
 
       // If a pending downgrade schedule exists, release it first
       if (subscription.stripeScheduleId) {
-        await getStripe().subscriptionSchedules.release(subscription.stripeScheduleId);
+        try {
+          await getStripe().subscriptionSchedules.release(subscription.stripeScheduleId);
+        } catch (scheduleErr) {
+          // Schedule may already be released or expired — safe to continue
+          log.warn(
+            { err: scheduleErr, scheduleId: subscription.stripeScheduleId },
+            "Schedule release failed (may already be released)"
+          );
+        }
         await prisma.subscription.update({
           where: { id: subscription.id },
           data: {

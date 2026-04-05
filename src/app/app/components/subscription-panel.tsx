@@ -13,6 +13,7 @@ type SubscriptionPanelProps = {
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
+  emailVerified?: boolean;
 };
 
 export function SubscriptionPanel({
@@ -22,6 +23,7 @@ export function SubscriptionPanel({
   hasStripeSubscription,
   currentPeriodEnd,
   scheduledDowngradeTier,
+  emailVerified,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
@@ -240,6 +242,13 @@ export function SubscriptionPanel({
                   : `All features included with ${plan.limits.maxMonitoredTradingAccounts} monitored trading account${plan.limits.maxMonitoredTradingAccounts === 1 ? "" : "s"}. Upgrade to monitor more.`}
             </p>
           </div>
+
+          {/* Email verification warning */}
+          {emailVerified === false && tier === "FREE" && (
+            <p className="text-[11px] text-[#F59E0B] mb-2">
+              Verify your email to upgrade your plan.
+            </p>
+          )}
 
           {/* Action Buttons */}
           <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2">
