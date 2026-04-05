@@ -91,6 +91,12 @@ export interface LiveInstanceDTO {
   heartbeats: LiveInstanceHeartbeat[];
   healthSnapshots?: LiveInstanceHealthSnapshot[];
   deployments?: LiveInstanceDeployment[];
+  edgeScore?: {
+    phase: "COLLECTING" | "EARLY" | "FULL";
+    score: number | null;
+    tradesCompleted: number;
+    tradesRequired: number;
+  } | null;
 }
 
 // ── SSE heartbeat patch ──────────────────────────────────

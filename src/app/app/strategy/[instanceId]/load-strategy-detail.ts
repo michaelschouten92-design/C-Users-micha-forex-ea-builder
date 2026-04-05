@@ -11,6 +11,7 @@
 
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { computeEdgeScore, type EdgeScoreResult } from "@/domain/monitoring/edge-score";
 import {
   resolveInstanceMonitoringStatus,
   resolveDeploymentCurrency,
@@ -175,6 +176,9 @@ export interface StrategyDetailData {
    * Includes all versions, deployment counts per version, and current/outdated splits.
    */
   strategyLineage: StrategyLineage | null;
+
+  /** Edge Score — live performance vs backtest baseline. Null when no baseline or track record. */
+  edgeScore: EdgeScoreResult | null;
 }
 
 // ── Monitoring status resolution (delegates to shared semantic layer) ──
@@ -300,6 +304,7 @@ export async function loadStrategyDetail(
       peakScoreAt: true,
       monitoringSuppressedUntil: true,
       strategyVersionId: true,
+      balance: true,
       terminalDeployments: {
         where: { ignoredAt: null },
         select: { symbol: true, magicNumber: true, materialFingerprint: true },
@@ -582,6 +587,59 @@ export async function loadStrategyDetail(
     now: new Date(),
   });
 
+  // ── Edge Score ─────────────────────────────────────────
+  let edgeScore: EdgeScoreResult | null = null;
+  if (instance.strategyVersionId) {
+    try {
+      const [bl, tradeStats] = await Promise.all([
+        prisma.backtestBaseline.findUnique({
+          where: { strategyVersionId: instance.strategyVersionId },
+          select: {
+            winRate: true,
+            profitFactor: true,
+            maxDrawdownPct: true,
+            netReturnPct: true,
+            initialDeposit: true,
+          },
+        }),
+        prisma.$queryRaw<
+          { tradeCount: bigint; winCount: bigint; grossProfit: number; grossLoss: number }[]
+        >`
+          SELECT COUNT(*)::bigint AS "tradeCount",
+            COUNT(*) FILTER (WHERE profit > 0)::bigint AS "winCount",
+            COALESCE(SUM(CASE WHEN profit > 0 THEN profit ELSE 0 END), 0) AS "grossProfit",
+            COALESCE(SUM(CASE WHEN profit < 0 THEN ABS(profit) ELSE 0 END), 0) AS "grossLoss"
+          FROM "EATrade"
+          WHERE "instanceId" = ${instance.id} AND "closeTime" IS NOT NULL
+        `,
+      ]);
+      const stats = tradeStats[0];
+      if (bl && stats && Number(stats.tradeCount) > 0) {
+        edgeScore = computeEdgeScore(
+          {
+            totalTrades: Number(stats.tradeCount),
+            winCount: Number(stats.winCount),
+            lossCount: Number(stats.tradeCount) - Number(stats.winCount),
+            grossProfit: Number(stats.grossProfit),
+            grossLoss: Number(stats.grossLoss),
+            maxDrawdownPct: 0,
+            totalProfit: instance.balance != null ? instance.balance - bl.initialDeposit : 0,
+            balance: instance.balance ?? 0,
+          },
+          {
+            winRate: bl.winRate,
+            profitFactor: bl.profitFactor,
+            maxDrawdownPct: bl.maxDrawdownPct,
+            netReturnPct: bl.netReturnPct,
+            initialDeposit: bl.initialDeposit,
+          }
+        );
+      }
+    } catch {
+      // Non-critical — edge score won't be shown
+    }
+  }
+
   return {
     id: instance.id,
     eaName: instance.eaName,
@@ -620,5 +678,6 @@ export async function loadStrategyDetail(
     versionNo,
     versionCurrency,
     strategyLineage,
+    edgeScore,
   };
 }

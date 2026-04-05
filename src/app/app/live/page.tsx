@@ -6,6 +6,7 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { loadMonitorData } from "./load-monitor-data";
+import { computeEdgeScore } from "@/domain/monitoring/edge-score";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 import { resolveTier } from "@/lib/plan-limits";
 
@@ -61,7 +62,7 @@ function renderDashboard(
   params: { decision?: string; relink?: string },
   tier: import("@/lib/plans").PlanTier
 ) {
-  const { eaInstances } = data;
+  const { eaInstances, tradeAggregates } = data;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -117,21 +118,59 @@ function renderDashboard(
           }
         : null;
     })(),
-    trades: ea.trades.map((t) => ({
-      profit: t.profit,
-      closeTime: t.closeTime?.toISOString() ?? null,
-      symbol: t.symbol,
-      magicNumber: t.magicNumber ?? null,
-    })),
-    heartbeats: ea.heartbeats.map((h) => ({
-      equity: h.equity,
-      createdAt: h.createdAt.toISOString(),
-    })),
+    trades: [],
+    heartbeats: [],
     healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
       driftDetected: hs.driftDetected,
       driftSeverity: hs.driftSeverity,
       status: hs.status,
     })),
+    edgeScore: (() => {
+      const bl = ea.strategyVersion?.backtestBaseline as
+        | {
+            winRate: number | null;
+            profitFactor: number | null;
+            maxDrawdownPct: number | null;
+            netReturnPct: number | null;
+            initialDeposit: number | null;
+          }
+        | undefined;
+      if (!bl || bl.winRate == null || bl.profitFactor == null) return null;
+      const agg = tradeAggregates.get(ea.id);
+      if (!agg || agg.tradeCount === 0) {
+        return {
+          phase: "COLLECTING" as const,
+          score: null,
+          tradesCompleted: 0,
+          tradesRequired: 10,
+        };
+      }
+      const result = computeEdgeScore(
+        {
+          totalTrades: agg.tradeCount,
+          winCount: agg.winCount,
+          lossCount: agg.lossCount,
+          grossProfit: agg.grossProfit,
+          grossLoss: agg.grossLoss,
+          maxDrawdownPct: 0, // per-instance DD not available from aggregates
+          totalProfit: ea.totalProfit,
+          balance: ea.balance ?? 0,
+        },
+        {
+          winRate: bl.winRate,
+          profitFactor: bl.profitFactor,
+          maxDrawdownPct: bl.maxDrawdownPct ?? 0,
+          netReturnPct: bl.netReturnPct ?? 0,
+          initialDeposit: bl.initialDeposit ?? 0,
+        }
+      );
+      return {
+        phase: result.phase,
+        score: result.score,
+        tradesCompleted: result.tradesCompleted,
+        tradesRequired: result.tradesRequired,
+      };
+    })(),
   }));
 
   const relinkInstanceId = params.relink ?? null;

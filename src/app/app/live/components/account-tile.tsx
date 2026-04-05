@@ -11,6 +11,7 @@ import {
   deriveStrategyHealth,
   HEALTH_STYLES,
 } from "./utils";
+import { EdgeScoreBadge } from "./edge-score-badge";
 
 interface AccountTileProps {
   account: AccountGroup;
@@ -42,6 +43,7 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
       symbol: ea.symbol!,
       health: deriveStrategyHealth(ea),
       hasBaseline: !!ea.baseline,
+      edgeScore: ea.edgeScore ?? null,
     }));
   const totalStrategies = instances.filter((ea) => ea.symbol !== null).length;
   const hiddenCount = totalStrategies - strategies.length;
@@ -181,7 +183,10 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${hs.dot}`} />
                   <span className="text-[11px] text-[#CBD5E1] font-medium">{s.symbol}</span>
                 </div>
-                <span className={`text-[9px] font-medium ${hs.text}`}>{s.health}</span>
+                <div className="flex items-center gap-2">
+                  {s.edgeScore && <EdgeScoreBadge edgeScore={s.edgeScore} />}
+                  <span className={`text-[9px] font-medium ${hs.text}`}>{s.health}</span>
+                </div>
               </div>
             );
           })}

@@ -10,6 +10,7 @@ import { IncidentTimeline } from "@/components/app/incident-timeline";
 import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
+import { EdgeScorePanel } from "@/components/app/edge-score-panel";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
 import { GovernancePanel } from "@/components/app/governance-panel";
@@ -37,6 +38,9 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* 1. Header — name, status, lifecycle, health, last eval */}
         <StrategyHeader data={data} />
+
+        {/* ── Edge Score ────────────────────────────────────── */}
+        {data.edgeScore && <EdgeScorePanel edgeScore={data.edgeScore} />}
 
         {/* ── Control Layer ─────────────────────────────────── */}
 

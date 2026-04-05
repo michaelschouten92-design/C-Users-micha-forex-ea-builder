@@ -15,6 +15,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const modeFilter = request.nextUrl.searchParams.get("mode");
 
+    // Polling endpoint: only fetch live-changing fields, not static baseline data.
+    // Baseline, trades, heartbeats are already loaded on initial page render.
     const eaInstances = await prisma.liveEAInstance.findMany({
       where: {
         userId: session.user.id,
@@ -22,70 +24,48 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         ...(modeFilter === "LIVE" || modeFilter === "PAPER" ? { mode: modeFilter } : {}),
       },
       orderBy: { lastHeartbeat: { sort: "desc", nulls: "last" } },
-      include: {
-        accountTrackRecordShares: {
-          where: { isPublic: true },
-          select: { token: true },
-          take: 1,
-        },
-        trades: {
-          where: { closeTime: { not: null } },
-          select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
-          take: 10,
-          orderBy: { closeTime: "desc" },
-        },
-        heartbeats: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { equity: true, createdAt: true },
-        },
-        strategyVersion: {
-          select: {
-            backtestBaseline: {
-              select: {
-                winRate: true,
-                profitFactor: true,
-                totalTrades: true,
-                maxDrawdownPct: true,
-                sharpeRatio: true,
-              },
-            },
-          },
-        },
-        terminalDeployments: {
-          select: {
-            id: true,
-            baselineStatus: true,
-            strategyVersion: {
-              select: {
-                backtestBaseline: {
-                  select: {
-                    winRate: true,
-                    profitFactor: true,
-                    totalTrades: true,
-                    maxDrawdownPct: true,
-                    sharpeRatio: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        createdAt: true,
+        eaName: true,
+        symbol: true,
+        timeframe: true,
+        broker: true,
+        accountNumber: true,
+        status: true,
+        mode: true,
+        tradingState: true,
+        lastHeartbeat: true,
+        lastError: true,
+        balance: true,
+        equity: true,
+        openTrades: true,
+        totalTrades: true,
+        totalProfit: true,
+        parentInstanceId: true,
+        lifecycleState: true,
+        strategyStatus: true,
+        operatorHold: true,
+        apiKeySuffix: true,
+        exportJobId: true,
         incidents: {
           where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
-          orderBy: { openedAt: "desc" },
+          orderBy: { openedAt: "desc" as const },
           select: { reasonCodes: true },
           take: 1,
         },
         healthSnapshots: {
-          orderBy: { createdAt: "desc" },
+          orderBy: { createdAt: "desc" as const },
           take: 1,
           select: { driftDetected: true, driftSeverity: true, status: true },
+        },
+        terminalDeployments: {
+          where: { ignoredAt: null },
+          select: { baselineStatus: true },
         },
       },
     });
 
-    // Serialize dates to ISO strings for client consumption
     const data = eaInstances.map((ea) => ({
       id: ea.id,
       createdAt: ea.createdAt.toISOString(),
@@ -109,35 +89,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       strategyStatus: ea.strategyStatus,
       operatorHold: ea.operatorHold,
       apiKeySuffix: ea.apiKeySuffix,
-      trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
       healthStatus: ea.healthSnapshots?.[0]?.status ?? null,
       isExternal: ea.exportJobId === null,
-      relinkRequired: ea.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
+      relinkRequired: ea.terminalDeployments.some(
+        (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
+      ),
       monitoringReasons: ea.incidents[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
-      baseline: (() => {
-        const depBaseline = ea.terminalDeployments.find((d) => d.strategyVersion?.backtestBaseline)
-          ?.strategyVersion?.backtestBaseline;
-        const bl = depBaseline ?? ea.strategyVersion?.backtestBaseline;
-        return bl
-          ? {
-              winRate: bl.winRate,
-              profitFactor: bl.profitFactor,
-              totalTrades: bl.totalTrades,
-              maxDrawdownPct: bl.maxDrawdownPct,
-              sharpeRatio: bl.sharpeRatio,
-            }
-          : null;
-      })(),
-      trades: ea.trades.map((t) => ({
-        profit: t.profit,
-        closeTime: t.closeTime?.toISOString() ?? null,
-        symbol: t.symbol,
-        magicNumber: t.magicNumber ?? null,
-      })),
-      heartbeats: ea.heartbeats.map((h) => ({
-        equity: h.equity,
-        createdAt: h.createdAt.toISOString(),
-      })),
+      trades: [],
+      heartbeats: [],
       healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
         driftDetected: hs.driftDetected,
         driftSeverity: hs.driftSeverity,

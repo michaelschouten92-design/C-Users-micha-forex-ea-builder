@@ -198,6 +198,8 @@ export interface TrackRecordRunningState {
   totalCommission: number;
   winCount: number;
   lossCount: number;
+  grossProfit: number;
+  grossLoss: number;
   openPositions: OpenPosition[];
   /** Cumulative cashflow (deposits − withdrawals). Drawdown never resets from cashflow. */
   cumulativeCashflow: number;

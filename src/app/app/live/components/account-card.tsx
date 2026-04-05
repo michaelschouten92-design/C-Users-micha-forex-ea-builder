@@ -17,6 +17,7 @@ import {
   HEALTH_STYLES,
   compareInstances,
 } from "./utils";
+import { EdgeScoreBadge } from "./edge-score-badge";
 
 export function AccountCard({
   account,
@@ -691,9 +692,28 @@ export function AccountCard({
           ) : (
             <div>
               {/* Header row */}
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_110px_150px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_80px_150px] gap-x-3 gap-y-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
                 <span>Symbol</span>
-                <span>Edge Status</span>
+                <span className="relative group/edge inline-flex items-center gap-1 cursor-help">
+                  Edge
+                  <svg
+                    className="w-3 h-3 text-[#475569]"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M8 7v4M8 5.5v0" strokeLinecap="round" />
+                  </svg>
+                  <span className="absolute left-0 top-full mt-1 z-50 w-56 p-2.5 rounded-lg bg-[#1E293B] border border-[#334155] text-[10px] leading-relaxed text-[#CBD5E1] normal-case tracking-normal font-normal shadow-xl opacity-0 pointer-events-none group-hover/edge:opacity-100 group-hover/edge:pointer-events-auto transition-opacity">
+                    <span className="font-semibold text-white">Edge Score</span> measures how your
+                    live performance compares to your backtest baseline. After 10 live trades, we
+                    calculate a score based on win rate, profit factor, drawdown and return. 100% =
+                    matching your backtest. Updated after each closed trade.
+                  </span>
+                </span>
+                <span>Status</span>
                 <span>Baseline</span>
               </div>
               {/* Strategy rows */}
@@ -719,7 +739,7 @@ export function AccountCard({
                   <div key={rowKey}>
                     <div
                       onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
-                      className={`grid grid-cols-1 sm:grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
+                      className={`grid grid-cols-1 sm:grid-cols-[1fr_120px_80px_150px] gap-x-3 gap-y-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
                         isHighlighted
                           ? "border-[#F59E0B]/40 bg-[#F59E0B]/5"
                           : isExpanded
@@ -730,6 +750,11 @@ export function AccountCard({
                       <p className="text-xs font-semibold text-[#CBD5E1] truncate self-center">
                         {sg.symbol}
                       </p>
+                      <div className="self-center">
+                        {owningInstance?.edgeScore ? (
+                          <EdgeScoreBadge edgeScore={owningInstance.edgeScore} />
+                        ) : null}
+                      </div>
                       <div className="self-center">
                         <span
                           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}

@@ -76,6 +76,12 @@ export function updateStateOnTradeClose(
     state.lossCount++;
   }
 
+  if (profit > 0) {
+    state.grossProfit += profit;
+  } else if (profit < 0) {
+    state.grossLoss += Math.abs(profit);
+  }
+
   // Equity correction: the closed trade's unrealized PnL was approximately equal to profit.
   // After closing: equity adjusts by swap + commission (profit was already reflected in equity).
   // Falls back to balance if equity was never set (first trade scenario).

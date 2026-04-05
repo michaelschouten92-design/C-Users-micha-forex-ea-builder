@@ -121,11 +121,26 @@ export function LiveDashboardClient({
       }
     }
 
+    // Merge polling data with existing static data (baseline, edgeScore, etc.)
+    const mergedInstances = newInstances.map((ea) => {
+      const prev = previousMap.get(ea.id);
+      if (!prev) return ea;
+      return {
+        ...prev,
+        ...ea,
+        // Preserve static fields that polling doesn't include
+        baseline: ea.baseline ?? prev.baseline,
+        edgeScore: ea.edgeScore ?? prev.edgeScore,
+        trackRecordToken: ea.trackRecordToken ?? prev.trackRecordToken,
+        trades: ea.trades.length > 0 ? ea.trades : prev.trades,
+      };
+    });
+
     const newMap = new Map<string, EAInstanceData>();
-    newInstances.forEach((ea) => newMap.set(ea.id, ea));
+    mergedInstances.forEach((ea) => newMap.set(ea.id, ea));
     previousDataRef.current = newMap;
 
-    setEaInstances(newInstances);
+    setEaInstances(mergedInstances);
     setChangedIds(changed);
 
     if (changed.size > 0) {
