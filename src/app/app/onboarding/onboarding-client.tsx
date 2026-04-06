@@ -74,7 +74,7 @@ function useOnboardingStatus() {
     fetchStatus();
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") fetchStatus();
-    }, 5_000);
+    }, 10_000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
 

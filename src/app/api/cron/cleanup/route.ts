@@ -97,7 +97,9 @@ async function handleCleanup(request: NextRequest) {
     // Batch 2: EA-related operations (can run in parallel)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     const [deletedHeartbeats, deletedEAErrors, staleInstances] = await Promise.all([
-      batchDelete(prisma.eAHeartbeat, { createdAt: { lt: sevenDaysAgo } }),
+      batchDelete(prisma.eAHeartbeat, {
+        createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      }),
       batchDelete(prisma.eAError, { createdAt: { lt: thirtyDaysAgo } }),
       prisma.liveEAInstance.updateMany({
         where: {
@@ -108,6 +110,63 @@ async function handleCleanup(request: NextRequest) {
         data: { status: "OFFLINE" },
       }),
     ]);
+
+    // Batch 3: Retention policies for previously unbounded tables
+    let deletedMonitoringRuns = 0;
+    let deletedHealthSnapshots = 0;
+    let deletedOutbox = 0;
+    let deletedAlerts = 0;
+    let deletedProofEvents = 0;
+    let deletedSoftInstances = 0;
+    let deletedSoftExports = 0;
+    let deletedSoftTerminals = 0;
+
+    if (!isTimedOut()) {
+      [
+        deletedMonitoringRuns,
+        deletedHealthSnapshots,
+        deletedOutbox,
+        deletedAlerts,
+        deletedProofEvents,
+        deletedSoftInstances,
+        deletedSoftExports,
+        deletedSoftTerminals,
+      ] = await Promise.all([
+        // MonitoringRun: delete > 90 days
+        batchDelete(prisma.monitoringRun, {
+          completedAt: { lt: ninetyDaysAgo },
+        }),
+        // HealthSnapshot: delete > 90 days
+        batchDelete(prisma.healthSnapshot, {
+          createdAt: { lt: ninetyDaysAgo },
+        }),
+        // NotificationOutbox: delete SENT/DEAD > 30 days
+        batchDelete(prisma.notificationOutbox, {
+          status: { in: ["SENT", "DEAD"] },
+          createdAt: { lt: thirtyDaysAgo },
+        }),
+        // ControlLayerAlert: delete acknowledged > 90 days
+        batchDelete(prisma.controlLayerAlert, {
+          acknowledgedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // ProofEventLog: delete > 365 days
+        batchDelete(prisma.proofEventLog, {
+          createdAt: { lt: oneYearAgo },
+        }),
+        // Soft-deleted LiveEAInstance: hard delete > 90 days
+        batchDelete(prisma.liveEAInstance, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // Soft-deleted ExportJob: hard delete > 90 days
+        batchDelete(prisma.exportJob, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // Soft-deleted TerminalConnection: hard delete > 90 days
+        batchDelete(prisma.terminalConnection, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+      ]);
+    }
 
     // See prisma/schema.prisma for deprecated model annotations.
 
@@ -254,6 +313,14 @@ async function handleCleanup(request: NextRequest) {
         deletedAdminOtps,
         deletedHeartbeats,
         deletedEAErrors,
+        deletedMonitoringRuns,
+        deletedHealthSnapshots,
+        deletedOutbox,
+        deletedAlerts,
+        deletedProofEvents,
+        deletedSoftInstances,
+        deletedSoftExports,
+        deletedSoftTerminals,
         staleEAsOfflined: staleInstances.count,
         downgraded,
         warningsSent,
@@ -274,6 +341,14 @@ async function handleCleanup(request: NextRequest) {
         auditLogs: deletedAuditLogs,
         eaHeartbeats: deletedHeartbeats,
         eaErrors: deletedEAErrors,
+        monitoringRuns: deletedMonitoringRuns,
+        healthSnapshots: deletedHealthSnapshots,
+        outboxEntries: deletedOutbox,
+        controlLayerAlerts: deletedAlerts,
+        proofEvents: deletedProofEvents,
+        softDeletedInstances: deletedSoftInstances,
+        softDeletedExports: deletedSoftExports,
+        softDeletedTerminals: deletedSoftTerminals,
       },
       staleEAsOfflined: staleInstances.count,
       downgraded,
