@@ -21,7 +21,7 @@ export function AlertsModal({
   // New alert form state
   const [newAlertType, setNewAlertType] = useState("DRAWDOWN");
   const [newThreshold, setNewThreshold] = useState("5");
-  const [newChannel, setNewChannel] = useState("EMAIL");
+  const [newChannel, setNewChannel] = useState("BROWSER_PUSH");
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [newInstanceId, setNewInstanceId] = useState("");
 
@@ -89,7 +89,7 @@ export function AlertsModal({
       // Reset form
       setNewAlertType("DRAWDOWN");
       setNewThreshold("5");
-      setNewChannel("EMAIL");
+      setNewChannel("BROWSER_PUSH");
       setNewWebhookUrl("");
       setNewInstanceId("");
     } else {
@@ -128,7 +128,7 @@ export function AlertsModal({
   const needsThreshold = ["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"].includes(
     newAlertType
   );
-  const needsWebhook = newChannel === "WEBHOOK";
+  const needsWebhook = false;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -220,9 +220,8 @@ export function AlertsModal({
                 onChange={(e) => setNewChannel(e.target.value)}
                 className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
               >
-                <option value="EMAIL">Email</option>
-                <option value="WEBHOOK">Webhook</option>
                 <option value="BROWSER_PUSH">Browser Push</option>
+                <option value="TELEGRAM">Telegram</option>
               </select>
             </div>
 

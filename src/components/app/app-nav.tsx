@@ -5,7 +5,7 @@ import { NotificationBell } from "./notification-bell";
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
 import { TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 
-export type NavItem = "evaluate" | "monitor" | "risk" | "settings";
+export type NavItem = "evaluate" | "monitor" | "alerts" | "settings";
 
 interface AppNavProps {
   activeItem?: NavItem;
@@ -21,7 +21,7 @@ const NAV_LINKS: {
 }[] = [
   { key: "monitor", label: "Command Center", href: () => "/app/live" },
   { key: "evaluate", label: "Evaluate Strategy", href: () => "/app/evaluate" },
-  { key: "risk", label: "Risk", href: () => "/app/risk" },
+  { key: "alerts", label: "Alerts", href: () => "/app/alerts" },
   { key: "settings", label: "Settings", href: () => "/app/settings" },
 ];
 

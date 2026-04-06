@@ -28,7 +28,7 @@ export default async function RiskPage() {
 
   return (
     <div className="min-h-screen">
-      <AppNav activeItem="risk" session={session} tier={tier} />
+      <AppNav session={session} tier={tier} />
 
       <main id="main-content" className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <AppBreadcrumbs items={[{ label: "Dashboard", href: "/app" }, { label: "Risk" }]} />

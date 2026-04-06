@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-type NavItem = "evaluate" | "monitor" | "risk" | "settings";
+type NavItem = "evaluate" | "monitor" | "alerts" | "settings";
 
 const NAV_ITEMS: { key: NavItem; label: string; href: string }[] = [
   { key: "evaluate", label: "Evaluate", href: "/app/evaluate" },
   { key: "monitor", label: "Command Center", href: "/app/live" },
-  { key: "risk", label: "Risk", href: "/app/risk" },
+  { key: "alerts", label: "Alerts", href: "/app/alerts" },
   { key: "settings", label: "Settings", href: "/app/settings" },
 ];
 
@@ -104,19 +104,19 @@ export function MobileNavMenu({ activeItem }: { activeItem?: NavItem }) {
             Command Center
           </Link>
           <Link
-            href="/app/risk"
+            href="/app/alerts"
             onClick={() => setOpen(false)}
-            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "risk" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
+            className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${activeItem === "alerts" ? "text-[#818CF8] bg-[rgba(79,70,229,0.08)]" : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(255,255,255,0.06)]"}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
               />
             </svg>
-            Risk
+            Alerts
           </Link>
           <Link
             href="/app/settings"

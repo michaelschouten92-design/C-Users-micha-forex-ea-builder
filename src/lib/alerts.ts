@@ -52,33 +52,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     triggeredIds.push(config.id);
 
     const channel = config.channel;
-    if (channel === "EMAIL") {
-      const esc = (s: string) =>
-        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      await enqueueNotification({
-        userId,
-        channel: "EMAIL",
-        destination: config.user.email,
-        subject: `AlgoStudio Alert: ${alertType} — ${eaName}`,
-        payload: {
-          html: `<h2>EA Alert: ${esc(alertType)}</h2><p><strong>EA:</strong> ${esc(eaName)}</p><p>${esc(message)}</p>`,
-        },
-      });
-    } else if (channel === "WEBHOOK" && config.webhookUrl) {
-      await enqueueNotification({
-        userId,
-        channel: "WEBHOOK",
-        destination: config.webhookUrl,
-        payload: {
-          event: "alert",
-          alertType,
-          eaName,
-          instanceId,
-          message,
-          triggeredAt: now.toISOString(),
-        },
-      });
-    } else if (channel === "BROWSER_PUSH") {
+    if (channel === "BROWSER_PUSH") {
       await enqueueNotification({
         userId,
         channel: "BROWSER_PUSH",
