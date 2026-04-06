@@ -1056,11 +1056,16 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
       candidates[k].hasOpenPosition = false;
    }
 
-   // ── Closed deals ──────────────────────────────────────────────
-   for(int i = 0; i < total; i++)
+   // ── Closed deals (last 90 days only — avoids stale strategies from old history) ──
+   datetime cutoff = TimeCurrent() - 90 * 24 * 3600;
+   for(int i = total - 1; i >= 0; i--)
    {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
+
+      // Skip deals older than cutoff (scanning newest first for efficiency)
+      datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      if(dealTime < cutoff) break;
 
       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
