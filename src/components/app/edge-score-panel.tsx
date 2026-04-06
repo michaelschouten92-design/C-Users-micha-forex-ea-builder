@@ -1,4 +1,5 @@
 import type { EdgeScoreResult, EdgeScoreBreakdown } from "@/domain/monitoring/edge-score";
+import { InfoTooltip } from "./info-tooltip";
 
 function scoreColor(score: number): string {
   if (score >= 90) return "#10B981";
@@ -19,13 +20,25 @@ const METRIC_LABELS: Record<keyof EdgeScoreBreakdown, string> = {
   returnPct: "Return",
 };
 
+const METRIC_TIPS: Record<keyof EdgeScoreBreakdown, string> = {
+  profitFactor:
+    "Gross profit divided by gross loss. Above 1.5 is healthy, below 1.0 means losing money.",
+  winRate: "Percentage of trades that are profitable. Compare live vs backtest to spot drift.",
+  drawdown:
+    "Largest peak-to-trough decline. Lower is better. Exceeding your backtest drawdown is a warning sign.",
+  returnPct: "Total return as a percentage of starting balance.",
+};
+
 export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
   if (edgeScore.phase === "COLLECTING") {
     const pct = (edgeScore.tradesCompleted / edgeScore.tradesRequired) * 100;
     return (
       <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-[#FAFAFA]">Edge Score</h3>
+          <h3 className="text-sm font-semibold text-[#FAFAFA]">
+            Edge Score
+            <InfoTooltip text="Compares your live trading performance against your backtest baseline. 100% means your live results match the backtest exactly." />
+          </h3>
           <span className="text-[10px] text-[#64748B]">
             Collecting data ({edgeScore.tradesCompleted}/{edgeScore.tradesRequired} trades)
           </span>
@@ -78,7 +91,10 @@ export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
             return (
               <div key={key}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-[#94A3B8]">{METRIC_LABELS[key]}</span>
+                  <span className="text-[11px] text-[#94A3B8]">
+                    {METRIC_LABELS[key]}
+                    <InfoTooltip text={METRIC_TIPS[key]} />
+                  </span>
                   <div className="flex items-center gap-3 text-[10px] tabular-nums">
                     <span className="text-[#64748B]">BL: {formatMetric(key, metric.baseline)}</span>
                     <span className="text-[#CBD5E1] font-medium">

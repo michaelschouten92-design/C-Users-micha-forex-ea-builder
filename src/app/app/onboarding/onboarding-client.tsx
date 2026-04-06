@@ -271,7 +271,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
 
       {!complete && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             <h4 className="text-sm font-medium text-white">Quick Setup</h4>
             <ol className="space-y-3 text-sm text-[#94A3B8]">
               <li className="flex gap-3">
@@ -365,7 +365,7 @@ function StepWaitingForTrades({
         complete={complete}
       />
 
-      <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-3">
+      <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-3">
         <StatusRow label="Terminal" value="Connected" ok />
         <StatusRow label="Heartbeat" value="Receiving" ok />
         {terminal?.broker && <StatusRow label="Broker" value={terminal.broker} ok />}
@@ -415,7 +415,7 @@ function StepStrategyDiscovered({
           {strategies.map((s) => (
             <div
               key={s.instanceId}
-              className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5"
+              className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -629,7 +629,7 @@ function StepLinkBaseline({
 
       {!complete && !hasLinkableBaseline && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             <p className="text-sm text-[#94A3B8]">
               Upload your strategy&apos;s backtest report from MT5 Strategy Tester. AlgoStudio uses
               it to detect when live performance drifts from what you tested.
@@ -641,7 +641,7 @@ function StepLinkBaseline({
 
       {!complete && hasLinkableBaseline && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             {/* Show best available baseline */}
             {bestBaseline && (
               <div className="flex items-start gap-3">

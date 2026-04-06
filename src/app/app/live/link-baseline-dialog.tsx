@@ -219,7 +219,7 @@ export function LinkBaselineDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="link-baseline-title"
-        className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
+        className="bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
       >
         {/* Header */}
         <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">

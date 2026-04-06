@@ -132,9 +132,9 @@ export function AlertsModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[rgba(79,70,229,0.15)]">
+        <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-lg font-semibold text-white">Alert Configuration</h2>
           <button onClick={onClose} className="text-[#7C8DB0] hover:text-white transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

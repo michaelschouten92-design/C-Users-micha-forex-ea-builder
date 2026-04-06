@@ -70,7 +70,7 @@ export function StrategyActions({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
       {/* Pause / Resume */}
       <button
         onClick={handleTogglePause}

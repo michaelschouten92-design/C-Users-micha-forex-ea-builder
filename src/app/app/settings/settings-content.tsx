@@ -87,10 +87,16 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
       {/* Telegram */}
       <TelegramSection />
 
-      {/* Change Password */}
+      {/* Security */}
+      <h2 className="text-sm font-semibold text-[#7C8DB0] uppercase tracking-wider mt-4">
+        Security
+      </h2>
       <ChangePasswordSection />
 
       {/* Data & Privacy */}
+      <h2 className="text-sm font-semibold text-[#7C8DB0] uppercase tracking-wider mt-4">
+        Data & Privacy
+      </h2>
       <DataExportSection />
 
       {/* Delete Account */}
@@ -372,7 +378,7 @@ function DeleteAccountSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-[#EF4444] mb-2">Delete Account</h2>
 
       <p className="text-sm text-[#94A3B8] mb-4">

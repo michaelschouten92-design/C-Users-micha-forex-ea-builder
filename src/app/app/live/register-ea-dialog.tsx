@@ -113,7 +113,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
             role="dialog"
             aria-modal="true"
             aria-labelledby="register-ea-title"
-            className="relative bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-lg shadow-2xl"
+            className="relative bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-2xl w-full max-w-lg shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-2">

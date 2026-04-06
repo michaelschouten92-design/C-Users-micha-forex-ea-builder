@@ -109,7 +109,7 @@ export function PushNotificationToggle() {
       <button
         onClick={handleToggle}
         disabled={loading}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:ring-offset-2 focus:ring-offset-[#1A0626] disabled:opacity-50 ${
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:ring-offset-2 focus:ring-offset-[#111114] disabled:opacity-50 ${
           subscribed ? "bg-[#4F46E5]" : "bg-[#334155]"
         }`}
         role="switch"

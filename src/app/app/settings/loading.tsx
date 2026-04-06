@@ -1,7 +1,7 @@
 export default function SettingsLoading() {
   return (
     <div className="min-h-screen">
-      <nav className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50">
+      <nav className="bg-[#111114]/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="h-5 w-32 bg-[#1E293B] rounded animate-pulse" />
@@ -15,7 +15,7 @@ export default function SettingsLoading() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6"
+              className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6"
             >
               <div className="animate-pulse space-y-3">
                 <div className="h-5 bg-[#1E293B] rounded w-1/3" />
