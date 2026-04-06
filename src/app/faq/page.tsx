@@ -95,12 +95,12 @@ const faqItems = [
   },
   {
     q: "What's included in Control?",
-    a: "All the same features as every plan — monitoring, Strategy Identity, Verified Track Record, and priority support. Control gives you up to 5 monitored trading accounts.",
+    a: "All the same features as every plan — monitoring, Strategy Identity, Verified Track Record, and priority support. Control gives you up to 3 monitored trading accounts.",
     category: "Pricing" as const,
   },
   {
     q: "What's included in Authority?",
-    a: "All features included, same as every plan. Authority gives you up to 15 monitored trading accounts — designed for traders who run strategies across multiple accounts.",
+    a: "All features included, same as every plan. Authority gives you up to 10 monitored trading accounts — designed for traders who run strategies across multiple accounts.",
     category: "Pricing" as const,
   },
   {
