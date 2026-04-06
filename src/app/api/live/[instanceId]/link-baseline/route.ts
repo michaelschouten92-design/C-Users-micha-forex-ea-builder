@@ -233,11 +233,17 @@ export async function POST(
     );
 
     // Symbol mismatch warning (soft — don't block, some EAs trade multiple pairs)
+    // Strip broker suffixes before comparing (same regex as backtest parser)
+    const normalizeSymbol = (s: string) =>
+      s
+        .replace(/[._](r|m|i|raw|ecn|pro|std|micro|mini|c|e|sb|z)\b/i, "")
+        .replace(/([A-Z]{6})([a-z]{1,3})$/, "$1")
+        .trim()
+        .toUpperCase();
     const symbolMismatch =
       instance.symbol &&
       backtestRun.symbol &&
-      instance.symbol.replace(/[.mr]/gi, "").toUpperCase() !==
-        backtestRun.symbol.replace(/[.mr]/gi, "").toUpperCase();
+      normalizeSymbol(instance.symbol) !== normalizeSymbol(backtestRun.symbol);
 
     return NextResponse.json(
       {

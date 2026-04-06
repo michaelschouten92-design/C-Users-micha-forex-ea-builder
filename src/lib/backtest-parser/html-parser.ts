@@ -51,9 +51,10 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 1. Extract header metadata
   // ========================================
-  // Use the first table (metrics/header) for metadata if the original root is corrupted
-  const metadataSource = tables.length > 0 ? tables[0] : root;
-  const metadata = extractMetadata(metadataSource, warnings);
+  // Always use original root for metadata — it contains <title> in <head> and
+  // cell text is accessible even when table DOM is corrupted. The split-fallback
+  // tables are only needed for metrics and deals extraction.
+  const metadata = extractMetadata(root, warnings);
 
   // ========================================
   // 2. Detect locale from number samples

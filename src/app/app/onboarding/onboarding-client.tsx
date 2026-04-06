@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -508,7 +509,11 @@ function InlineBacktestUpload({ onUploaded }: { onUploaded: () => void }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/backtest/upload", { method: "POST", body: formData });
+      const res = await fetch("/api/backtest/upload", {
+        method: "POST",
+        headers: getCsrfHeaders(),
+        body: formData,
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.error ?? "Upload failed");

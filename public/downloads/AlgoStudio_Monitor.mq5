@@ -1063,9 +1063,9 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
 
-      // Skip deals older than cutoff (scanning newest first for efficiency)
+      // Skip deals older than cutoff (deal order is NOT guaranteed chronological)
       datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
-      if(dealTime < cutoff) break;
+      if(dealTime < cutoff) continue;
 
       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
