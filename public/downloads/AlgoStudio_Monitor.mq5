@@ -1056,8 +1056,8 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
       candidates[k].hasOpenPosition = false;
    }
 
-   // ── Closed deals (last 90 days only — avoids stale strategies from old history) ──
-   datetime cutoff = TimeCurrent() - 90 * 24 * 3600;
+   // ── Closed deals (last 30 days only — avoids stale strategies from old history) ──
+   datetime cutoff = TimeCurrent() - 30 * 24 * 3600;
    for(int i = total - 1; i >= 0; i--)
    {
       ulong ticket = HistoryDealGetTicket(i);
@@ -1136,6 +1136,40 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
          string comment = PositionGetString(POSITION_COMMENT);
          // Strip broker-injected ticket hints (e.g., "[tp 12345]", "[sl]", "#12345")
          // but preserve legitimate EA comments containing brackets
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
+         discoveredCount++;
+      }
+   }
+
+   // ── Pending orders (catches strategies that use limit/stop orders before any fill) ──
+   for(int o = OrdersTotal() - 1; o >= 0; o--)
+   {
+      ulong orderTicket = OrderGetTicket(o);
+      if(orderTicket == 0) continue;
+
+      string sym   = OrderGetString(ORDER_SYMBOL);
+      long   magic = (long)OrderGetInteger(ORDER_MAGIC);
+
+      if(StringLen(sym) == 0) continue;
+      if(magic == 0) continue;
+
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
+
+      if(idx >= 0)
+      {
+         // Already known from deals or positions — just mark as having pending activity
+      }
+      else if(discoveredCount < maxCount)
+      {
+         candidates[discoveredCount].symbol         = sym;
+         candidates[discoveredCount].magicNumber    = magic;
+         candidates[discoveredCount].tradeCount     = 0;
+         candidates[discoveredCount].hasOpenPosition = false;
+         string comment = OrderGetString(ORDER_COMMENT);
          if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
             StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
          candidates[discoveredCount].eaHint = comment;

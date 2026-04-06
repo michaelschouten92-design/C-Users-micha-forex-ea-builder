@@ -376,10 +376,15 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       isAutoDiscovered:
         ea.lifecycleState === "DRAFT" &&
         ea.terminalDeployments.some((d) => {
-          const expected = createHash("sha256")
+          // EA fingerprint formula: ctx:v3:SYMBOL:MAGIC:TIMEFRAME (timeframe="" for auto-discovered)
+          const v3 = createHash("sha256")
+            .update(`ctx:v3:${d.symbol}:${d.magicNumber}:`)
+            .digest("hex");
+          // Backward compat with older EA versions
+          const v2 = createHash("sha256")
             .update(`ctx:v2:${d.symbol}:${d.magicNumber}`)
             .digest("hex");
-          return d.materialFingerprint === expected;
+          return d.materialFingerprint === v3 || d.materialFingerprint === v2;
         }),
     }));
     const subscription = subResult.value;

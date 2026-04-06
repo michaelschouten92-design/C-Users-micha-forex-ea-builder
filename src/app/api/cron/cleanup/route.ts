@@ -120,6 +120,8 @@ async function handleCleanup(request: NextRequest) {
     let deletedSoftInstances = 0;
     let deletedSoftExports = 0;
     let deletedSoftTerminals = 0;
+    let staleDiscoveredSoftDeleted = 0;
+    let staleDeploymentsDeleted = 0;
 
     if (!isTimedOut()) {
       [
@@ -166,6 +168,33 @@ async function handleCleanup(request: NextRequest) {
           deletedAt: { not: null, lt: ninetyDaysAgo },
         }),
       ]);
+    }
+
+    // Batch 4: Soft-delete stale auto-discovered child instances.
+    // These are strategies discovered from trade history that are no longer being reported
+    // by the EA (OFFLINE > 7 days). Without cleanup they linger forever in the dashboard.
+    if (!isTimedOut()) {
+      const staleDiscovered = await prisma.liveEAInstance.updateMany({
+        where: {
+          parentInstanceId: { not: null },
+          deletedAt: null,
+          status: "OFFLINE",
+          lastHeartbeat: { lt: sevenDaysAgo },
+        },
+        data: { deletedAt: new Date() },
+      });
+      staleDiscoveredSoftDeleted = staleDiscovered.count;
+      if (staleDiscoveredSoftDeleted > 0) {
+        log.info(
+          { count: staleDiscoveredSoftDeleted },
+          "Soft-deleted stale auto-discovered child instances"
+        );
+      }
+
+      // Clean up TerminalDeployment records not seen in 30 days
+      staleDeploymentsDeleted = await batchDelete(prisma.terminalDeployment, {
+        lastSeenAt: { lt: thirtyDaysAgo },
+      });
     }
 
     // See prisma/schema.prisma for deprecated model annotations.
@@ -321,6 +350,8 @@ async function handleCleanup(request: NextRequest) {
         deletedSoftInstances,
         deletedSoftExports,
         deletedSoftTerminals,
+        staleDiscoveredSoftDeleted,
+        staleDeploymentsDeleted,
         staleEAsOfflined: staleInstances.count,
         downgraded,
         warningsSent,
@@ -349,6 +380,8 @@ async function handleCleanup(request: NextRequest) {
         softDeletedInstances: deletedSoftInstances,
         softDeletedExports: deletedSoftExports,
         softDeletedTerminals: deletedSoftTerminals,
+        staleDiscoveredChildren: staleDiscoveredSoftDeleted,
+        staleDeployments: staleDeploymentsDeleted,
       },
       staleEAsOfflined: staleInstances.count,
       downgraded,

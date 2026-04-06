@@ -796,6 +796,34 @@ export function AccountCard({
                         ) : (
                           <p className="text-xs text-[#64748B]">Missing</p>
                         )}
+                        {/* Dismiss button for child (auto-discovered) strategies */}
+                        {resolvedInstanceId && resolvedInstanceId !== primary.id && (
+                          <button
+                            type="button"
+                            title="Remove this strategy"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Remove ${sg.symbol} from monitoring?`)) {
+                                onDelete(resolvedInstanceId);
+                              }
+                            }}
+                            className="ml-auto text-[#475569] hover:text-[#EF4444] transition-colors"
+                          >
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                     {isExpanded && owningInstance && (
