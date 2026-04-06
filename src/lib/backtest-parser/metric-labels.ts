@@ -58,6 +58,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "валовая прибыль",
     "profit brut",
     "lucro bruto",
+    "profitto lordo", // IT
+    "zysk brutto", // PL
+    "总利润", // ZH
+    "総利益", // JA
   ],
   grossLoss: [
     "gross loss",
@@ -66,6 +70,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "валовой убыток",
     "perte brute",
     "perda bruta",
+    "perdita lorda", // IT
+    "strata brutto", // PL
+    "总亏损", // ZH
+    "総損失", // JA
   ],
   profitFactor: [
     "profit factor",
@@ -84,6 +92,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "математическое ожидание",
     "gain espéré",
     "retorno esperado",
+    "rendimento atteso", // IT
+    "oczekiwana wypłata", // PL
+    "期望收益", // ZH
+    "期待利益", // JA
   ],
   maxDrawdown: [
     // Equity drawdown labels listed first for fuzzy match priority.
@@ -122,6 +134,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "фактор восстановления",
     "facteur de récupération",
     "fator de recuperação",
+    "fattore di recupero", // IT
+    "współczynnik odzyskiwania", // PL
+    "恢复因子", // ZH
+    "リカバリーファクター", // JA
   ],
   totalTrades: [
     "total trades",

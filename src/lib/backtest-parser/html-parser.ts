@@ -332,7 +332,13 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       cellText === "expert" ||
       cellText === "experte" ||
       cellText === "эксперт" ||
-      cellText === "asesor experto"
+      cellText === "asesor experto" ||
+      cellText === "expert advisor" ||
+      cellText === "consulente" || // IT
+      cellText === "ekspert" || // PL
+      cellText === "especialista" || // PT
+      cellText === "智能交易" || // ZH
+      cellText === "エキスパート" // JA
     ) {
       // EA name from "Expert:" row (most reliable source in MT5 reports)
       metadata.eaName = nextText;
@@ -340,7 +346,10 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       cellText === "symbol" ||
       cellText === "символ" ||
       cellText === "símbolo" ||
-      cellText === "symbole"
+      cellText === "symbole" ||
+      cellText === "simbolo" || // IT
+      cellText === "品种" || // ZH
+      cellText === "シンボル" // JA
     ) {
       // Strip broker suffixes: "EURUSD.r" → "EURUSD", "GBPJPYm" → "GBPJPY", "XAUUSD.ecn" → "XAUUSD"
       metadata.symbol = nextText
@@ -351,7 +360,12 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       cellText === "period" ||
       cellText === "zeitraum" ||
       cellText === "período" ||
-      cellText === "période"
+      cellText === "période" ||
+      cellText === "период" || // RU
+      cellText === "periodo" || // IT
+      cellText === "okres" || // PL
+      cellText === "周期" || // ZH
+      cellText === "期間" // JA
     ) {
       // Period often includes timeframe: "H1 (2020.01.01 - 2023.12.31)"
       const periodMatch = nextText.match(/^(\w+)\s*\((.+)\)$/);
@@ -664,14 +678,28 @@ function extractDeals(
 
       const hasTime = texts.some(
         (h) =>
-          h.includes("time") || h.includes("zeit") || h.includes("время") || h.includes("temps")
+          h.includes("time") ||
+          h.includes("zeit") ||
+          h.includes("время") ||
+          h.includes("temps") ||
+          h.includes("hora") ||
+          h.includes("tempo") ||
+          h.includes("czas") ||
+          h.includes("时间") ||
+          h.includes("時間")
       );
       const hasProfit = texts.some(
         (h) =>
           h.includes("profit") ||
+          h.includes("lucro") ||
+          h.includes("beneficio") ||
           h.includes("gewinn") ||
           h.includes("прибыль") ||
-          h.includes("bénéfice")
+          h.includes("bénéfice") ||
+          h.includes("profitto") ||
+          h.includes("zysk") ||
+          h.includes("利益") ||
+          h.includes("利润")
       );
 
       if (hasTime && hasProfit) {
@@ -683,15 +711,33 @@ function extractDeals(
 
     if (headerRowIdx === -1) continue;
 
-    // Find column indices
+    // Find column indices (multilingual: EN, DE, ES, RU, FR, PT, IT, PL, ZH, JA)
     const timeIdx = headerTexts.findIndex(
-      (h) => h.includes("time") || h.includes("zeit") || h.includes("время") || h.includes("temps")
+      (h) =>
+        h.includes("time") ||
+        h.includes("zeit") ||
+        h.includes("время") ||
+        h.includes("temps") ||
+        h.includes("hora") ||
+        h.includes("tempo") ||
+        h.includes("czas") ||
+        h.includes("时间") ||
+        h.includes("時間")
     );
     const typeIdx = headerTexts.findIndex(
-      (h) => h === "type" || h === "typ" || h === "тип" || h === "tipo"
+      (h) =>
+        h === "type" || h === "typ" || h === "тип" || h === "tipo" || h === "类型" || h === "タイプ"
     );
     const directionIdx = headerTexts.findIndex(
-      (h) => h.includes("direction") || h.includes("richtung") || h.includes("направление")
+      (h) =>
+        h.includes("direction") ||
+        h.includes("richtung") ||
+        h.includes("направление") ||
+        h.includes("dirección") ||
+        h.includes("direção") ||
+        h.includes("direzione") ||
+        h.includes("kierunek") ||
+        h.includes("方向")
     );
     const volumeIdx = headerTexts.findIndex(
       (h) =>
@@ -701,27 +747,58 @@ function extractDeals(
         h.includes("lot") ||
         h === "size" ||
         h === "größe" ||
-        h === "tamaño"
+        h === "tamaño" ||
+        h.includes("objętość") ||
+        h.includes("成交量")
     );
     const priceIdx = headerTexts.findIndex(
-      (h) => h === "price" || h === "preis" || h === "precio" || h === "цена" || h === "prix"
+      (h) =>
+        h === "price" ||
+        h === "preis" ||
+        h === "precio" ||
+        h === "цена" ||
+        h === "prix" ||
+        h === "preço" ||
+        h === "prezzo" ||
+        h === "cena" ||
+        h === "价格" ||
+        h === "価格"
     );
     const profitIdx = headerTexts.findIndex(
       (h) =>
         h.includes("profit") ||
+        h.includes("lucro") ||
+        h.includes("beneficio") ||
         h.includes("gewinn") ||
         h.includes("прибыль") ||
-        h.includes("bénéfice")
+        h.includes("bénéfice") ||
+        h.includes("profitto") ||
+        h.includes("zysk") ||
+        h.includes("利益") ||
+        h.includes("利润")
     );
     const symbolIdx = headerTexts.findIndex(
-      (h) => h === "symbol" || h === "символ" || h === "símbolo" || h === "symbole"
+      (h) =>
+        h === "symbol" ||
+        h === "символ" ||
+        h === "símbolo" ||
+        h === "symbole" ||
+        h === "simbolo" ||
+        h === "品种" ||
+        h === "シンボル"
     );
     const commentIdx = headerTexts.findIndex(
       (h) =>
         h.includes("comment") ||
         h.includes("kommentar") ||
         h.includes("комментарий") ||
-        h.includes("commentaire")
+        h.includes("commentaire") ||
+        h.includes("comentario") ||
+        h.includes("comentário") ||
+        h.includes("commento") ||
+        h.includes("komentarz") ||
+        h.includes("注释") ||
+        h.includes("コメント")
     );
 
     // Parse data rows (skip header)
