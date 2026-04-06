@@ -21,10 +21,29 @@ import type { ParsedReport, ParsedMetadata, ParsedMetrics, ParsedDeal } from "./
  */
 export function parseMT5Report(html: string): ParsedReport {
   const warnings: string[] = [];
+
   const root = parseHTML(html, { lowerCaseTagName: true });
 
-  // Collect all tables
-  const tables = root.querySelectorAll("table");
+  // Collect all tables. node-html-parser sometimes merges sibling tables into
+  // one DOM node when the HTML contains unquoted attributes or <th>/<img> tags
+  // (common in MT5 Strategy Tester reports). Fallback: split on </table> and
+  // parse each chunk individually to guarantee correct table separation.
+  let tables = root.querySelectorAll("table");
+  const rawTableCount = (html.match(/<table[\s>]/gi) || []).length;
+
+  if (tables.length < rawTableCount) {
+    // Parser merged tables — re-parse each table chunk individually
+    const chunks = html.split(/<\/table>/i);
+    tables = [];
+    for (const chunk of chunks) {
+      const tableStart = chunk.indexOf("<table");
+      if (tableStart === -1) continue;
+      const tableHtml = chunk.substring(tableStart) + "</table>";
+      const parsed = parseHTML(tableHtml, { lowerCaseTagName: true });
+      const t = parsed.querySelector("table");
+      if (t) tables.push(t);
+    }
+  }
   if (tables.length < 2) {
     warnings.push(`Expected >=2 tables, found ${tables.length}`);
   }
@@ -32,7 +51,9 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 1. Extract header metadata
   // ========================================
-  const metadata = extractMetadata(root, warnings);
+  // Use the first table (metrics/header) for metadata if the original root is corrupted
+  const metadataSource = tables.length > 0 ? tables[0] : root;
+  const metadata = extractMetadata(metadataSource, warnings);
 
   // ========================================
   // 2. Detect locale from number samples
@@ -294,16 +315,8 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
   // MT5 reports typically have the EA name in a bold/title element near the top.
   // The structure is often: first <b> or <title> text, then symbol/timeframe in a row.
 
-  // Try title element first
-  const title = root.querySelector("title");
-  if (title) {
-    const titleText = title.text.trim();
-    if (titleText && titleText !== "Strategy Tester") {
-      metadata.eaName = titleText.replace(/Strategy Tester:?\s*/i, "").trim() || null;
-    }
-  }
-
-  // Look for the header row pattern: "Symbol", "Period", etc. in table cells
+  // Look for the header row pattern: "Symbol", "Period", etc. in table cells.
+  // "Expert:" row is the most reliable source for EA name — check it first.
   const allCells = root.querySelectorAll("td");
   for (let i = 0; i < allCells.length; i++) {
     const cellText = allCells[i].text
@@ -321,10 +334,8 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       cellText === "эксперт" ||
       cellText === "asesor experto"
     ) {
-      // EA name from "Expert:" row (common in MT5 Strategy Tester reports)
-      if (!metadata.eaName) {
-        metadata.eaName = nextText;
-      }
+      // EA name from "Expert:" row (most reliable source in MT5 reports)
+      metadata.eaName = nextText;
     } else if (
       cellText === "symbol" ||
       cellText === "символ" ||
@@ -392,12 +403,28 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
   }
 
   // Fallback: extract symbol and timeframe from title — e.g. "Strategy Tester: EA (EURUSD,H1)"
-  if (metadata.symbol === "UNKNOWN" && title) {
-    const titleMatch = title.text.trim().match(/\(([A-Za-z0-9._]+)\s*,\s*([A-Za-z0-9]+)\)/);
+  const titleEl = root.querySelector("title");
+  if (metadata.symbol === "UNKNOWN" && titleEl) {
+    const titleMatch = titleEl.text.trim().match(/\(([A-Za-z0-9._]+)\s*,\s*([A-Za-z0-9]+)\)/);
     if (titleMatch) {
       metadata.symbol = titleMatch[1].replace(/[._].*$/, "").toUpperCase();
       if (metadata.timeframe === "UNKNOWN") {
         metadata.timeframe = titleMatch[2].toUpperCase();
+      }
+    }
+  }
+
+  // Fallback: EA name from <title> if not found in cells
+  if (!metadata.eaName) {
+    const title = titleEl;
+    if (title) {
+      const stripped = title.text
+        .trim()
+        .replace(/Strategy Tester\s*(Report)?:?\s*/i, "")
+        .trim();
+      // Only use title if it's meaningful (not empty, not generic like "Report" or "Type")
+      if (stripped && stripped.length > 3 && !/^(report|type|отчёт)$/i.test(stripped)) {
+        metadata.eaName = stripped;
       }
     }
   }
@@ -625,23 +652,36 @@ function extractDeals(
     const rows = table.querySelectorAll("tr");
     if (rows.length < 3) continue;
 
-    // Check if this table has a deals-like header
-    const headerRow = rows[0];
-    const headerCells = headerRow.querySelectorAll("td, th");
-    const headerTexts = Array.from(headerCells).map((c) => c.text.trim().toLowerCase());
+    // Find the deals header row. In some MT5 reports, "Orders" and "Deals" are
+    // sub-sections within a single table. The deals header (with "Time" + "Profit")
+    // may not be the first row — scan all rows to find it.
+    let headerRowIdx = -1;
+    let headerTexts: string[] = [];
 
-    const hasTime = headerTexts.some(
-      (h) => h.includes("time") || h.includes("zeit") || h.includes("время") || h.includes("temps")
-    );
-    const hasProfit = headerTexts.some(
-      (h) =>
-        h.includes("profit") ||
-        h.includes("gewinn") ||
-        h.includes("прибыль") ||
-        h.includes("bénéfice")
-    );
+    for (let r = 0; r < rows.length; r++) {
+      const cells = rows[r].querySelectorAll("td, th");
+      const texts = Array.from(cells).map((c) => c.text.trim().toLowerCase());
 
-    if (!hasTime || !hasProfit) continue;
+      const hasTime = texts.some(
+        (h) =>
+          h.includes("time") || h.includes("zeit") || h.includes("время") || h.includes("temps")
+      );
+      const hasProfit = texts.some(
+        (h) =>
+          h.includes("profit") ||
+          h.includes("gewinn") ||
+          h.includes("прибыль") ||
+          h.includes("bénéfice")
+      );
+
+      if (hasTime && hasProfit) {
+        headerRowIdx = r;
+        headerTexts = texts;
+        break;
+      }
+    }
+
+    if (headerRowIdx === -1) continue;
 
     // Find column indices
     const timeIdx = headerTexts.findIndex(
@@ -685,7 +725,7 @@ function extractDeals(
     );
 
     // Parse data rows (skip header)
-    for (let r = 1; r < rows.length; r++) {
+    for (let r = headerRowIdx + 1; r < rows.length; r++) {
       const cells = rows[r].querySelectorAll("td");
       if (cells.length < 6) continue;
 
