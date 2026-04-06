@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = { title: "Get Started | AlgoStudio" };
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/app/app-nav";
 import { OnboardingClient } from "./onboarding-client";

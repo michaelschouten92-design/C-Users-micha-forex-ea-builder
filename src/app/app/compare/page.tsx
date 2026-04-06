@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
+export const metadata: Metadata = { title: "Compare Accounts | AlgoStudio" };
 import { prisma } from "@/lib/prisma";
 import { AppNav } from "@/components/app/app-nav";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";

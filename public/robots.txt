@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /app/
+Disallow: /api/
+Disallow: /admin/
+Allow: /api/public/
+
+Sitemap: https://algo-studio.com/sitemap.xml

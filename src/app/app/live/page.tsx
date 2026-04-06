@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
+
+export const metadata: Metadata = { title: "Command Center | AlgoStudio" };
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
