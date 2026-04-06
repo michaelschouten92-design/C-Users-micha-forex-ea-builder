@@ -506,7 +506,18 @@ async function resolveManifestContextInstance(
     return fallback;
   }
 
-  // Step 3: No match — create new instance
+  // Step 3: No match — create new instance (with limit guard)
+  const childCount = await prisma.liveEAInstance.count({
+    where: { parentInstanceId: baseInstanceId, deletedAt: null },
+  });
+  if (childCount >= 50) {
+    log.warn(
+      { baseInstanceId, childCount },
+      "Child instance limit reached (50) — rejecting new context"
+    );
+    return baseInstanceId; // Fall back to base instance
+  }
+
   const ctx = await prisma.liveEAInstance.create({
     data: {
       userId,
@@ -610,7 +621,18 @@ async function resolveAutoDiscoveredContextInstance(
     return fallback;
   }
 
-  // Step 3: No match — create new instance
+  // Step 3: No match — create new instance (with limit guard)
+  const childCount = await prisma.liveEAInstance.count({
+    where: { parentInstanceId: baseInstanceId, deletedAt: null },
+  });
+  if (childCount >= 50) {
+    log.warn(
+      { baseInstanceId, childCount },
+      "Child instance limit reached (50) — rejecting auto-discovered context"
+    );
+    return baseInstanceId;
+  }
+
   const ctx = await prisma.liveEAInstance.create({
     data: {
       userId,

@@ -65,7 +65,7 @@ struct DiscoveryCandidate
 //+------------------------------------------------------------------+
 input string InpApiKey        = "";              // API Key (from AlgoStudio dashboard)
 input string InpBaseUrl       = "https://algo-studio.com"; // AlgoStudio Server URL
-input int    InpHeartbeatSec  = 30;              // Heartbeat interval (seconds)
+input int    InpHeartbeatSec  = 60;              // Heartbeat interval (seconds)
 input int    InpSnapshotSec   = 300;             // Track-record snapshot interval (seconds)
 
 // Monitoring scope
@@ -141,6 +141,7 @@ string g_instanceId    = "";
 
 // Timing
 datetime g_lastHeartbeat  = 0;
+datetime g_lastDealRebuild = 0;
 datetime g_lastSnapshot   = 0;
 datetime g_sessionStart   = 0;
 
@@ -401,6 +402,14 @@ void OnTimer()
          SendHeartbeat();
       }
       g_lastHeartbeat = now;
+   }
+
+   // Periodic known deals rebuild — prevents unbounded array growth.
+   // Rebuilds from current history once per hour (resets to exact current state).
+   if(now - g_lastDealRebuild >= 3600)
+   {
+      BuildKnownDeals();
+      g_lastDealRebuild = now;
    }
 
    // Flush offline queue after heartbeat (instanceId may now be known)
@@ -1274,16 +1283,34 @@ void BuildKnownDeals()
       g_knownDeals[g_knownDealCount++] = ticket;
    }
    ArrayResize(g_knownDeals, g_knownDealCount);
+   // Sort for binary search in IsKnownDeal/AddKnownDeal
+   ArraySort(g_knownDeals);
+}
+
+bool IsKnownDeal(ulong ticket)
+{
+   if(g_knownDealCount == 0) return false;
+   // Binary search on sorted array — O(log n) instead of O(n)
+   int lo = 0, hi = g_knownDealCount - 1;
+   while(lo <= hi)
+   {
+      int mid = (lo + hi) / 2;
+      if(g_knownDeals[mid] == ticket) return true;
+      if(g_knownDeals[mid] < ticket) lo = mid + 1;
+      else hi = mid - 1;
+   }
+   return false;
 }
 
 void AddKnownDeal(ulong ticket)
 {
-   for(int i = 0; i < g_knownDealCount; i++)
-      if(g_knownDeals[i] == ticket) return;
+   if(IsKnownDeal(ticket)) return;
 
    g_knownDealCount++;
    ArrayResize(g_knownDeals, g_knownDealCount);
    g_knownDeals[g_knownDealCount - 1] = ticket;
+   // Keep sorted for binary search
+   ArraySort(g_knownDeals);
 }
 
 //+------------------------------------------------------------------+
@@ -1300,13 +1327,8 @@ void PollTradeChanges()
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
 
-      // Already known?
-      bool known = false;
-      for(int j = 0; j < g_knownDealCount; j++)
-      {
-         if(g_knownDeals[j] == ticket) { known = true; break; }
-      }
-      if(known) continue;
+      // Already known? (binary search)
+      if(IsKnownDeal(ticket)) continue;
 
       // Check filters
       if(!PassesFilter(ticket)) continue;
@@ -2008,8 +2030,8 @@ void SendHeartbeat()
          + "}";
    }
 
-   // Automatic deployment discovery (ACCOUNT_WIDE mode only)
-   string discoveryJson = DiscoverDeploymentsFromActivity();
+   // Automatic deployment discovery (ACCOUNT_WIDE mode only — skip scan in SYMBOL_ONLY)
+   string discoveryJson = (InpMonitorMode == MODE_ACCOUNT_WIDE) ? DiscoverDeploymentsFromActivity() : "";
 
    string monitorModeStr = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
 
