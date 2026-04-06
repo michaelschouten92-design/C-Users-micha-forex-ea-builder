@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { loadStrategyDetail } from "./load-strategy-detail";
 import { StrategyHeader } from "@/components/app/strategy-header";
+import { StrategyActions } from "@/components/app/strategy-actions";
 import { SystemRecommendation } from "@/components/app/system-recommendation";
 import { LivePerformanceGrid } from "@/components/app/live-performance-grid";
 import { BaselineComparison } from "@/components/app/baseline-comparison";
@@ -39,6 +40,16 @@ export default async function StrategyDetailPage({ params }: PageProps) {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* 1. Header — name, status, lifecycle, health, last eval */}
         <StrategyHeader data={data} />
+
+        {/* Action bar — Pause/Resume + Acknowledge Incidents */}
+        <StrategyActions
+          instanceId={data.id}
+          eaName={data.eaName}
+          tradingState={data.tradingState}
+          openIncidentIds={data.incidents
+            .filter((i) => i.status === "OPEN" || i.status === "ESCALATED")
+            .map((i) => i.id)}
+        />
 
         {/* ── Edge Score ────────────────────────────────────── */}
         {data.edgeScore && <EdgeScorePanel edgeScore={data.edgeScore} />}

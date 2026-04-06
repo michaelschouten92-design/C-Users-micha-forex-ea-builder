@@ -121,6 +121,7 @@ export interface StrategyDetailData {
   isAutoDiscovered: boolean;
   lifecyclePhase: string;
   operatorHold: string;
+  tradingState: string;
   phaseEnteredAt: string;
   provenAt: string | null;
   retiredAt: string | null;
@@ -300,6 +301,7 @@ export async function loadStrategyDetail(
       lifecycleState: true,
       lifecyclePhase: true,
       operatorHold: true,
+      tradingState: true,
       phaseEnteredAt: true,
       provenAt: true,
       retiredAt: true,
@@ -685,6 +687,7 @@ export async function loadStrategyDetail(
       }),
     lifecyclePhase: instance.lifecyclePhase,
     operatorHold: instance.operatorHold,
+    tradingState: instance.tradingState,
     phaseEnteredAt: instance.phaseEnteredAt.toISOString(),
     provenAt: instance.provenAt?.toISOString() ?? null,
     retiredAt: instance.retiredAt?.toISOString() ?? null,

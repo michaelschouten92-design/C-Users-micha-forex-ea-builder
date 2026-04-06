@@ -44,11 +44,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/prop-firms`,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
       url: `${baseUrl}/faq`,
       changeFrequency: "monthly",
       priority: 0.6,

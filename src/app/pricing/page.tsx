@@ -51,7 +51,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     rows: [
       ["Backtest health scoring", true, true, true, true],
       ["Monte Carlo risk simulation", true, true, true, true],
-      ["Strategy journal", true, true, true, true],
+      ["Alert history & notifications", true, true, true, true],
     ],
   },
   {

@@ -128,13 +128,6 @@ export function MobileNav() {
               About
             </Link>
             <Link
-              href="/prop-firms"
-              onClick={closeAndRestoreFocus}
-              className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"
-            >
-              Prop Firms
-            </Link>
-            <Link
               href="/blog"
               onClick={closeAndRestoreFocus}
               className="text-sm text-[#A1A1AA] hover:text-white transition-colors rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]"

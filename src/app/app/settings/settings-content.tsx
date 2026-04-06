@@ -402,7 +402,7 @@ function DeleteAccountSection() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
-                Journal entries and track record data
+                Track record and monitoring data
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />

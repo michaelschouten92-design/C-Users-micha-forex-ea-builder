@@ -134,7 +134,7 @@ export default async function ProjectPage({ params }: Props) {
                   />
                 </svg>
                 <Link
-                  href="/app/journal"
+                  href="/app/live"
                   className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-[#7C8DB0] hover:text-[#A78BFA] hover:bg-[#4F46E5]/10 transition-all"
                 >
                   <span className="w-3.5 h-3.5 rounded-full border border-[#7C8DB0]/40 flex items-center justify-center text-[8px]">
@@ -152,7 +152,7 @@ export default async function ProjectPage({ params }: Props) {
                   title="Deploy"
                 />
                 <Link
-                  href="/app/journal"
+                  href="/app/live"
                   className="w-2 h-2 rounded-full bg-[#7C8DB0]/40 hover:bg-[#A78BFA] transition-colors"
                   title="Monitor"
                 />
