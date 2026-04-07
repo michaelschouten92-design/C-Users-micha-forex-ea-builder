@@ -11,7 +11,7 @@ import { GlassCard } from "@/components/marketing/glass-card";
 export const metadata: Metadata = {
   title: "How MT5 EA Monitoring Works — Setup in 5 Minutes | Algo Studio",
   description:
-    "Connect your MetaTrader 5 terminal, upload a backtest baseline, and start detecting strategy drift automatically. Works with any MT5 broker. No code changes to your EAs needed.",
+    "Connect your MT5 terminal, upload a backtest baseline, and detect strategy drift automatically. Any broker, no code changes needed.",
   alternates: { canonical: "/how-it-works" },
   openGraph: {
     title: "How Algo Studio Works — MT5 EA Monitoring in 3 Steps",

@@ -10,7 +10,7 @@ import { FAQContent } from "./faq-content";
 export const metadata: Metadata = {
   title: "FAQ — MT5 EA Monitoring Questions Answered | Algo Studio",
   description:
-    "Common questions about MT5 strategy monitoring, drift detection, backtest comparison, verified track records, pricing, and broker compatibility. Get answers about Algo Studio.",
+    "Questions about MT5 strategy monitoring, drift detection, backtest comparison, verified track records, and pricing. Answers from Algo Studio.",
   alternates: { canonical: "/faq" },
   openGraph: {
     title: "Frequently Asked Questions — Algo Studio",
@@ -50,7 +50,7 @@ const faqItems = [
   // How It Works
   {
     q: "How does drift detection work?",
-    a: "Algo Studio uses CUSUM (cumulative sum) statistical monitoring to detect persistent performance degradation. Unlike simple threshold alerts, CUSUM accumulates small deviations over time — distinguishing normal variance from meaningful directional shift. This catches degradation weeks before it shows on your equity curve.",
+    a: "Algo Studio uses CUSUM (cumulative sum) statistical monitoring to detect persistent performance degradation. Unlike simple threshold alerts, CUSUM accumulates small deviations over time — distinguishing normal variance from meaningful directional shift. This catches degradation weeks before it shows on your equity curve. See the full setup walkthrough on our How It Works page.",
     category: "Verification" as const,
   },
   {
@@ -96,7 +96,7 @@ const faqItems = [
   // Pricing
   {
     q: "What do I get on the free plan?",
-    a: "Everything. All features — drift detection, health scoring, auto-halt, verified track records, Telegram alerts — are included on the free Baseline plan. The only limit is 1 monitored trading account. No credit card required.",
+    a: "Everything. All features — drift detection, health scoring, auto-halt, verified track records, Telegram alerts — are included on the free Baseline plan. The only limit is 1 monitored trading account. No credit card required. Compare all plans on our Pricing page.",
     category: "Pricing" as const,
   },
   {

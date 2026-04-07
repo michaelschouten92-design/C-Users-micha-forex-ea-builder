@@ -59,9 +59,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
+      url: `${baseUrl}/sample-evaluation`,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/about`,
       changeFrequency: "monthly",
-      priority: 0.5,
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/contact`,

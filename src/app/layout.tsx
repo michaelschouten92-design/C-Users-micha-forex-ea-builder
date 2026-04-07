@@ -31,13 +31,21 @@ export const metadata: Metadata = {
     template: "%s | Algo Studio",
   },
   description:
-    "Verify your trading strategy with cryptographic proof. Upload a backtest for instant health scoring, validate with Monte Carlo analysis, and build a tamper-proof live track record anyone can audit.",
+    "Verify your trading strategy with cryptographic proof. Instant health scoring, Monte Carlo analysis, and tamper-proof track records.",
   openGraph: {
     title: "Algo Studio — Proof > Backtests",
     description:
-      "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification. The trust layer algo trading has been missing.",
+      "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification.",
     type: "website",
     siteName: "Algo Studio",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Algo Studio — The Proof Layer for Algorithmic Trading",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -56,7 +64,7 @@ const organizationJsonLd = {
   description:
     "The proof layer for algorithmic trading. Verify strategies with cryptographic track records, Monte Carlo validation, and independent auditing.",
   foundingDate: "2025",
-  sameAs: [],
+  sameAs: ["https://x.com/AlgoStudio_"],
 };
 
 export default function RootLayout({

@@ -23,6 +23,33 @@ const CATEGORIES: FAQCategory[] = [
   "Pricing",
 ];
 
+function FAQDetail({ item, showCategory }: { item: FAQItem; showCategory: boolean }) {
+  return (
+    <details className="group bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+      <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-[#FAFAFA] font-medium text-sm list-none">
+        <span className="flex items-center gap-3">
+          <h3 className="inline font-medium">{item.q}</h3>
+          {showCategory && (
+            <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)]">
+              {item.category}
+            </span>
+          )}
+        </span>
+        <svg
+          className="w-5 h-5 text-[#71717A] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </summary>
+      <div className="px-6 pb-4 text-sm text-[#A1A1AA] leading-relaxed">{item.a}</div>
+    </details>
+  );
+}
+
 export function FAQContent({ items }: { items: FAQItem[] }) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<FAQCategory | "All">("All");
@@ -96,37 +123,22 @@ export function FAQContent({ items }: { items: FAQItem[] }) {
           <p className="text-center text-[#71717A] py-8">
             No questions match your search. Try a different term.
           </p>
+        ) : activeCategory === "All" && !search.trim() ? (
+          /* Grouped by category with H2 headings for SEO hierarchy */
+          CATEGORIES.map((cat) => {
+            const catItems = filtered.filter((item) => item.category === cat);
+            if (catItems.length === 0) return null;
+            return (
+              <div key={cat} className="space-y-4">
+                <h2 className="text-lg font-semibold text-[#FAFAFA] pt-6 first:pt-0">{cat}</h2>
+                {catItems.map((item, i) => (
+                  <FAQDetail key={i} item={item} showCategory={false} />
+                ))}
+              </div>
+            );
+          })
         ) : (
-          filtered.map((item, i) => (
-            <details
-              key={i}
-              className="group bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden"
-            >
-              <summary className="flex items-center justify-between px-6 py-4 cursor-pointer text-[#FAFAFA] font-medium text-sm list-none">
-                <span className="flex items-center gap-3">
-                  {item.q}
-                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-medium bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)]">
-                    {item.category}
-                  </span>
-                </span>
-                <svg
-                  className="w-5 h-5 text-[#71717A] group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </summary>
-              <div className="px-6 pb-4 text-sm text-[#A1A1AA] leading-relaxed">{item.a}</div>
-            </details>
-          ))
+          filtered.map((item, i) => <FAQDetail key={i} item={item} showCategory />)
         )}
       </div>
     </div>

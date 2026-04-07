@@ -13,7 +13,7 @@ import { SampleEvaluationDemo } from "./sample-evaluation-demo";
 export const metadata: Metadata = {
   title: "MT5 Strategy Health Score — Free Backtest Evaluation | Algo Studio",
   description:
-    "Upload your MT5 backtest and get an instant health score, Monte Carlo simulation, and drift detection baseline. See exactly how Algo Studio evaluates trading strategies. Free, no signup required.",
+    "Upload your MT5 backtest for an instant health score, Monte Carlo simulation, and drift detection baseline. Free, no signup required.",
   alternates: { canonical: "/sample-evaluation" },
   openGraph: {
     title: "See What a Strategy Evaluation Looks Like — Algo Studio",

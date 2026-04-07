@@ -12,9 +12,9 @@ import { GlassCard } from "@/components/marketing/glass-card";
 
 /* ── SEO: keyword-optimized metadata ── */
 export const metadata: Metadata = {
-  title: "Algo Studio — MT5 Strategy Monitoring & Drift Detection for Forex EAs",
+  title: "MT5 Strategy Monitoring & Drift Detection | Algo Studio",
   description:
-    "Monitor your MetaTrader 5 Expert Advisors in real time. Detect strategy drift, compare live performance against backtests, and auto-halt degrading EAs before losses compound. Free plan available.",
+    "Monitor your MT5 Expert Advisors in real time. Detect strategy drift, compare live vs backtest, and auto-halt degrading EAs. Free plan available.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "Algo Studio — MT5 Strategy Monitoring & Drift Detection",
@@ -823,6 +823,15 @@ export default async function HomePage() {
                 </div>
               </GlassCard>
             </AnimateOnScroll>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/about"
+                className="text-sm text-[#6366F1] hover:text-[#818CF8] transition-colors font-medium"
+              >
+                Learn how we verify track records &rarr;
+              </Link>
+            </div>
           </div>
         </section>
 
