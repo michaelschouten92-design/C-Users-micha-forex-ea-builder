@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sign In",
+  title: "Sign In — Algo Studio",
   description:
-    "Sign in or create an Algo Studio account. Monitor, govern, and verify your MetaTrader 5 trading strategies.",
+    "Sign in to your Algo Studio account. Monitor your MT5 Expert Advisors, detect strategy drift, and manage verified track records.",
   alternates: { canonical: "/login" },
   robots: { index: false, follow: false },
 };

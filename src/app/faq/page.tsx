@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { faqJsonLd } from "@/components/marketing/faq-section";
-import { CTASection } from "@/components/marketing/cta-section";
+import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
 import { FAQContent } from "./faq-content";
 
 export const metadata: Metadata = {
-  title: "FAQ — Frequently Asked Questions | Algo Studio",
+  title: "FAQ — MT5 EA Monitoring Questions Answered | Algo Studio",
   description:
-    "Common questions about Algo Studio: strategy monitoring, verification, Monte Carlo analysis, verified track records, health monitoring, pricing, and technical details.",
+    "Common questions about MT5 strategy monitoring, drift detection, backtest comparison, verified track records, pricing, and broker compatibility. Get answers about Algo Studio.",
   alternates: { canonical: "/faq" },
+  openGraph: {
+    title: "Frequently Asked Questions — Algo Studio",
+    description:
+      "Everything you need to know about monitoring your MetaTrader 5 Expert Advisors with Algo Studio.",
+  },
 };
 
 const breadcrumbs = [
@@ -22,97 +28,92 @@ const faqItems = [
   // General
   {
     q: "What is Algo Studio?",
-    a: "Algo Studio is a monitoring and governance platform for algorithmic trading strategies. It monitors live strategy performance against validated baselines, detects structural deviation, verifies track records with cryptographic proof, and provides lifecycle monitoring and health signals for deployed strategies.",
+    a: "Algo Studio is a monitoring and governance platform for MetaTrader 5 Expert Advisors. It monitors live EA performance against backtest baselines, detects strategy drift with CUSUM statistics, and can automatically halt degrading strategies. It also provides verified track records with cryptographic proof.",
     category: "General" as const,
   },
   {
-    q: "What is strategy verification?",
-    a: "Strategy verification is the process of objectively measuring whether a trading strategy operates within its validated parameters. Algo Studio combines Monte Carlo risk analysis, verified track records, and live health monitoring to give you a complete picture of strategy integrity.",
+    q: "Does Algo Studio place trades or manage my account?",
+    a: "No. Algo Studio is read-only. The Monitor EA observes trade events and account data but never places, modifies, or closes trades. Your strategies run exactly as before.",
     category: "General" as const,
   },
   {
-    q: "Does Algo Studio place trades?",
-    a: "No. Algo Studio does not place trades, generate signals, or manage positions. It monitors and verifies strategy performance. Trading decisions remain with you and your strategy.",
+    q: "How is this different from a trading dashboard?",
+    a: "Dashboards show you what happened. Algo Studio measures whether your strategy still operates within the statistical bounds that justified running it — comparing every trade against your backtest baseline in real time.",
     category: "General" as const,
   },
   {
-    q: "How is Algo Studio different from a trading dashboard?",
-    a: "Dashboards show you what happened. Algo Studio measures whether your strategy is still operating within the statistical bounds that justified running it. It combines Monte Carlo analysis, verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison).",
+    q: "Does it work with any MT5 broker?",
+    a: "Yes. Algo Studio works with any MetaTrader 5 broker — IC Markets, Pepperstone, FTMO, or any other. The Monitor EA runs alongside your existing strategies without interfering.",
     category: "General" as const,
   },
 
-  // Verification
+  // How It Works
+  {
+    q: "How does drift detection work?",
+    a: "Algo Studio uses CUSUM (cumulative sum) statistical monitoring to detect persistent performance degradation. Unlike simple threshold alerts, CUSUM accumulates small deviations over time — distinguishing normal variance from meaningful directional shift. This catches degradation weeks before it shows on your equity curve.",
+    category: "Verification" as const,
+  },
+  {
+    q: "What is a Strategy Health Score?",
+    a: "A composite 0-100% score comparing live trading results against your backtest baseline. Five weighted metrics — return, drawdown, win rate, volatility, and trade frequency — are each scored independently and combined into an overall health rating.",
+    category: "Verification" as const,
+  },
   {
     q: "What is Monte Carlo simulation?",
-    a: "Monte Carlo simulation randomizes your trade sequence thousands of times to reveal the probability distribution of outcomes. Instead of relying on one backtest result, you see the realistic range \u2014 best case, worst case, and everything in between. This separates luck from genuine edge.",
-    category: "Verification" as const,
-  },
-  {
-    q: "How does the Monte Carlo risk calculator work?",
-    a: "The Monte Carlo risk calculator randomizes your trade sequence thousands of times to reveal the probability distribution of outcomes. Instead of relying on a single test, you see the realistic range \u2014 best case, worst case, and everything in between. This separates luck from genuine edge.",
-    category: "Verification" as const,
-  },
-  {
-    q: "How do I get my strategy evaluated?",
-    a: "Upload a backtest report from MetaTrader 5 or connect your trading account. Algo Studio analyzes the trade history, scores strategy health, and runs Monte Carlo validation automatically.",
+    a: "Monte Carlo randomizes your trade sequence 1,000 times to reveal the probability distribution of outcomes. Instead of relying on one backtest path, you see the realistic range — best case, worst case, survival probability, and everything in between.",
     category: "Verification" as const,
   },
 
-  // Track Record & Monitoring
+  // Track Record
   {
     q: "What is a Verified Track Record?",
-    a: "Every trade is recorded in a tamper-resistant hash chain \u2014 similar to how blockchain works. Each event is linked to the previous one with a cryptographic hash, creating an auditable history that proves results are genuine. No manipulation, no cherry-picking.",
+    a: "Every trade is recorded in a tamper-resistant hash chain — each event cryptographically linked to the previous one. The result is an auditable history that proves results are genuine. Shareable with a public link, independently verifiable by anyone.",
     category: "Track Record & Monitoring" as const,
   },
   {
-    q: "What is the Strategy Health Monitor?",
-    a: "The Health Monitor continuously compares live trading performance against the backtest baseline across 5 key metrics: return, volatility, drawdown, win rate, and trade frequency. It detects when a strategy's edge begins to degrade \u2014 before a drawdown becomes critical.",
+    q: "Will the Monitor EA slow down my strategies?",
+    a: "No. The Monitor EA is lightweight and read-only. It observes trade events and sends heartbeats without interfering with execution. It has no impact on trade speed or strategy performance.",
     category: "Track Record & Monitoring" as const,
   },
   {
-    q: "What is Strategy Identity?",
-    a: "Each strategy gets a permanent, unique identifier (AS-xxxx) and version history. When you change parameters or logic, a new version is created with its own fingerprint. This lets you track exactly what's deployed, what changed, and when.",
+    q: "Is my trading data secure?",
+    a: "Yes. Algo Studio never has access to your broker credentials. The Monitor EA connects over HTTPS with an encrypted API key. Trade data is stored encrypted and never shared with third parties.",
     category: "Track Record & Monitoring" as const,
   },
 
   // Technical
   {
-    q: "How do strategies enter Algo Studio?",
-    a: "Strategies can enter through broker connection or backtest report upload. Connect your MT5 account to stream live performance data, or upload an MT5 Strategy Tester report (.html) for instant evaluation.",
+    q: "How do I connect my MT5 terminal?",
+    a: "Install the AlgoStudio_Monitor EA on any MT5 chart. Enter your API key (generated in the Algo Studio dashboard). The EA starts streaming data automatically. Setup takes about 2 minutes.",
     category: "Technical" as const,
   },
   {
-    q: "Which brokers are supported?",
-    a: "Algo Studio supports any broker that provides MetaTrader 5 trade history. Compatible with prop firms like FTMO, E8 Markets, and FundingPips.",
+    q: "What if I don't have a backtest yet?",
+    a: "You can still connect and start monitoring. Algo Studio tracks your live performance, detects anomalies, and builds your verified track record. Uploading a backtest baseline unlocks drift detection and health scoring.",
     category: "Technical" as const,
   },
 
   // Pricing
   {
-    q: "What do I get with the Baseline plan?",
-    a: "All features are included on every plan — the only difference between tiers is the number of monitored trading accounts. Baseline includes 1 monitored trading account. No credit card required.",
+    q: "What do I get on the free plan?",
+    a: "Everything. All features — drift detection, health scoring, auto-halt, verified track records, Telegram alerts — are included on the free Baseline plan. The only limit is 1 monitored trading account. No credit card required.",
     category: "Pricing" as const,
   },
   {
-    q: "What's included in Control?",
-    a: "All the same features as every plan — monitoring, Strategy Identity, Verified Track Record, and priority support. Control gives you up to 3 monitored trading accounts.",
-    category: "Pricing" as const,
-  },
-  {
-    q: "What's included in Authority?",
-    a: "All features included, same as every plan. Authority gives you up to 10 monitored trading accounts — designed for traders who run strategies across multiple accounts.",
+    q: "What's the difference between the plans?",
+    a: "Plans differ only by how many trading accounts you can monitor: Baseline (1), Control (3), Authority (10), Institutional (unlimited). All platform features are included on every plan.",
     category: "Pricing" as const,
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your account settings at any time. Your access continues until the end of your billing period.",
+    a: "Yes. Cancel from your account settings at any time. No contracts, no cancellation fees. Your subscription remains active until the end of the current billing period.",
     category: "Pricing" as const,
   },
 ];
 
 export default function FAQPage() {
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden bg-[#09090B]">
+    <div className="min-h-screen flex flex-col overflow-x-hidden bg-[#08080A]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
@@ -124,25 +125,48 @@ export default function FAQPage() {
 
       <SiteNav />
 
-      <main className="pt-24 pb-20 px-6">
+      <main className="pt-24 pb-0 px-6">
         <div className="max-w-3xl mx-auto">
           <Breadcrumbs items={breadcrumbs} />
 
           <section className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-[#FAFAFA] leading-tight mb-6">
-              Frequently Asked Questions
+            <h1 className="text-[28px] md:text-[42px] font-extrabold text-[#FAFAFA] leading-tight tracking-tight mb-5">
+              Frequently asked questions
             </h1>
-            <p className="text-lg text-[#A1A1AA]">Everything you need to know about Algo Studio.</p>
+            <p className="text-base text-[#A1A1AA]">
+              Everything you need to know about monitoring your MT5 strategies with Algo Studio.
+            </p>
           </section>
 
           <FAQContent items={faqItems} />
+
+          {/* CTA */}
+          <section className="py-20 text-center">
+            <AnimateOnScroll>
+              <h2 className="text-xl font-bold text-[#FAFAFA] tracking-tight mb-3">
+                Still have questions?
+              </h2>
+              <p className="text-sm text-[#A1A1AA] mb-8">
+                We respond within 24 hours on business days.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  href="/contact"
+                  className="px-7 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#FAFAFA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] transition-colors text-sm"
+                >
+                  Contact us
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-all text-sm btn-primary-cta"
+                >
+                  Start monitoring free
+                </Link>
+              </div>
+            </AnimateOnScroll>
+          </section>
         </div>
       </main>
-
-      <CTASection
-        title="Monitor your trading strategies"
-        description="Continuous performance tracking, verification, and governance for algorithmic strategies."
-      />
 
       <Footer />
     </div>

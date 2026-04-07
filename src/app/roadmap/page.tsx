@@ -4,9 +4,9 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Roadmap — Algo Studio",
+  title: "Product Roadmap — MT5 Monitoring Features | Algo Studio",
   description:
-    "See what we're building next. Algo Studio roadmap with recently shipped features, current priorities, and future plans for strategy monitoring and governance.",
+    "See what's shipped, in progress, and planned. Algo Studio roadmap for MT5 strategy monitoring: drift detection, mobile app, broker API integration, and more.",
   alternates: { canonical: "/roadmap" },
   openGraph: {
     title: "Algo Studio Roadmap — See What's Coming",
@@ -134,13 +134,10 @@ function RoadmapSection({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {items.map((item) => (
-          <div
-            key={item.title}
-            className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg p-5 hover:border-[rgba(255,255,255,0.10)] transition-colors"
-          >
+          <div key={item.title} className="glass-card p-5">
             <div className="flex items-start justify-between gap-3 mb-2">
               <h3 className="text-sm font-semibold text-[#FAFAFA]">{item.title}</h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(99,102,241,0.10)] text-[#818CF8] border border-[rgba(99,102,241,0.20)] whitespace-nowrap shrink-0">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.04)] text-[#A1A1AA] border border-[rgba(255,255,255,0.1)] whitespace-nowrap shrink-0">
                 {item.tag}
               </span>
             </div>
@@ -160,17 +157,17 @@ function RoadmapSection({
 
 export default function RoadmapPage() {
   return (
-    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B]">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#08080A]">
       <SiteNav />
 
       <main className="pt-32 pb-16 px-4 sm:px-6 flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl sm:text-5xl font-bold text-[#FAFAFA] mb-4">
-              Algo Studio Roadmap
+            <h1 className="text-[28px] md:text-[42px] font-extrabold text-[#FAFAFA] tracking-tight mb-5">
+              Product roadmap
             </h1>
-            <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto">
+            <p className="text-base text-[#A1A1AA] max-w-2xl mx-auto leading-relaxed">
               See what we have shipped, what we are building now, and what is planned for the
               future. Your feedback shapes our priorities.
             </p>

@@ -134,7 +134,7 @@ export default function StatusPage() {
               return (
                 <div
                   key={service.name}
-                  className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-4 flex items-center justify-between"
+                  className="glass-card rounded-lg p-4 flex items-center justify-between"
                 >
                   <div>
                     <h3 className="text-sm font-medium text-white">{service.name}</h3>
@@ -150,13 +150,13 @@ export default function StatusPage() {
           </div>
 
           {/* Uptime */}
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-6 mb-8 text-center">
+          <div className="glass-card rounded-lg p-6 mb-8 text-center">
             <p className="text-sm text-[#94A3B8] mb-1">Uptime over the last 90 days</p>
             <p className="text-3xl font-bold text-white">99.9%</p>
           </div>
 
           {/* Status Updates */}
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-8">
+          <div className="glass-card rounded-xl p-6 mb-8">
             <h2 className="text-lg font-semibold text-white mb-2">Stay Informed</h2>
             <p className="text-sm text-[#94A3B8]">
               For real-time status updates and incident notifications, follow us on{" "}

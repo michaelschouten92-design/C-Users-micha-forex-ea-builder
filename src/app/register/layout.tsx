@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Create Free Account | Algo Studio",
+  title: "Create Free Account — MT5 EA Monitoring | Algo Studio",
   description:
-    "Create a free Algo Studio account and start monitoring your MetaTrader 5 strategies with governance, drift detection, and verified track records. No credit card required.",
+    "Create a free Algo Studio account. Monitor your MT5 Expert Advisors, detect strategy drift, and get verified track records. All features included — no credit card required.",
   alternates: { canonical: "/register" },
   robots: { index: false, follow: false },
 };
