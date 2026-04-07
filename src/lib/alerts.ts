@@ -38,19 +38,29 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
   if (configs.length === 0) return;
 
   const now = new Date();
-  const triggeredIds: string[] = [];
+  const cooldownCutoff = new Date(now.getTime() - RATE_LIMIT_MS);
 
-  for (const config of configs) {
-    // Rate limit: skip if triggered within the last 15 minutes
-    if (config.lastTriggered) {
-      const elapsed = now.getTime() - config.lastTriggered.getTime();
-      if (elapsed < RATE_LIMIT_MS) {
-        continue;
-      }
-    }
+  // Atomic claim: only configs where cooldown has passed get their lastTriggered
+  // updated. This prevents concurrent heartbeats from both passing the rate limit.
+  const eligibleIds = configs.map((c) => c.id);
+  const { count: claimedCount } = await prisma.eAAlertConfig.updateMany({
+    where: {
+      id: { in: eligibleIds },
+      OR: [{ lastTriggered: null }, { lastTriggered: { lt: cooldownCutoff } }],
+    },
+    data: { lastTriggered: now },
+  });
 
-    triggeredIds.push(config.id);
+  if (claimedCount === 0) return;
 
+  // Re-read which configs were claimed (those with lastTriggered === now)
+  // Use the original configs list and filter by cooldown eligibility
+  const claimedConfigs = configs.filter((c) => {
+    if (!c.lastTriggered) return true; // was null → claimed
+    return c.lastTriggered.getTime() < cooldownCutoff.getTime(); // was expired → claimed
+  });
+
+  for (const config of claimedConfigs) {
     const channel = config.channel;
     if (channel === "BROWSER_PUSH") {
       await enqueueNotification({
@@ -95,14 +105,6 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     }
 
     log.info({ alertType, channel: config.channel, instanceId }, "Alert triggered");
-  }
-
-  // Batch update lastTriggered for all triggered configs (avoids N+1 UPDATE)
-  if (triggeredIds.length > 0) {
-    await prisma.eAAlertConfig.updateMany({
-      where: { id: { in: triggeredIds } },
-      data: { lastTriggered: now },
-    });
   }
 }
 

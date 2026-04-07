@@ -156,13 +156,17 @@ export async function POST(request: NextRequest) {
         rawDecision.reasonCode,
         governanceSnapshot,
         now
-      ).catch(() => {});
+      ).catch((err) => {
+        log.error({ err, strategyId }, "Failed to log control inconsistency proof event");
+      });
     } else if (decision.reasonCode === "AUTHORITY_UNINITIALIZED") {
       log.info(
         { strategyId, action: "PAUSE", reasonCode: "AUTHORITY_UNINITIALIZED", authorityReasons },
         "heartbeat authority block"
       );
-      logAuthorityBlockEvent(strategyId, authorityReasons, now).catch(() => {});
+      logAuthorityBlockEvent(strategyId, authorityReasons, now).catch((err) => {
+        log.error({ err, strategyId }, "Failed to log authority block proof event");
+      });
     } else {
       // Structured log — safe fields only (no accountId/instanceTag)
       log.info(
@@ -178,7 +182,9 @@ export async function POST(request: NextRequest) {
       decision.reasonCode,
       governanceSnapshot,
       now
-    ).catch(() => {});
+    ).catch((err) => {
+      log.error({ err, strategyId }, "Failed to log heartbeat proof event");
+    });
 
     return NextResponse.json(
       {

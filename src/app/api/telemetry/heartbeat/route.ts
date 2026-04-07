@@ -1138,11 +1138,14 @@ async function processDiscoveredDeployments(
 
 /**
  * Check if account-level drawdown exceeds the user's configured limit.
- * When exceeded: emit control-layer alert + halt all user's active strategies.
+ * Requires SUSTAINED_BREACH_COUNT consecutive heartbeats in breach before halting,
+ * to avoid false positives from momentary spread widening or news spikes.
  *
+ * When sustained breach confirmed: emit control-layer alert + halt all user's active strategies.
  * Only called for base instances (not child contexts) to avoid duplicate triggers.
- * Rate-limited by the control-layer alert dedup mechanism.
  */
+const SUSTAINED_BREACH_COUNT = 3;
+
 async function checkPortfolioDrawdownLimit(
   userId: string,
   balance: number,
@@ -1161,9 +1164,34 @@ async function checkPortfolioDrawdownLimit(
 
   if (!user?.maxDrawdownPct || drawdownPct < user.maxDrawdownPct) return;
 
+  // Verify sustained breach: check last N heartbeats for this instance.
+  // All must show drawdown above the limit to confirm it's not a momentary spike.
+  const recentHeartbeats = await prisma.eAHeartbeat.findMany({
+    where: { instanceId },
+    orderBy: { createdAt: "desc" },
+    take: SUSTAINED_BREACH_COUNT,
+    select: { balance: true, equity: true },
+  });
+
+  if (recentHeartbeats.length < SUSTAINED_BREACH_COUNT) return; // not enough data yet
+
+  const allInBreach = recentHeartbeats.every((hb) => {
+    if (hb.balance <= 0) return false;
+    const dd = ((hb.balance - hb.equity) / hb.balance) * 100;
+    return dd >= user.maxDrawdownPct!;
+  });
+
+  if (!allInBreach) return;
+
   log.warn(
-    { userId, drawdownPct: drawdownPct.toFixed(2), limit: user.maxDrawdownPct, instanceId },
-    "Portfolio drawdown limit exceeded — halting all strategies"
+    {
+      userId,
+      drawdownPct: drawdownPct.toFixed(2),
+      limit: user.maxDrawdownPct,
+      instanceId,
+      sustainedCount: SUSTAINED_BREACH_COUNT,
+    },
+    "Portfolio drawdown limit exceeded (sustained) — halting all strategies"
   );
 
   // Emit control-layer alert (dedup key prevents spam)
@@ -1172,7 +1200,7 @@ async function checkPortfolioDrawdownLimit(
     instanceId,
     alertType: "PORTFOLIO_DRAWDOWN_BREACH",
     reasons: [
-      `Account drawdown ${drawdownPct.toFixed(1)}% exceeded your ${user.maxDrawdownPct}% limit`,
+      `Account drawdown ${drawdownPct.toFixed(1)}% exceeded your ${user.maxDrawdownPct}% limit for ${SUSTAINED_BREACH_COUNT} consecutive heartbeats`,
     ],
   });
 

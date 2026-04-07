@@ -153,7 +153,12 @@ export async function POST(request: NextRequest) {
           where: { id: incident.id, status: "ESCALATING" },
           data: { status: "OPEN" },
         })
-        .catch(() => {});
+        .catch((rollbackErr) => {
+          log.error(
+            { err: rollbackErr, incidentId: incident.id },
+            "Failed to rollback incident escalation status"
+          );
+        });
     }
   }
 
