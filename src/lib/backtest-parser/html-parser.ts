@@ -162,21 +162,25 @@ export function parseMT5Report(html: string): ParsedReport {
   // ========================================
   // 6. Cross-validate net profit against deal sum
   // ========================================
-  if (deals.length > 0 && metrics.totalNetProfit !== 0) {
-    // Use only exit deals (profit ≠ 0) to avoid double-counting entry deals in MT5 hedging mode
+  if (deals.length > 0) {
     const dealSum = deals
       .filter((d) => d.type !== "balance" && d.profit !== 0)
       .reduce((sum, d) => sum + d.profit, 0);
-    // Only warn when discrepancy exceeds 1% of the reported value
-    if (
+
+    if (metrics.totalNetProfit === 0 && dealSum !== 0) {
+      // Metrics table had no value — use deal sum as fallback
+      metrics.totalNetProfit = dealSum;
+      warnings.push(`Net profit derived from deal sum: ${dealSum.toFixed(2)}`);
+    } else if (
+      metrics.totalNetProfit !== 0 &&
       dealSum !== 0 &&
       Math.abs(metrics.totalNetProfit - dealSum) > Math.abs(metrics.totalNetProfit) * 0.01
     ) {
+      // Discrepancy exists — metrics table is authoritative (includes commissions/swaps),
+      // deal sum only contains trade profit. Keep metrics table value, just log the difference.
       warnings.push(
-        `Net profit discrepancy: metrics table reports ${metrics.totalNetProfit.toFixed(2)} ` +
-          `but deal sum is ${dealSum.toFixed(2)}. Deal-derived value used.`
+        `Note: deal profit sum (${dealSum.toFixed(2)}) differs from reported net profit (${metrics.totalNetProfit.toFixed(2)}) — likely due to commissions/swaps.`
       );
-      metrics.totalNetProfit = dealSum;
     }
   }
 
@@ -344,13 +348,14 @@ function extractMetadata(root: HTMLElement, warnings: string[]): ParsedMetadata 
       // EA name from "Expert:" row (most reliable source in MT5 reports)
       metadata.eaName = nextText;
     } else if (
-      cellText === "symbol" ||
-      cellText === "символ" ||
-      cellText === "símbolo" ||
-      cellText === "symbole" ||
-      cellText === "simbolo" || // IT
-      cellText === "品种" || // ZH
-      cellText === "シンボル" // JA
+      metadata.symbol === "UNKNOWN" && // Only accept first match — table headers like "Symbol | Type | Volume" would overwrite
+      (cellText === "symbol" ||
+        cellText === "символ" ||
+        cellText === "símbolo" ||
+        cellText === "symbole" ||
+        cellText === "simbolo" || // IT
+        cellText === "品种" || // ZH
+        cellText === "シンボル") // JA
     ) {
       // Strip broker suffixes: "EURUSD.r" → "EURUSD", "GBPJPYm" → "GBPJPY", "XAUUSD.ecn" → "XAUUSD"
       metadata.symbol = nextText

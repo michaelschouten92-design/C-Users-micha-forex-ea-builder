@@ -87,12 +87,16 @@ export function parseLocalizedNumber(value: string, locale: NumberLocale | null)
 
   if (!cleaned || cleaned === "-" || cleaned === "") return 0;
 
+  // Always strip spaces first — MT5 uses spaces as thousands separators
+  // in many locales (e.g., "146 863.43" or "764 862.89")
+  cleaned = cleaned.replace(/\s/g, "");
+
   const effectiveLocale = locale ?? "EN";
 
   switch (effectiveLocale) {
     case "FR":
-      // Remove space thousands, replace comma decimal with period
-      cleaned = cleaned.replace(/\s/g, "").replace(",", ".");
+      // Replace comma decimal with period (spaces already stripped above)
+      cleaned = cleaned.replace(",", ".");
       break;
     case "EU":
       // Remove period thousands, replace comma decimal with period

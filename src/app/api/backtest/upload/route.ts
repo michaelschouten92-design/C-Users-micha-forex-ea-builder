@@ -226,52 +226,55 @@ export async function POST(request: Request) {
     const sanitizedHtml = sanitizeHtmlForStorage(html);
     const safeName = sanitizeFileName(file.name);
 
-    // 14. Store in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const upload = await tx.backtestUpload.create({
-        data: {
-          userId: session.user.id,
-          projectId: projectId || null,
-          contentHash,
-          originalHtml: sanitizedHtml,
-          fileName: safeName,
-          fileSize: file.size,
-        },
-      });
+    // 14. Store in transaction (extended timeout for slow remote DB connections)
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const upload = await tx.backtestUpload.create({
+          data: {
+            userId: session.user.id,
+            projectId: projectId || null,
+            contentHash,
+            originalHtml: sanitizedHtml,
+            fileName: safeName,
+            fileSize: file.size,
+          },
+        });
 
-      const run = await tx.backtestRun.create({
-        data: {
-          uploadId: upload.id,
-          eaName: parsed.metadata.eaName,
-          symbol: parsed.metadata.symbol,
-          timeframe: parsed.metadata.timeframe,
-          period: parsed.metadata.period,
-          initialDeposit: parsed.metadata.initialDeposit,
-          totalNetProfit: parsed.metrics.totalNetProfit,
-          profitFactor: parsed.metrics.profitFactor,
-          maxDrawdownPct: parsed.metrics.maxDrawdownPct,
-          maxDrawdownAbs: parsed.metrics.maxDrawdownAbs,
-          sharpeRatio: parsed.metrics.sharpeRatio,
-          recoveryFactor: parsed.metrics.recoveryFactor,
-          expectedPayoff: parsed.metrics.expectedPayoff,
-          totalTrades: parsed.metrics.totalTrades,
-          winRate: parsed.metrics.winRate,
-          longWinRate: parsed.metrics.longWinRate,
-          shortWinRate: parsed.metrics.shortWinRate,
-          healthScore: healthResult.score,
-          healthStatus: healthResult.status,
-          healthScoreVersion: healthResult.version,
-          confidenceLower: healthResult.confidenceInterval.lower,
-          confidenceUpper: healthResult.confidenceInterval.upper,
-          trades: JSON.parse(JSON.stringify(parsed.deals)),
-          scoreBreakdown: JSON.parse(JSON.stringify(healthResult.breakdown)),
-          parseWarnings: [...parsed.parseWarnings, ...healthResult.warnings],
-          detectedLocale: parsed.detectedLocale,
-        },
-      });
+        const run = await tx.backtestRun.create({
+          data: {
+            uploadId: upload.id,
+            eaName: parsed.metadata.eaName,
+            symbol: parsed.metadata.symbol,
+            timeframe: parsed.metadata.timeframe,
+            period: parsed.metadata.period,
+            initialDeposit: parsed.metadata.initialDeposit,
+            totalNetProfit: parsed.metrics.totalNetProfit,
+            profitFactor: parsed.metrics.profitFactor,
+            maxDrawdownPct: parsed.metrics.maxDrawdownPct,
+            maxDrawdownAbs: parsed.metrics.maxDrawdownAbs,
+            sharpeRatio: parsed.metrics.sharpeRatio,
+            recoveryFactor: parsed.metrics.recoveryFactor,
+            expectedPayoff: parsed.metrics.expectedPayoff,
+            totalTrades: parsed.metrics.totalTrades,
+            winRate: parsed.metrics.winRate,
+            longWinRate: parsed.metrics.longWinRate,
+            shortWinRate: parsed.metrics.shortWinRate,
+            healthScore: healthResult.score,
+            healthStatus: healthResult.status,
+            healthScoreVersion: healthResult.version,
+            confidenceLower: healthResult.confidenceInterval.lower,
+            confidenceUpper: healthResult.confidenceInterval.upper,
+            trades: JSON.parse(JSON.stringify(parsed.deals)),
+            scoreBreakdown: JSON.parse(JSON.stringify(healthResult.breakdown)),
+            parseWarnings: [...parsed.parseWarnings, ...healthResult.warnings],
+            detectedLocale: parsed.detectedLocale,
+          },
+        });
 
-      return { upload, run };
-    });
+        return { upload, run };
+      },
+      { timeout: 15000 }
+    );
 
     // 15. Return result — merge parser warnings + scorer warnings
     const allWarnings = [...parsed.parseWarnings, ...healthResult.warnings];
