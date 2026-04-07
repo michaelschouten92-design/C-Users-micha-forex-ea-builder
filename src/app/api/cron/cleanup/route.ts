@@ -40,6 +40,7 @@ async function handleCleanup(request: NextRequest) {
     const BATCH_SIZE = 1000;
     const cronStartTime = Date.now();
     const CRON_TIMEOUT_MS = 55_000; // 55 seconds — Vercel free tier has 60s limit
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -172,14 +173,14 @@ async function handleCleanup(request: NextRequest) {
 
     // Batch 4: Soft-delete stale auto-discovered child instances.
     // These are strategies discovered from trade history that are no longer being reported
-    // by the EA (OFFLINE > 7 days). Without cleanup they linger forever in the dashboard.
+    // by the EA (OFFLINE > 3 days). Without cleanup they linger forever in the dashboard.
     if (!isTimedOut()) {
       const staleDiscovered = await prisma.liveEAInstance.updateMany({
         where: {
           parentInstanceId: { not: null },
           deletedAt: null,
           status: "OFFLINE",
-          lastHeartbeat: { lt: sevenDaysAgo },
+          lastHeartbeat: { lt: threeDaysAgo },
         },
         data: { deletedAt: new Date() },
       });

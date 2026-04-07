@@ -202,6 +202,7 @@ int    g_contextCount = 0;
 bool   g_manifestMode = false;
 datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
 datetime g_lastIncrementalDiscovery = 0; // Rate-limit incremental re-discovery scans
+datetime g_lastPruneCheck = 0;              // Rate-limit stale context pruning
 bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
 datetime g_lastSyncAttempt  = 0;         // Rate-limit chain sync retries
 bool     g_queueDirty       = false;     // True when queue was mutated but not yet flushed to disk
@@ -436,6 +437,15 @@ void OnTimer()
    {
       g_lastIncrementalDiscovery = now;
       IncrementalRediscovery();
+   }
+
+   // Prune stale contexts: remove auto-discovered contexts that no longer have
+   // any activity (no trades in last 30d, no open positions). Runs every 5 min.
+   if(g_manifestMode && g_contextCount > 0 && InpStrategyMagic <= 0
+      && now - g_lastPruneCheck >= 300)
+   {
+      g_lastPruneCheck = now;
+      PruneStaleContexts();
    }
 
    // Retry chain sync if initial sync failed — max once per 60 seconds.
@@ -992,6 +1002,69 @@ void IncrementalRediscovery()
 }
 
 //+------------------------------------------------------------------+
+//| Prune stale contexts: remove auto-discovered contexts that no    |
+//| longer have any activity (no closed deals in last 30d, no open   |
+//| positions, no pending orders). Preserves manifest/self-id ctxs.  |
+//| Must run AFTER IncrementalRediscovery so candidates are fresh.   |
+//+------------------------------------------------------------------+
+void PruneStaleContexts()
+{
+   if(g_contextCount == 0) return;
+
+   DiscoveryCandidate candidates[];
+   int unattributed = 0;
+   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+
+   // Build a set of active fingerprints from current scan
+   int pruned = 0;
+   int writeIdx = 0;
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      // Check if this context's fingerprint matches any current candidate
+      bool stillActive = false;
+      for(int j = 0; j < found; j++)
+      {
+         string fpSymbol = candidates[j].symbol;
+         StringToUpper(fpSymbol);
+         string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)candidates[j].magicNumber) + ":";
+         string fp = SHA256(canonical);
+
+         if(g_contexts[i].fingerprint == fp
+            && (candidates[j].tradeCount >= 1 || candidates[j].hasOpenPosition))
+         {
+            stillActive = true;
+            break;
+         }
+      }
+
+      if(stillActive)
+      {
+         if(writeIdx != i)
+            g_contexts[writeIdx] = g_contexts[i];
+         writeIdx++;
+      }
+      else
+      {
+         Print("AlgoStudio Monitor: Pruned stale context [", i, "] ",
+               g_contexts[i].symbol, " magic=", g_contexts[i].magicNumber,
+               " — no recent activity detected");
+         pruned++;
+      }
+   }
+
+   if(pruned > 0)
+   {
+      g_contextCount = writeIdx;
+      ArrayResize(g_contexts, g_contextCount);
+      Print("AlgoStudio Monitor: Pruned ", pruned, " stale context(s). Remaining: ", g_contextCount);
+
+      // If all contexts pruned, reset manifest mode so AutoDiscoverContexts can retry
+      if(g_contextCount == 0)
+         g_manifestMode = false;
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Return worst-case governance across all contexts (display only). |
 //| STOP > PAUSE > RUN.                                              |
 //| Does NOT modify g_govAction — per-context governance is          |
@@ -1056,8 +1129,8 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
       candidates[k].hasOpenPosition = false;
    }
 
-   // ── Closed deals (last 30 days only — avoids stale strategies from old history) ──
-   datetime cutoff = TimeCurrent() - 30 * 24 * 3600;
+   // ── Closed deals (last 14 days only — balances freshness vs low-frequency strategies) ──
+   datetime cutoff = TimeCurrent() - 14 * 24 * 3600;
    for(int i = total - 1; i >= 0; i--)
    {
       ulong ticket = HistoryDealGetTicket(i);
