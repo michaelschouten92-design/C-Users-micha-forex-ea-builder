@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
-import { getStatusExplanation } from "@/lib/strategy-status/resolver";
+import { getStatusExplanation, getRecoveryGuidance } from "@/lib/strategy-status/resolver";
 import { formatDateMedium } from "@/lib/format-date";
 import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
@@ -478,6 +478,19 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
         </div>
       )}
 
+      {/* Recovery Guidance */}
+      {strategyStatus &&
+        (() => {
+          const guidance = getRecoveryGuidance(strategyStatus);
+          if (!guidance) return null;
+          return (
+            <div className="px-3 py-2 rounded-md bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <p className="text-[10px] font-medium text-[#A1A1AA] mb-0.5">Recommended action</p>
+              <p className="text-[10px] text-[#7C8DB0] leading-relaxed">{guidance}</p>
+            </div>
+          );
+        })()}
+
       {/* Primary Driver + Trend + Expectancy */}
       {(health.primaryDriver || health.scoreTrend || health.expectancy !== null) && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#7C8DB0]">
@@ -543,6 +556,9 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
       <p className="text-[10px] text-[#7C8DB0]">
         Last assessed: {new Date(health.createdAt).toLocaleString()}
+        {Date.now() - new Date(health.createdAt).getTime() > 60 * 60 * 1000 && (
+          <span className="ml-1 text-[#F59E0B]">(stale — over 1 hour ago)</span>
+        )}
       </p>
     </div>
   );

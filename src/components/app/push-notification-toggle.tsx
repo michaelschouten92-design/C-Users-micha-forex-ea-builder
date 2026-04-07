@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 export function PushNotificationToggle() {
   const [supported, setSupported] = useState(false);
@@ -104,6 +105,25 @@ export function PushNotificationToggle() {
     );
   }
 
+  async function handleTestPush() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/push/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+      });
+      if (res.ok) {
+        showSuccess("Test notification sent — check your browser");
+      } else {
+        showError("Failed to send test notification");
+      }
+    } catch {
+      showError("Could not reach the test endpoint");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="flex items-center gap-3">
       <button
@@ -129,6 +149,15 @@ export function PushNotificationToggle() {
             ? "Push notifications enabled"
             : "Enable push notifications"}
       </span>
+      {subscribed && (
+        <button
+          onClick={handleTestPush}
+          disabled={loading}
+          className="text-xs text-[#6366F1] hover:text-[#818CF8] transition-colors disabled:opacity-50"
+        >
+          Send test
+        </button>
+      )}
     </div>
   );
 }
