@@ -88,12 +88,6 @@ export function SettingsContent({ email, emailVerified, maxDrawdownPct }: Settin
       {/* Telegram */}
       <TelegramSection />
 
-      {/* Risk Protection */}
-      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
-        Risk Protection
-      </h2>
-      <DrawdownLimitSection initialValue={maxDrawdownPct} />
-
       {/* Security */}
       <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
         Security

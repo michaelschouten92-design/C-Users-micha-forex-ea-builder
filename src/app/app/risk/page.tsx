@@ -34,7 +34,7 @@ export default async function PortfolioRiskPage() {
 
   return (
     <div className="min-h-screen">
-      <AppNav activeItem="portfolio" session={session} tier={tier} />
+      <AppNav session={session} tier={tier} />
 
       <main id="main-content" className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <AppBreadcrumbs
