@@ -930,12 +930,6 @@ function PropFirmCheck({
       critical: maxDrawdownPct > 10,
     },
     {
-      label: "Max Drawdown ≤ 5% (strict firms)",
-      pass: maxDrawdownPct <= 5,
-      detail: `${maxDrawdownPct.toFixed(1)}%`,
-      critical: false,
-    },
-    {
       label: "Profit Factor > 1.2",
       pass: profitFactor > 1.2,
       detail: profitFactor.toFixed(2),
