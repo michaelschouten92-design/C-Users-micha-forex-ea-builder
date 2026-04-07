@@ -23,7 +23,7 @@ export default async function SettingsPage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { emailVerified: true },
+      select: { emailVerified: true, maxDrawdownPct: true },
     }),
     prisma.terminalConnection.count({
       where: {
@@ -58,7 +58,11 @@ export default async function SettingsPage() {
           }
         />
 
-        <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />
+        <SettingsContent
+          email={session.user.email || ""}
+          emailVerified={!!user?.emailVerified}
+          maxDrawdownPct={user?.maxDrawdownPct ?? null}
+        />
       </main>
     </div>
   );

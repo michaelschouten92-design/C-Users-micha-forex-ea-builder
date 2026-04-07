@@ -14,7 +14,8 @@ export type ControlLayerAlertType =
   | "VERSION_OUTDATED"
   | "HEALTH_DEGRADED"
   | "HEALTH_CRITICAL"
-  | "EDGE_DECAY_WARNING";
+  | "EDGE_DECAY_WARNING"
+  | "PORTFOLIO_DRAWDOWN_BREACH";
 
 export type AlertSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
 
@@ -28,6 +29,7 @@ export const ALERT_SEVERITY: Record<ControlLayerAlertType, AlertSeverity> = {
   HEALTH_DEGRADED: "HIGH",
   HEALTH_CRITICAL: "CRITICAL",
   EDGE_DECAY_WARNING: "MEDIUM",
+  PORTFOLIO_DRAWDOWN_BREACH: "CRITICAL",
 };
 
 export function getAlertSeverity(alertType: string): AlertSeverity {

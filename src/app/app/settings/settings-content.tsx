@@ -16,7 +16,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="ml-2 text-[#7C8DB0] hover:text-[#22D3EE] transition-colors p-1"
+      className="ml-2 text-[#71717A] hover:text-[#22D3EE] transition-colors p-1"
       title="Copy email"
       aria-label="Copy email to clipboard"
     >
@@ -46,9 +46,10 @@ function CopyButton({ text }: { text: string }) {
 type SettingsContentProps = {
   email: string;
   emailVerified: boolean;
+  maxDrawdownPct: number | null;
 };
 
-export function SettingsContent({ email, emailVerified }: SettingsContentProps) {
+export function SettingsContent({ email, emailVerified, maxDrawdownPct }: SettingsContentProps) {
   return (
     <div className="space-y-6">
       {/* Email */}
@@ -87,14 +88,20 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
       {/* Telegram */}
       <TelegramSection />
 
+      {/* Risk Protection */}
+      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
+        Risk Protection
+      </h2>
+      <DrawdownLimitSection initialValue={maxDrawdownPct} />
+
       {/* Security */}
-      <h2 className="text-sm font-semibold text-[#7C8DB0] uppercase tracking-wider mt-4">
+      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
         Security
       </h2>
       <ChangePasswordSection />
 
       {/* Data & Privacy */}
-      <h2 className="text-sm font-semibold text-[#7C8DB0] uppercase tracking-wider mt-4">
+      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
         Data & Privacy
       </h2>
       <DataExportSection />
@@ -652,7 +659,7 @@ function TelegramSection() {
             <button
               type="button"
               onClick={() => setShowToken(!showToken)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C8DB0] hover:text-white transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {showToken ? (
@@ -711,6 +718,114 @@ function TelegramSection() {
         {testStatus === "success" && <p className="text-[11px] text-[#10B981]">{testMessage}</p>}
         {testStatus === "error" && <p className="text-[11px] text-[#EF4444]">{testMessage}</p>}
       </div>
+    </div>
+  );
+}
+
+// ── Drawdown Limit Section ──────────────────────────────────
+
+function DrawdownLimitSection({ initialValue }: { initialValue: number | null }) {
+  const [value, setValue] = useState(initialValue?.toString() ?? "");
+  const [saving, setSaving] = useState(false);
+  const [enabled, setEnabled] = useState(initialValue !== null);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const pct = enabled ? parseFloat(value) : null;
+      if (enabled && (isNaN(pct!) || pct! <= 0 || pct! > 100)) {
+        showError("Enter a valid percentage between 0.1 and 100");
+        setSaving(false);
+        return;
+      }
+
+      const res = await fetch("/api/account/drawdown-limit", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ maxDrawdownPct: pct }),
+      });
+
+      if (res.ok) {
+        showSuccess(pct ? `Drawdown limit set to ${pct}%` : "Drawdown limit disabled");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || "Failed to save");
+      }
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="text-base font-semibold text-white">Portfolio Drawdown Limit</h3>
+          <p className="text-sm text-[#A1A1AA] mt-1">
+            Auto-halt all strategies when your account drawdown exceeds this percentage. Protects
+            against compounding losses across multiple EAs.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => setEnabled(!enabled)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? "bg-[#6366F1]" : "bg-[#27272A]"}`}
+          role="switch"
+          aria-checked={enabled}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`}
+          />
+        </button>
+        <span className="text-sm text-[#A1A1AA]">{enabled ? "Enabled" : "Disabled"}</span>
+      </div>
+
+      {enabled && (
+        <div className="flex items-end gap-3">
+          <div className="flex-1 max-w-[200px]">
+            <label htmlFor="drawdown-limit" className="block text-xs text-[#71717A] mb-1">
+              Max drawdown (%)
+            </label>
+            <input
+              id="drawdown-limit"
+              type="number"
+              min="0.1"
+              max="100"
+              step="0.1"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="e.g. 5"
+              className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-white px-3 py-2 text-sm focus:outline-none focus:border-[#6366F1]"
+            />
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#818CF8] disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      )}
+
+      {!enabled && initialValue !== null && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="text-xs text-[#71717A] hover:text-[#A1A1AA] transition-colors"
+        >
+          {saving ? "Saving..." : "Save (disable limit)"}
+        </button>
+      )}
+
+      <p className="text-xs text-[#52525B] mt-3">
+        When triggered, all your strategies will be paused and you&apos;ll receive an alert. You can
+        resume trading manually from the Command Center.
+      </p>
     </div>
   );
 }

@@ -160,7 +160,7 @@ export function AlertsModal({
               <select
                 value={newAlertType}
                 onChange={(e) => setNewAlertType(e.target.value)}
-                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="DRAWDOWN">Floating Drawdown</option>
                 <option value="OFFLINE">EA Offline</option>
@@ -180,7 +180,7 @@ export function AlertsModal({
               <select
                 value={newInstanceId}
                 onChange={(e) => setNewInstanceId(e.target.value)}
-                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="">All Instances</option>
                 {instances.map((inst) => (
@@ -204,7 +204,7 @@ export function AlertsModal({
                   min="0.1"
                   max="100"
                   step="0.1"
-                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
+                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
                   placeholder="5.0"
                 />
               </div>
@@ -218,9 +218,10 @@ export function AlertsModal({
               <select
                 value={newChannel}
                 onChange={(e) => setNewChannel(e.target.value)}
-                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="BROWSER_PUSH">Browser Push</option>
+                <option value="EMAIL">Email</option>
                 <option value="TELEGRAM">Telegram</option>
               </select>
             </div>
@@ -235,7 +236,7 @@ export function AlertsModal({
                   type="url"
                   value={newWebhookUrl}
                   onChange={(e) => setNewWebhookUrl(e.target.value)}
-                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
+                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
                   placeholder="https://hooks.example.com/alert"
                 />
               </div>

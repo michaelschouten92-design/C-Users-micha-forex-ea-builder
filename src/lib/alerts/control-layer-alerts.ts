@@ -39,6 +39,8 @@ const ALERT_SUMMARIES: Record<ControlLayerAlertType, string> = {
   HEALTH_CRITICAL: "Strategy edge is critical. Sustained performance decline detected.",
   EDGE_DECAY_WARNING:
     "Edge decay detected. Performance trending below baseline — projected to break threshold.",
+  PORTFOLIO_DRAWDOWN_BREACH:
+    "Portfolio drawdown limit exceeded. All strategies auto-halted to prevent further losses.",
 };
 
 // ── Public API ───────────────────────────────────────────
@@ -113,6 +115,7 @@ const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
   "HEALTH_DEGRADED",
   "HEALTH_CRITICAL",
   "EDGE_DECAY_WARNING",
+  "PORTFOLIO_DRAWDOWN_BREACH",
 ]);
 
 // ── Multi-channel delivery ───────────────────────────────

@@ -79,6 +79,19 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
           });
         }
       }
+    } else if (channel === "EMAIL") {
+      const email = config.user.email;
+      if (email) {
+        await enqueueNotification({
+          userId,
+          channel: "EMAIL",
+          destination: email,
+          subject: `Algo Studio Alert: ${eaName} — ${alertType}`,
+          payload: {
+            html: `<p><strong>${alertType}</strong></p><p>EA: ${eaName}</p><p>${message}</p><p><a href="https://algo-studio.com/app/live">View in dashboard</a></p>`,
+          },
+        });
+      }
     }
 
     log.info({ alertType, channel: config.channel, instanceId }, "Alert triggered");

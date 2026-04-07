@@ -353,6 +353,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Portfolio drawdown protection: if user has maxDrawdownPct set, check
+    // account-level drawdown and auto-halt all strategies if exceeded.
+    // Only runs for base instances (not child contexts) to avoid duplicate checks.
+    if (!isManifestContext && data.balance > 0 && data.equity > 0) {
+      checkPortfolioDrawdownLimit(
+        auth.userId,
+        data.balance,
+        data.equity,
+        effectiveInstanceId
+      ).catch((err) => {
+        log.error({ err, userId: auth.userId }, "Portfolio drawdown check failed");
+      });
+    }
+
     // Governance decision — reuse the same pure function as internal heartbeat.
     // The telemetry endpoint authenticates by API key (instance is confirmed to exist),
     // so authorityReady is always true here.
@@ -1118,4 +1132,60 @@ async function processDiscoveredDeployments(
     },
     "Processed account-wide deployment discovery"
   );
+}
+
+// ── Portfolio Drawdown Protection ────────────────────────────
+
+/**
+ * Check if account-level drawdown exceeds the user's configured limit.
+ * When exceeded: emit control-layer alert + halt all user's active strategies.
+ *
+ * Only called for base instances (not child contexts) to avoid duplicate triggers.
+ * Rate-limited by the control-layer alert dedup mechanism.
+ */
+async function checkPortfolioDrawdownLimit(
+  userId: string,
+  balance: number,
+  equity: number,
+  instanceId: string
+): Promise<void> {
+  if (balance <= 0) return;
+
+  const drawdownPct = ((balance - equity) / balance) * 100;
+  if (drawdownPct <= 0) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { maxDrawdownPct: true },
+  });
+
+  if (!user?.maxDrawdownPct || drawdownPct < user.maxDrawdownPct) return;
+
+  log.warn(
+    { userId, drawdownPct: drawdownPct.toFixed(2), limit: user.maxDrawdownPct, instanceId },
+    "Portfolio drawdown limit exceeded — halting all strategies"
+  );
+
+  // Emit control-layer alert (dedup key prevents spam)
+  await emitControlLayerAlert(prisma, {
+    userId,
+    instanceId,
+    alertType: "PORTFOLIO_DRAWDOWN_BREACH",
+    reasons: [
+      `Account drawdown ${drawdownPct.toFixed(1)}% exceeded your ${user.maxDrawdownPct}% limit`,
+    ],
+  });
+
+  // Halt all active (non-deleted) instances for this user
+  await prisma.liveEAInstance.updateMany({
+    where: {
+      userId,
+      deletedAt: null,
+      tradingState: "TRADING",
+    },
+    data: {
+      tradingState: "PAUSED",
+      operatorHold: "HALTED",
+    },
+  });
 }

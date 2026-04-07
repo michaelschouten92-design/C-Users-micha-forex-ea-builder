@@ -138,6 +138,9 @@ model User {
   suspended       Boolean   @default(false)
   suspendedAt     DateTime?
   suspendedReason String?   @db.Text
+  /// Portfolio drawdown limit (%). When account drawdown exceeds this,
+  /// all strategies are auto-halted. Null = disabled.
+  maxDrawdownPct  Float?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
