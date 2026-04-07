@@ -463,7 +463,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
       {/* Drift Warning */}
       {health.driftDetected && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <span className="text-[10px] text-[#EF4444] font-medium flex items-center">
+          <span className="text-[11px] text-[#EF4444] font-medium flex items-center">
             Edge drift detected — strategy expectancy has persistently declined
             <MetricTooltip metric="CUSUM Drift" />
           </span>
@@ -471,7 +471,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
       )}
       {!health.driftDetected && health.driftSeverity > 0.5 && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#F59E0B]/10 border border-[#F59E0B]/20">
-          <span className="text-[10px] text-[#F59E0B] font-medium flex items-center">
+          <span className="text-[11px] text-[#F59E0B] font-medium flex items-center">
             Possible drift ({Math.round(health.driftSeverity * 100)}% toward threshold)
             <MetricTooltip metric="Drift Severity" />
           </span>
@@ -485,8 +485,8 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
           if (!guidance) return null;
           return (
             <div className="px-3 py-2 rounded-md bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
-              <p className="text-[10px] font-medium text-[#A1A1AA] mb-0.5">Recommended action</p>
-              <p className="text-[10px] text-[#7C8DB0] leading-relaxed">{guidance}</p>
+              <p className="text-[11px] font-medium text-[#A1A1AA] mb-0.5">Recommended action</p>
+              <p className="text-[11px] text-[#7C8DB0] leading-relaxed">{guidance}</p>
             </div>
           );
         })()}

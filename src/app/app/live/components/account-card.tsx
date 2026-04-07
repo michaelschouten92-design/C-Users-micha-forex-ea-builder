@@ -441,7 +441,7 @@ export function AccountCard({
       <div className="px-5 pt-3 pb-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mb-3">
           <div className="flex items-baseline gap-1">
-            <span className="text-[9px] uppercase tracking-wider text-[#52525B]">Equity</span>
+            <span className="section-title">Equity</span>
             <span className="text-sm font-semibold text-white tabular-nums ml-1">
               {formatCurrency(equity)}
             </span>
@@ -508,7 +508,7 @@ export function AccountCard({
             </button>
           )}
 
-          <span className="ml-auto text-[9px] text-[#52525B]">
+          <span className="ml-auto text-[10px] text-[#52525B]">
             Heartbeat {formatRelativeTime(lastHeartbeat ?? null)}
           </span>
         </div>
@@ -692,7 +692,7 @@ export function AccountCard({
           ) : (
             <div>
               {/* Header row */}
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_80px_150px] gap-x-3 gap-y-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_80px_150px] gap-x-3 gap-y-2 px-3 py-1.5 text-[10px] uppercase tracking-wider text-[#64748B]">
                 <span>Symbol</span>
                 <span className="relative group/edge inline-flex items-center gap-1 cursor-help">
                   Edge

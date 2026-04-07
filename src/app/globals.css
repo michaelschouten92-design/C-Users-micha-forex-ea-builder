@@ -273,6 +273,15 @@ body::after {
   pointer-events: none;
 }
 
+/* Section title pattern used across dashboard, cards, and detail pages */
+.section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #52525b;
+}
+
 .btn-primary {
   background-color: var(--indigo-tech);
   color: white;

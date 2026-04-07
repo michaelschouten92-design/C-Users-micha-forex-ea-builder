@@ -188,7 +188,7 @@ function ChangePasswordSection() {
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
           />
         </div>
         <div>
@@ -201,7 +201,7 @@ function ChangePasswordSection() {
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
             placeholder="Minimum 8 characters"
           />
           {newPassword.length > 0 && (
@@ -237,7 +237,7 @@ function ChangePasswordSection() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-[#A1A1AA] cursor-pointer">
@@ -245,7 +245,7 @@ function ChangePasswordSection() {
             type="checkbox"
             checked={showPasswords}
             onChange={(e) => setShowPasswords(e.target.checked)}
-            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#22D3EE]"
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1]"
           />
           Show passwords
         </label>
@@ -648,7 +648,7 @@ function TelegramSection() {
               value={botToken}
               onChange={(e) => setBotToken(e.target.value)}
               placeholder="123456789:ABCDefGhIjKlMnOpQrStUvWxYz"
-              className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 text-sm pr-10"
+              className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 text-sm pr-10"
             />
             <button
               type="button"
@@ -684,7 +684,7 @@ function TelegramSection() {
             value={chatId}
             onChange={(e) => setChatId(e.target.value)}
             placeholder="123456789"
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 text-sm"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 text-sm"
           />
         </div>
 
