@@ -86,7 +86,7 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
           onClick();
         }
       }}
-      className={`rounded-xl bg-[#0C0714] border p-4 transition-all duration-200 cursor-pointer hover:border-[#52525B] focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:outline-none ${
+      className={`rounded-xl bg-[#0C0714] border p-4 transition-all duration-200 cursor-pointer hover:border-[#52525B] focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:outline-none h-full flex flex-col ${
         isSelected
           ? "ring-2 ring-[#6366F1] border-[#6366F1]/50"
           : statusChanged
@@ -196,8 +196,8 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
         </div>
       )}
 
-      {/* Action link */}
-      <div className="flex items-center gap-1 text-[11px] font-medium text-[#818CF8]">
+      {/* Action link — pushed to bottom */}
+      <div className="mt-auto pt-2 flex items-center gap-1 text-[11px] font-medium text-[#818CF8]">
         {isSelected ? "Hide Details" : "View Details"}
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
