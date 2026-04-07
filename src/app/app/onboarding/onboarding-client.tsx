@@ -370,7 +370,7 @@ function StepWaitingForTrades({
         subtitle={
           complete
             ? "Strategy detected from trade activity"
-            : "Algo Studio will auto-discover strategies from your trade history."
+            : "Strategies appear automatically when they open a position or place an order."
         }
         complete={complete}
       />
@@ -390,7 +390,7 @@ function StepWaitingForTrades({
       </div>
 
       {!complete && (
-        <WaitingPulse message="Monitoring trade activity... A strategy will appear once trades are detected." />
+        <WaitingPulse message="Waiting for your first trade... As soon as an EA opens a position or places an order, it will appear here automatically." />
       )}
 
       {complete && <SuccessBanner message="Strategy auto-discovered from trade activity." />}
@@ -489,7 +489,7 @@ function StepStrategyDiscovered({
       )}
 
       {!complete && strategies.length === 0 && (
-        <WaitingPulse message="Waiting for strategy discovery..." />
+        <WaitingPulse message="Waiting for your EAs to open a position or place an order..." />
       )}
     </div>
   );

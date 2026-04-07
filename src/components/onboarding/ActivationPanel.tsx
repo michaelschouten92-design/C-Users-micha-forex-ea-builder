@@ -252,8 +252,8 @@ export function ActivationPanel() {
           <div>
             <p className="text-xs text-[#94A3B8] mb-1">No live deployment available to link yet.</p>
             <p className="text-[11px] text-[#7C8DB0]">
-              A deployment appears automatically when the Monitor EA detects a running strategy on
-              your terminal.
+              Strategies appear automatically when they open a position or place an order. Make sure
+              your EAs are running and AutoTrading is enabled.
             </p>
           </div>
         )}
