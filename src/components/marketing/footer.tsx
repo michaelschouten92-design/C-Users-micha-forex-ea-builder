@@ -6,7 +6,6 @@ const SECTIONS = [
     links: [
       { label: "How It Works", href: "/how-it-works" },
       { label: "Pricing", href: "/pricing" },
-      { label: "Strategies", href: "/strategies" },
       { label: "Sample Evaluation", href: "/sample-evaluation" },
     ],
   },

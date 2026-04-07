@@ -818,10 +818,7 @@ export default async function HomePage() {
                     />
                   </svg>
                   <span className="text-xs font-medium text-[#71717A]">
-                    Cryptographically verified &middot; Hash-chain integrity &middot;{" "}
-                    <Link href="/strategies" className="text-[#6366F1] hover:text-[#818CF8]">
-                      View public strategies
-                    </Link>
+                    Cryptographically verified &middot; Hash-chain integrity
                   </span>
                 </div>
               </GlassCard>
