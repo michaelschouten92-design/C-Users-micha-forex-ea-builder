@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
         // 0. Read incident first (need incidentId for proof payload)
         const openIncident = await tx.incident.findFirst({
           where: { strategyId, status: { not: "CLOSED" } },
+          orderBy: { openedAt: "desc" },
         });
 
         const incidentId = openIncident?.id ?? null;
@@ -255,9 +256,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     if ((err as { code?: string }).code === "OVERRIDE_EXPIRED") {
-      return NextResponse.json(apiError(ErrorCode.OVERRIDE_EXPIRED, "Override request has expired"), {
-        status: 400,
-      });
+      return NextResponse.json(
+        apiError(ErrorCode.OVERRIDE_EXPIRED, "Override request has expired"),
+        {
+          status: 400,
+        }
+      );
     }
     log.error({ err, strategyId, overrideRequestId }, "Failed to apply override");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

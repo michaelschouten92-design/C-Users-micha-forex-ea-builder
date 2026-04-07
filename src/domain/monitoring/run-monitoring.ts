@@ -575,6 +575,7 @@ export async function runMonitoring(params: RunMonitoringParams): Promise<RunMon
             // Close incident for this instance on recovery or invalidation
             const openIncident = await tx.incident.findFirst({
               where: { instanceId, status: { not: "CLOSED" } },
+              orderBy: { openedAt: "desc" },
             });
             if (openIncident) {
               const closeReason =

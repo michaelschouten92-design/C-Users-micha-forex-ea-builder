@@ -300,33 +300,36 @@ async function handleCleanup(request: NextRequest) {
       });
     }
 
-    // Auto-downgrade past_due subscriptions after 14-day grace period
+    // Auto-downgrade past_due and unpaid subscriptions after 14-day grace period.
+    // unpaid = Stripe gave up collecting (invoice uncollectible) — user won't pay.
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     let downgraded = 0;
 
     if (!isTimedOut()) {
       // Atomic UPDATE...RETURNING to get affected rows for structured transition logging.
       // Prevents concurrent cron runs from double-downgrading (same atomicity as updateMany).
-      const downgradeRows = await prisma.$queryRaw<Array<{ userId: string; tier: string }>>`
+      const downgradeRows = await prisma.$queryRaw<
+        Array<{ userId: string; tier: string; status: string }>
+      >`
         UPDATE "Subscription"
         SET tier = 'FREE', status = 'cancelled', "stripeSubId" = NULL
-        WHERE status = 'past_due'
+        WHERE status IN ('past_due', 'unpaid')
           AND "currentPeriodEnd" < ${fourteenDaysAgo}
           AND tier != 'FREE'
           AND ("manualPeriodEnd" IS NULL OR "manualPeriodEnd" < ${fourteenDaysAgo})
-        RETURNING "userId", tier
+        RETURNING "userId", tier, status
       `;
       downgraded = downgradeRows.length;
       for (const row of downgradeRows) {
         logSubscriptionTransition(
           row.userId,
-          { status: "past_due", tier: row.tier as "PRO" | "ELITE" },
+          { status: row.status as "past_due" | "unpaid", tier: row.tier as "PRO" | "ELITE" },
           { status: "cancelled", tier: "FREE" },
-          "auto_downgrade_past_due_14d"
+          row.status === "unpaid" ? "auto_downgrade_unpaid" : "auto_downgrade_past_due_14d"
         );
       }
       if (downgraded > 0) {
-        log.info({ count: downgraded }, "Auto-downgraded past_due subscriptions");
+        log.info({ count: downgraded }, "Auto-downgraded past_due/unpaid subscriptions");
       }
     }
 
