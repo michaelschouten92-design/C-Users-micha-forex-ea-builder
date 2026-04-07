@@ -930,9 +930,9 @@ function PropFirmCheck({
       critical: maxDrawdownPct > 10,
     },
     {
-      label: "Daily Drawdown ≤ 5%",
+      label: "Max Drawdown ≤ 5% (strict firms)",
       pass: maxDrawdownPct <= 5,
-      detail: maxDrawdownPct <= 5 ? "Within limit" : "Exceeds — check daily DD separately",
+      detail: `${maxDrawdownPct.toFixed(1)}%`,
       critical: false,
     },
     {
