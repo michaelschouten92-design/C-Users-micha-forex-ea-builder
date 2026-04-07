@@ -17,8 +17,8 @@ export function RiskPageTabs() {
           onClick={() => setTab("simulator")}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             tab === "simulator"
-              ? "bg-[#4F46E5] text-white"
-              : "text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)]"
+              ? "bg-[#6366F1] text-white"
+              : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(79,70,229,0.1)]"
           }`}
         >
           Simulator
@@ -27,8 +27,8 @@ export function RiskPageTabs() {
           onClick={() => setTab("portfolio")}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             tab === "portfolio"
-              ? "bg-[#4F46E5] text-white"
-              : "text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.1)]"
+              ? "bg-[#6366F1] text-white"
+              : "text-[#A1A1AA] hover:text-white hover:bg-[rgba(79,70,229,0.1)]"
           }`}
         >
           Portfolio

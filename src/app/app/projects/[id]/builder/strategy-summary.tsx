@@ -294,12 +294,12 @@ export function StrategySummary({ nodes }: StrategySummaryProps): React.ReactNod
             </p>
           ) : lines.length > 0 ? (
             <div>
-              <p className="text-xs font-medium text-[#94A3B8] mb-2">This strategy will:</p>
+              <p className="text-xs font-medium text-[#A1A1AA] mb-2">This strategy will:</p>
               <ul className="space-y-1.5">
                 {lines.map((line, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                    className="flex items-start gap-2 text-xs text-[#FAFAFA] leading-relaxed"
                   >
                     <svg
                       className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"

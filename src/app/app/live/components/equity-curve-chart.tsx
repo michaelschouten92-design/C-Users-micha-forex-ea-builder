@@ -28,14 +28,14 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition-colors ${
-                period === p ? "bg-[#4F46E5] text-white" : "text-[#475569] hover:text-[#A1A1AA]"
+                period === p ? "bg-[#6366F1] text-white" : "text-[#52525B] hover:text-[#A1A1AA]"
               }`}
             >
               {p}
             </button>
           ))}
         </div>
-        <div className="h-60 flex items-center justify-center text-xs text-[#475569]">
+        <div className="h-60 flex items-center justify-center text-xs text-[#52525B]">
           {dailyPnl.length < 2
             ? "Equity curve appears after 2+ trading days"
             : "No data available for the selected period"}
@@ -55,7 +55,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
   // Guard against corrupted data
   if (cumulative.some((v) => !isFinite(v))) {
     return (
-      <div className="h-60 flex items-center justify-center text-xs text-[#475569]">
+      <div className="h-60 flex items-center justify-center text-xs text-[#52525B]">
         Chart data contains invalid values
       </div>
     );
@@ -166,7 +166,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-2 py-0.5 text-[11px] font-medium rounded-full transition-colors ${
-                period === p ? "bg-[#4F46E5] text-white" : "text-[#475569] hover:text-[#A1A1AA]"
+                period === p ? "bg-[#6366F1] text-white" : "text-[#52525B] hover:text-[#A1A1AA]"
               }`}
             >
               {p}
@@ -247,7 +247,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
               x={padX - 6}
               y={y + 3}
               textAnchor="end"
-              className="fill-[#475569] text-[8px]"
+              className="fill-[#52525B] text-[8px]"
             >
               {Math.abs(tick) >= 1000 ? `$${(tick / 1000).toFixed(1)}k` : `$${tick.toFixed(0)}`}
             </text>
@@ -261,7 +261,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
             x={l.x}
             y={height - 4}
             textAnchor="middle"
-            className="fill-[#475569] text-[8px]"
+            className="fill-[#52525B] text-[8px]"
           >
             {l.label}
           </text>
@@ -309,7 +309,7 @@ export function EquityCurveChart({ dailyPnl }: { dailyPnl: { date: string; pnl: 
           >
             {formatPnl(hoverPoint.val)}
           </p>
-          <p className="text-[#475569]">Day: {formatPnl(hoverPoint.dayPnl)}</p>
+          <p className="text-[#52525B]">Day: {formatPnl(hoverPoint.dayPnl)}</p>
           {hoverPctFromStart !== null && (
             <p
               className={`tabular-nums ${

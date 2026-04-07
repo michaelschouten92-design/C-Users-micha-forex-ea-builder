@@ -636,7 +636,7 @@ export function LiveDashboardClient({
 
           {/* ── Controls bar ── */}
           <div className="flex flex-wrap items-center gap-2.5 px-1">
-            <div className="flex items-center rounded-full bg-[#0A0118]/60 border border-[#1E293B]/30 p-0.5">
+            <div className="flex items-center rounded-full bg-[#0D0D12]/60 border border-[#1E293B]/30 p-0.5">
               {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
                 <button
                   key={mode}
@@ -648,7 +648,7 @@ export function LiveDashboardClient({
                       ? mode === "PAPER"
                         ? "bg-[#F59E0B]/15 text-[#F59E0B]"
                         : "bg-white/10 text-white"
-                      : "text-[#64748B] hover:text-[#94A3B8]"
+                      : "text-[#64748B] hover:text-[#A1A1AA]"
                   }`}
                 >
                   {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
@@ -659,7 +659,7 @@ export function LiveDashboardClient({
             <button
               onClick={() => setSoundAlerts(!soundAlerts)}
               className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
-                soundAlerts ? "text-[#F59E0B]" : "text-[#64748B] hover:text-[#94A3B8]"
+                soundAlerts ? "text-[#F59E0B]" : "text-[#64748B] hover:text-[#A1A1AA]"
               }`}
               title={soundAlerts ? "Notifications on" : "Notifications off"}
               aria-label={soundAlerts ? "Disable notifications" : "Enable notifications"}
@@ -694,7 +694,7 @@ export function LiveDashboardClient({
               {accountGroups.length >= 2 && (
                 <Link
                   href="/app/compare"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-[#CBD5E1] hover:text-white border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] rounded-md transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-[#FAFAFA] hover:text-white border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] rounded-md transition-colors"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -752,7 +752,7 @@ export function LiveDashboardClient({
                     onKeyDown={(e) => handleKeyboardReorder(e, account.key)}
                     className={`transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:rounded-lg ${
                       draggedAccountKey === account.key ? "opacity-40" : ""
-                    } ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-lg" : ""}`}
+                    } ${dragOverAccountKey === account.key ? "ring-2 ring-[#6366F1] rounded-lg" : ""}`}
                   >
                     <AccountTile
                       account={account}
@@ -790,7 +790,7 @@ export function LiveDashboardClient({
               <div className="max-w-lg mx-auto">
                 {/* Hero */}
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-xl bg-[#4F46E5]/15 border border-[#4F46E5]/25 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-xl bg-[#6366F1]/15 border border-[#6366F1]/25 flex items-center justify-center">
                     <svg
                       className="w-6 h-6 text-[#818CF8]"
                       fill="none"
@@ -882,7 +882,7 @@ export function LiveDashboardClient({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   <Link
                     href="/app/onboarding"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
                   >
                     Start Setup
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -902,7 +902,7 @@ export function LiveDashboardClient({
 
           {/* Activity feed — below accounts */}
           {eaInstances.length > 0 && feedItems.length > 0 && (
-            <div className="rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/30 overflow-hidden">
+            <div className="rounded-lg bg-[#0D0D12]/40 border border-[#1E293B]/30 overflow-hidden">
               <div className="flex items-center justify-between px-3 py-2 border-b border-[#1E293B]/20">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">

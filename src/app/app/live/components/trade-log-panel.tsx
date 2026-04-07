@@ -176,14 +176,14 @@ export function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaNa
                       {trade.type}
                     </span>
                   </td>
-                  <td className="py-1.5 pr-2 text-[#CBD5E1]">{trade.symbol}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
+                  <td className="py-1.5 pr-2 text-[#FAFAFA]">{trade.symbol}</td>
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#FAFAFA]">
                     {trade.lots.toFixed(2)}
                   </td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#FAFAFA]">
                     {trade.openPrice.toFixed(5)}
                   </td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#CBD5E1]">
+                  <td className="py-1.5 pr-2 text-right tabular-nums text-[#FAFAFA]">
                     {trade.closePrice !== null ? trade.closePrice.toFixed(5) : "---"}
                   </td>
                   <td

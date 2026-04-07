@@ -35,7 +35,7 @@ export default async function RiskPage() {
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Risk</h1>
-          <p className="text-[#94A3B8]">
+          <p className="text-[#A1A1AA]">
             Simulate strategy risk, compare position sizing methods, and monitor portfolio-level
             risk.
           </p>

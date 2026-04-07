@@ -164,13 +164,13 @@ export function ComparisonTable({ accounts }: { accounts: AccountData[] }) {
                   idx % 2 === 0 ? "bg-transparent" : "bg-[rgba(255,255,255,0.01)]"
                 }`}
               >
-                <td className="px-4 py-2.5 text-[11px] text-[#94A3B8] font-medium">
+                <td className="px-4 py-2.5 text-[11px] text-[#A1A1AA] font-medium">
                   {metric.label}
                 </td>
                 {accounts.map((a, i) => (
                   <td
                     key={a.key}
-                    className={`px-4 py-2.5 text-xs tabular-nums text-[#CBD5E1] ${bestWorstClasses(rawValues, rawValues[i], metric.direction)}`}
+                    className={`px-4 py-2.5 text-xs tabular-nums text-[#FAFAFA] ${bestWorstClasses(rawValues, rawValues[i], metric.direction)}`}
                   >
                     {metric.getValue(a)}
                   </td>
@@ -180,7 +180,7 @@ export function ComparisonTable({ accounts }: { accounts: AccountData[] }) {
           })}
           {/* Connection status row */}
           <tr className="border-b border-[rgba(255,255,255,0.03)]">
-            <td className="px-4 py-2.5 text-[11px] text-[#94A3B8] font-medium">Last Heartbeat</td>
+            <td className="px-4 py-2.5 text-[11px] text-[#A1A1AA] font-medium">Last Heartbeat</td>
             {accounts.map((a) => (
               <td key={a.key} className="px-4 py-2.5 text-xs text-[#64748B]">
                 {formatRelativeTime(a.lastHeartbeat)}
@@ -189,7 +189,7 @@ export function ComparisonTable({ accounts }: { accounts: AccountData[] }) {
           </tr>
           {/* Mode row */}
           <tr>
-            <td className="px-4 py-2.5 text-[11px] text-[#94A3B8] font-medium">Mode</td>
+            <td className="px-4 py-2.5 text-[11px] text-[#A1A1AA] font-medium">Mode</td>
             {accounts.map((a) => (
               <td key={a.key} className="px-4 py-2.5">
                 <span

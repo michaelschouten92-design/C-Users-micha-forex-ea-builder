@@ -134,7 +134,7 @@ function AlertRow({
               <span className="text-xs text-[#7C8DB0]">{strategyLabel}</span>
             </div>
             {/* Summary */}
-            <p className="text-xs text-[#94A3B8] mt-0.5 line-clamp-2">{alert.summary}</p>
+            <p className="text-xs text-[#A1A1AA] mt-0.5 line-clamp-2">{alert.summary}</p>
             {/* Deliveries */}
             {alert.deliveries.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2">

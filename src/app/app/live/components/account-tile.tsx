@@ -86,11 +86,11 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
           onClick();
         }
       }}
-      className={`rounded-xl bg-[#0C0714] border p-4 transition-all duration-200 cursor-pointer hover:border-[#475569] focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:outline-none ${
+      className={`rounded-xl bg-[#0C0714] border p-4 transition-all duration-200 cursor-pointer hover:border-[#52525B] focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:outline-none ${
         isSelected
-          ? "ring-2 ring-[#4F46E5] border-[#4F46E5]/50"
+          ? "ring-2 ring-[#6366F1] border-[#6366F1]/50"
           : statusChanged
-            ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
+            ? "border-[#52525B] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
             : "border-[#1E293B]/80"
       }`}
     >
@@ -107,7 +107,7 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
             </span>
           )}
         </div>
-        <span className="text-[9px] text-[#475569] flex-shrink-0">
+        <span className="text-[9px] text-[#52525B] flex-shrink-0">
           {formatRelativeTime(lastHeartbeat ?? null)}
         </span>
       </div>
@@ -150,13 +150,13 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
         {/* Financial numbers */}
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-baseline justify-between">
-            <span className="text-[9px] uppercase tracking-wider text-[#475569]">Balance</span>
+            <span className="text-[9px] uppercase tracking-wider text-[#52525B]">Balance</span>
             <span className="text-sm font-bold tabular-nums text-white">
               {formatCurrency(balance)}
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-[9px] uppercase tracking-wider text-[#475569]">Profit</span>
+            <span className="text-[9px] uppercase tracking-wider text-[#52525B]">Profit</span>
             <span
               className={`text-sm font-bold tabular-nums ${totalProfit > 0 ? "text-[#10B981]" : totalProfit < 0 ? "text-[#EF4444]" : "text-[#64748B]"}`}
             >
@@ -181,7 +181,7 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
               <div key={s.symbol} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${hs.dot}`} />
-                  <span className="text-[11px] text-[#CBD5E1] font-medium">{s.symbol}</span>
+                  <span className="text-[11px] text-[#FAFAFA] font-medium">{s.symbol}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {s.edgeScore && <EdgeScoreBadge edgeScore={s.edgeScore} />}
@@ -191,7 +191,7 @@ export function AccountTile({ account, isSelected, onClick, changedIds }: Accoun
             );
           })}
           {hiddenCount > 0 && (
-            <p className="text-[9px] text-[#475569] pl-3.5">+{hiddenCount} more</p>
+            <p className="text-[9px] text-[#52525B] pl-3.5">+{hiddenCount} more</p>
           )}
         </div>
       )}

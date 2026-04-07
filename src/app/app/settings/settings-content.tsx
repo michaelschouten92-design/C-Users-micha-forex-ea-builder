@@ -56,7 +56,7 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
         <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 flex-wrap">
           <div className="flex items-center min-w-0">
-            <p className="text-[#94A3B8] text-sm break-all">{email}</p>
+            <p className="text-[#A1A1AA] text-sm break-all">{email}</p>
             <CopyButton text={email} />
           </div>
           <span
@@ -77,7 +77,7 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
       {/* Push Notifications */}
       <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <h2 className="text-lg font-semibold text-white mb-2">Push Notifications</h2>
-        <p className="text-sm text-[#94A3B8] mb-4">
+        <p className="text-sm text-[#A1A1AA] mb-4">
           Receive browser push notifications for alerts (drawdown, offline, new trades, errors).
           Works even when Algo Studio is not open.
         </p>
@@ -177,7 +177,7 @@ function ChangePasswordSection() {
         <div>
           <label
             htmlFor="currentPassword"
-            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+            className="block text-sm font-medium text-[#FAFAFA] mb-1"
           >
             Current Password
           </label>
@@ -191,7 +191,7 @@ function ChangePasswordSection() {
           />
         </div>
         <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-[#CBD5E1] mb-1">
+          <label htmlFor="newPassword" className="block text-sm font-medium text-[#FAFAFA] mb-1">
             New Password
           </label>
           <input
@@ -226,7 +226,7 @@ function ChangePasswordSection() {
         <div>
           <label
             htmlFor="confirmNewPassword"
-            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+            className="block text-sm font-medium text-[#FAFAFA] mb-1"
           >
             Confirm New Password
           </label>
@@ -239,19 +239,19 @@ function ChangePasswordSection() {
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-[#A1A1AA] cursor-pointer">
           <input
             type="checkbox"
             checked={showPasswords}
             onChange={(e) => setShowPasswords(e.target.checked)}
-            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#22D3EE]"
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#22D3EE]"
           />
           Show passwords
         </label>
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {loading ? "Saving..." : "Change Password"}
         </button>
@@ -297,14 +297,14 @@ function DataExportSection() {
   return (
     <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-2">Data & Privacy</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Download all your projects and account data as a JSON file. Useful for backup or data
         migration.
       </p>
       <button
         onClick={handleExport}
         disabled={exporting}
-        className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
       >
         {exporting ? (
           <>
@@ -381,7 +381,7 @@ function DeleteAccountSection() {
     <div className="bg-[#111114] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-[#EF4444] mb-2">Delete Account</h2>
 
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Permanently delete your account and all associated data. This action cannot be undone.
       </p>
 
@@ -421,7 +421,7 @@ function DeleteAccountSection() {
           <div>
             <label
               htmlFor="deleteAccountPassword"
-              className="block text-sm font-medium text-[#CBD5E1] mb-1"
+              className="block text-sm font-medium text-[#FAFAFA] mb-1"
             >
               Enter your current password
             </label>
@@ -466,7 +466,7 @@ function DeleteAccountSection() {
                 setConfirmText("");
                 setDeletePassword("");
               }}
-              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
+              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#A1A1AA] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
             >
               Cancel
             </button>
@@ -586,7 +586,7 @@ function TelegramSection() {
           </span>
         )}
       </div>
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Receive real-time alerts in Telegram when your strategy needs attention.
       </p>
 
@@ -607,14 +607,14 @@ function TelegramSection() {
       </button>
 
       {showSetup && (
-        <div className="rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] p-4 mb-4 space-y-3 text-sm text-[#94A3B8]">
+        <div className="rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] p-4 mb-4 space-y-3 text-sm text-[#A1A1AA]">
           <ol className="space-y-2 list-decimal list-inside">
             <li>
               Open Telegram and search for <strong className="text-white">@BotFather</strong>
             </li>
             <li>
               Send{" "}
-              <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#22D3EE]">
+              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
                 /newbot
               </code>{" "}
               and follow the prompts to create a bot
@@ -625,11 +625,11 @@ function TelegramSection() {
             <li>Open your new bot in Telegram and send it any message (e.g. &quot;hello&quot;)</li>
             <li>
               To find your Chat ID, open{" "}
-              <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#22D3EE] break-all">
+              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE] break-all">
                 https://api.telegram.org/bot&lt;YOUR_TOKEN&gt;/getUpdates
               </code>{" "}
               in your browser and look for{" "}
-              <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#22D3EE]">
+              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
                 &quot;chat&quot;:{`{`}&quot;id&quot;:123456789{`}`}
               </code>
             </li>
@@ -640,7 +640,7 @@ function TelegramSection() {
       {/* Bot Token */}
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">Bot Token</label>
+          <label className="block text-sm font-medium text-[#FAFAFA] mb-1">Bot Token</label>
           <div className="relative">
             <input
               type={showToken ? "text" : "password"}
@@ -677,7 +677,7 @@ function TelegramSection() {
 
         {/* Chat ID */}
         <div>
-          <label className="block text-sm font-medium text-[#CBD5E1] mb-1">Chat ID</label>
+          <label className="block text-sm font-medium text-[#FAFAFA] mb-1">Chat ID</label>
           <input
             type="text"
             value={chatId}
@@ -692,7 +692,7 @@ function TelegramSection() {
           <button
             onClick={handleSave}
             disabled={loading}
-            className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {loading ? "Saving..." : "Save"}
           </button>

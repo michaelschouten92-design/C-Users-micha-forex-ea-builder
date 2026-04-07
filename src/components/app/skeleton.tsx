@@ -38,7 +38,7 @@ interface SkeletonMetricProps {
 export function SkeletonMetric({ className = "" }: SkeletonMetricProps): React.ReactNode {
   return (
     <div
-      className={`bg-[#0A0118] border border-[rgba(255,255,255,0.06)] rounded-lg p-4 ${className}`}
+      className={`bg-[#0D0D12] border border-[rgba(255,255,255,0.06)] rounded-lg p-4 ${className}`}
     >
       <div className="h-2 w-16 bg-[#1E293B] rounded animate-pulse mb-2" />
       <div className="h-5 w-20 bg-[#1E293B] rounded animate-pulse" />

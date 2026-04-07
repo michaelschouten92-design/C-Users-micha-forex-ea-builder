@@ -64,7 +64,7 @@ export function SystemRecommendation({ level, reason }: SystemRecommendationProp
           </h3>
           <p className="text-xs text-[#E2E8F0] leading-relaxed">{reason}</p>
           {actionHint && (
-            <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">{actionHint}</p>
+            <p className="text-[11px] text-[#A1A1AA] leading-relaxed italic">{actionHint}</p>
           )}
         </div>
       </div>

@@ -329,7 +329,7 @@ function ParamInput({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#CBD5E1] mb-1">{label}</label>
+      <label className="block text-sm font-medium text-[#FAFAFA] mb-1">{label}</label>
       <div className="relative">
         {prefix && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C8DB0] text-sm">
@@ -384,7 +384,7 @@ function ResultCard({
   const valueColor = color ? colorMap[color] : "text-white";
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
+    <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-4">
       <div className="text-xs text-[#7C8DB0] mb-1">{label}</div>
       <div className={`text-xl font-bold ${valueColor}`}>{value}</div>
       {subValue && <div className="text-xs text-[#7C8DB0] mt-0.5">{subValue}</div>}
@@ -434,7 +434,7 @@ export function RiskCalculator() {
   return (
     <div className="space-y-8">
       {/* Input Parameters */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Simulation Parameters</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ParamInput
@@ -494,7 +494,7 @@ export function RiskCalculator() {
           <button
             onClick={handleRun}
             disabled={running}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] text-white font-medium rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {running ? (
               <>
@@ -539,7 +539,7 @@ export function RiskCalculator() {
           {/* Expected value info */}
           <p className="text-xs text-[#7C8DB0] mt-3">
             Expected edge per trade:{" "}
-            <span className="text-[#CBD5E1]">
+            <span className="text-[#FAFAFA]">
               {((params.winRate / 100) * params.rrRatio - (1 - params.winRate / 100)).toFixed(3)}R
             </span>{" "}
             (
@@ -582,7 +582,7 @@ export function RiskCalculator() {
           </div>
 
           {/* Equity Curve Chart */}
-          <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+          <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Equity Curve Bands</h2>
             <p className="text-xs text-[#7C8DB0] mb-4">
               Shows the range of outcomes across {params.numSimulations.toLocaleString()}{" "}

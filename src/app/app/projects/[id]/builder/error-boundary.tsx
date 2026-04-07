@@ -52,7 +52,7 @@ export class CanvasErrorBoundary extends Component<Props, State> {
       // Default fallback UI
       return (
         <div className="flex-1 flex items-center justify-center bg-[#0F0A1A]">
-          <div className="max-w-md w-full mx-4 p-8 bg-[#1A0626] border border-[rgba(239,68,68,0.3)] rounded-xl text-center">
+          <div className="max-w-md w-full mx-4 p-8 bg-[#111114] border border-[rgba(239,68,68,0.3)] rounded-xl text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[rgba(239,68,68,0.1)] flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-[#EF4444]"
@@ -71,14 +71,14 @@ export class CanvasErrorBoundary extends Component<Props, State> {
 
             <h3 className="text-xl font-semibold text-white mb-2">Something went wrong</h3>
 
-            <p className="text-[#94A3B8] mb-6">
+            <p className="text-[#A1A1AA] mb-6">
               The strategy builder encountered an error. Your work has been auto-saved. Try
               refreshing the page to continue.
             </p>
 
             {this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="text-sm text-[#7C8DB0] cursor-pointer hover:text-[#94A3B8]">
+                <summary className="text-sm text-[#7C8DB0] cursor-pointer hover:text-[#A1A1AA]">
                   Error details
                 </summary>
                 <pre className="mt-2 p-3 bg-[#0F0A1A] rounded-lg text-xs text-[#EF4444] overflow-auto max-h-32">
@@ -90,13 +90,13 @@ export class CanvasErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="px-4 py-2 text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] rounded-lg transition-colors"
+                className="px-4 py-2 text-[#A1A1AA] hover:text-white border border-[rgba(79,70,229,0.3)] rounded-lg transition-colors"
               >
                 Try Again
               </button>
               <button
                 onClick={this.handleReload}
-                className="px-4 py-2 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+                className="px-4 py-2 bg-[#6366F1] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
               >
                 Reload Page
               </button>
@@ -142,7 +142,7 @@ export class PanelErrorBoundary extends Component<Props, State> {
           <p className="text-sm text-[#EF4444] mb-2">This panel encountered an error.</p>
           <button
             onClick={this.handleRetry}
-            className="text-xs text-[#94A3B8] hover:text-white underline"
+            className="text-xs text-[#A1A1AA] hover:text-white underline"
           >
             Try again
           </button>

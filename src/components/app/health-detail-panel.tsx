@@ -139,7 +139,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
         </span>
         <span className="text-white font-medium">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: barColor }}
@@ -321,7 +321,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
   if (loading) {
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)]">
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-[#111114] rounded w-32" />
           <div className="h-2 bg-[#111114] rounded w-full" />
@@ -333,7 +333,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
   if (!health) {
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)]">
         <p className="text-xs text-[#7C8DB0]">
           No health data available yet. Health assessment begins after trade activity.
         </p>
@@ -351,7 +351,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
     const dayPct = Math.round(dayProgress * 100);
 
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-3">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] space-y-3">
         <div className="flex items-center gap-2">
           <span
             className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border"
@@ -375,7 +375,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
                 {health.tradesSampled} / {MIN_TRADES}
               </span>
             </div>
-            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -392,7 +392,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
                 {health.windowDays} / {MIN_DAYS} days
               </span>
             </div>
-            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -412,7 +412,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
   const ciUpper = Math.round(health.confidenceUpper * 100);
 
   return (
-    <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
+    <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

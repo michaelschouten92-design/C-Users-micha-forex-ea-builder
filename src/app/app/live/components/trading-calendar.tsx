@@ -156,7 +156,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
           disabled={!canGoPrev}
           className={`p-1 rounded transition-colors ${
             canGoPrev
-              ? "text-[#475569] hover:text-white cursor-pointer"
+              ? "text-[#52525B] hover:text-white cursor-pointer"
               : "text-[#1E293B] cursor-not-allowed"
           }`}
           aria-label="Previous month"
@@ -177,7 +177,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
           disabled={!canGoNext}
           className={`p-1 rounded transition-colors ${
             canGoNext
-              ? "text-[#475569] hover:text-white cursor-pointer"
+              ? "text-[#52525B] hover:text-white cursor-pointer"
               : "text-[#1E293B] cursor-not-allowed"
           }`}
           aria-label="Next month"
@@ -199,7 +199,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
         {DAY_HEADERS.map((d) => (
           <div
             key={d}
-            className="text-center text-[9px] uppercase tracking-wider text-[#475569] py-1"
+            className="text-center text-[9px] uppercase tracking-wider text-[#52525B] py-1"
           >
             {d}
           </div>
@@ -228,7 +228,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
                 <>
                   <span
                     className={`text-[9px] leading-none ${
-                      cell.isWeekend && pnl === null ? "text-[#1E293B]" : "text-[#475569]"
+                      cell.isWeekend && pnl === null ? "text-[#1E293B]" : "text-[#52525B]"
                     }`}
                   >
                     {cell.day}
@@ -251,7 +251,7 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
 
       {/* Empty month message */}
       {!hasData && (
-        <p className="text-center text-[10px] text-[#475569] py-4">
+        <p className="text-center text-[10px] text-[#52525B] py-4">
           No trading data for {formatMonthYear(currentMonth)}
         </p>
       )}
@@ -260,37 +260,37 @@ export function TradingCalendar({ dailyPnl }: TradingCalendarProps) {
       {hasData && (
         <div className="mt-3 pt-3 border-t border-[#1E293B]/60 grid grid-cols-3 gap-x-4 gap-y-2">
           <div>
-            <span className="text-[10px] text-[#475569]">Trading days </span>
+            <span className="text-[10px] text-[#52525B]">Trading days </span>
             <span className="text-[10px] text-white">{summary.tradingDays}</span>
           </div>
           <div>
-            <span className="text-[10px] text-[#475569]">Win days </span>
+            <span className="text-[10px] text-[#52525B]">Win days </span>
             <span className="text-[10px] text-[#10B981]">{summary.winDays}</span>
           </div>
           <div>
-            <span className="text-[10px] text-[#475569]">Loss days </span>
+            <span className="text-[10px] text-[#52525B]">Loss days </span>
             <span className="text-[10px] text-[#EF4444]">{summary.lossDays}</span>
           </div>
           {summary.best && (
             <div>
-              <span className="text-[10px] text-[#475569]">Best day </span>
+              <span className="text-[10px] text-[#52525B]">Best day </span>
               <span className="text-[10px] text-white">
                 {formatPnl(summary.best.pnl)}{" "}
-                <span className="text-[#475569]">({formatShortDate(summary.best.date)})</span>
+                <span className="text-[#52525B]">({formatShortDate(summary.best.date)})</span>
               </span>
             </div>
           )}
           {summary.worst && (
             <div>
-              <span className="text-[10px] text-[#475569]">Worst day </span>
+              <span className="text-[10px] text-[#52525B]">Worst day </span>
               <span className="text-[10px] text-white">
                 {formatPnl(summary.worst.pnl)}{" "}
-                <span className="text-[#475569]">({formatShortDate(summary.worst.date)})</span>
+                <span className="text-[#52525B]">({formatShortDate(summary.worst.date)})</span>
               </span>
             </div>
           )}
           <div>
-            <span className="text-[10px] text-[#475569]">Total </span>
+            <span className="text-[10px] text-[#52525B]">Total </span>
             <span
               className={`text-[10px] ${summary.total >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
             >

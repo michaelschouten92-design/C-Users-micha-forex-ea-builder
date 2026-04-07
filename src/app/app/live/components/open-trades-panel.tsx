@@ -121,18 +121,18 @@ export function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) 
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/[0.02] transition-colors"
         onClick={() => setExpanded((prev) => !prev)}
       >
-        <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
+        <span className="text-[9px] uppercase tracking-[0.15em] text-[#52525B] font-medium">
           Open Positions ({totalOpen})
         </span>
-        <span className="text-[10px] text-[#475569]">{expanded ? "\u25B2" : "\u25BC"}</span>
+        <span className="text-[10px] text-[#52525B]">{expanded ? "\u25B2" : "\u25BC"}</span>
       </button>
 
       {expanded && (
         <div className="px-3 pb-3">
           {loading ? (
-            <p className="text-[11px] text-[#475569] py-2">Loading positions...</p>
+            <p className="text-[11px] text-[#52525B] py-2">Loading positions...</p>
           ) : openTrades.size === 0 ? (
-            <p className="text-[11px] text-[#475569] py-2">
+            <p className="text-[11px] text-[#52525B] py-2">
               No open position details available yet.
             </p>
           ) : (
@@ -147,7 +147,7 @@ export function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) 
                     </p>
                     <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="text-[#475569] text-left">
+                        <tr className="text-[#52525B] text-left">
                           <th className="font-medium pb-1 pr-3">Symbol</th>
                           <th className="font-medium pb-1 pr-3">Type</th>
                           <th className="font-medium pb-1 pr-3 text-right">Lots</th>
@@ -157,7 +157,7 @@ export function OpenTradesPanel({ instances }: { instances: EAInstanceData[] }) 
                       </thead>
                       <tbody>
                         {trades.map((t) => (
-                          <tr key={t.ticket} className="text-[#94A3B8]">
+                          <tr key={t.ticket} className="text-[#A1A1AA]">
                             <td className="pr-3 py-0.5 font-mono">{t.symbol}</td>
                             <td
                               className={`pr-3 py-0.5 font-medium ${t.type === "BUY" ? "text-[#10B981]" : "text-[#EF4444]"}`}

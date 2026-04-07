@@ -33,14 +33,14 @@ export default function BuilderError({
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Builder Error</h2>
-        <p className="text-[#94A3B8] mb-2">An error occurred in the strategy builder.</p>
+        <p className="text-[#A1A1AA] mb-2">An error occurred in the strategy builder.</p>
         <p className="text-[#7C8DB0] text-sm mb-6">
           Your work was auto-saved. Try reloading the page to continue.
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+            className="px-6 py-2.5 bg-[#6366F1] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
           >
             Try Again
           </button>

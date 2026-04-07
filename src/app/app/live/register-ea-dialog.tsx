@@ -85,7 +85,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
       <button
         ref={triggerRef}
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-all duration-200 shadow-[0_0_12px_rgba(79,70,229,0.3)]"
+        className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-[#6366F1] text-white hover:bg-[#6366F1] transition-all duration-200 shadow-[0_0_12px_rgba(79,70,229,0.3)]"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
@@ -138,14 +138,14 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
             {!result ? (
               /* Registration form */
               <form onSubmit={handleSubmit} className="px-6 pb-6">
-                <p className="text-sm text-[#94A3B8] mb-4">
+                <p className="text-sm text-[#A1A1AA] mb-4">
                   Monitor any EA — even those not built with Algo Studio. Attach the Monitor EA to
                   your chart and it will send live telemetry to your dashboard.
                 </p>
 
                 <label
                   htmlFor="ea-name-input"
-                  className="block text-sm font-medium text-[#CBD5E1] mb-1.5"
+                  className="block text-sm font-medium text-[#FAFAFA] mb-1.5"
                 >
                   EA Name
                 </label>
@@ -156,7 +156,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                   onChange={(e) => setEaName(e.target.value)}
                   placeholder="e.g. My Scalper v2"
                   maxLength={100}
-                  className="w-full px-3 py-2 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-white placeholder-[#4B5563] focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5] text-sm"
+                  className="w-full px-3 py-2 rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.3)] text-white placeholder-[#4B5563] focus:border-[#6366F1] focus:outline-none focus:ring-1 focus:ring-[#6366F1] text-sm"
                   autoFocus
                 />
 
@@ -169,7 +169,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                 <button
                   type="submit"
                   disabled={loading || !eaName.trim()}
-                  className="mt-4 w-full px-4 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="mt-4 w-full px-4 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {loading ? "Registering..." : "Register EA"}
                 </button>
@@ -184,19 +184,19 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                 </div>
 
                 {/* API Key */}
-                <label className="block text-sm font-medium text-[#CBD5E1] mb-1.5">API Key</label>
+                <label className="block text-sm font-medium text-[#FAFAFA] mb-1.5">API Key</label>
                 <div className="flex gap-2 mb-1">
                   <input
                     type="text"
                     readOnly
                     value={result.apiKey}
-                    className="flex-1 px-3 py-2 rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.3)] text-[#22D3EE] font-mono text-xs select-all"
+                    className="flex-1 px-3 py-2 rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.3)] text-[#22D3EE] font-mono text-xs select-all"
                     onClick={(e) => (e.target as HTMLInputElement).select()}
                   />
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="px-3 py-2 rounded-lg border border-[rgba(79,70,229,0.3)] text-xs font-medium text-[#A78BFA] hover:bg-[#4F46E5]/20 transition-all duration-200 whitespace-nowrap"
+                    className="px-3 py-2 rounded-lg border border-[rgba(79,70,229,0.3)] text-xs font-medium text-[#A78BFA] hover:bg-[#6366F1]/20 transition-all duration-200 whitespace-nowrap"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
@@ -207,9 +207,9 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
 
                 {/* Setup instructions */}
                 <h4 className="text-sm font-medium text-white mb-3">Quick Setup</h4>
-                <ol className="space-y-3 text-sm text-[#94A3B8]">
+                <ol className="space-y-3 text-sm text-[#A1A1AA]">
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#4F46E5]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#6366F1]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
                       1
                     </span>
                     <span>
@@ -222,11 +222,11 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                         AlgoStudio_Monitor.ex5
                       </a>{" "}
                       and place it in your MetaTrader{" "}
-                      <code className="text-xs bg-[#0A0118] px-1 rounded">Experts</code> folder.
+                      <code className="text-xs bg-[#0D0D12] px-1 rounded">Experts</code> folder.
                     </span>
                   </li>
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#4F46E5]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#6366F1]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
                       2
                     </span>
                     <span>
@@ -234,19 +234,19 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                       <strong className="text-white">Tools → Options → Expert Advisors</strong> and
                       enable <strong className="text-white">Allow WebRequest for listed URL</strong>
                       . Add:{" "}
-                      <code className="text-xs bg-[#0A0118] px-1 rounded text-[#22D3EE]">
+                      <code className="text-xs bg-[#0D0D12] px-1 rounded text-[#22D3EE]">
                         https://algo-studio.com
                       </code>
                     </span>
                   </li>
                   <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#4F46E5]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#6366F1]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium">
                       3
                     </span>
                     <span>
                       Attach <strong className="text-white">AlgoStudio_Monitor</strong> to any
                       chart. Paste the API key above into the{" "}
-                      <code className="text-xs bg-[#0A0118] px-1 rounded">InpApiKey</code> input.
+                      <code className="text-xs bg-[#0D0D12] px-1 rounded">InpApiKey</code> input.
                     </span>
                   </li>
                 </ol>
@@ -254,7 +254,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="mt-5 w-full px-4 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-sm font-medium text-[#A78BFA] hover:bg-[#4F46E5]/20 transition-all duration-200"
+                  className="mt-5 w-full px-4 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-sm font-medium text-[#A78BFA] hover:bg-[#6366F1]/20 transition-all duration-200"
                 >
                   Done
                 </button>

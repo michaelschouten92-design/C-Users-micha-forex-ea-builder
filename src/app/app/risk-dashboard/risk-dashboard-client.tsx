@@ -88,7 +88,7 @@ export function RiskDashboardClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -96,9 +96,9 @@ export function RiskDashboardClient() {
   if (instances.length === 0) {
     return (
       <div className="text-center py-16 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114]/40">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#4F46E5]/10 flex items-center justify-center">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#6366F1]/10 flex items-center justify-center">
           <svg
-            className="w-7 h-7 text-[#4F46E5]"
+            className="w-7 h-7 text-[#6366F1]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -178,8 +178,8 @@ export function RiskDashboardClient() {
                     totalEquity > 0 ? ((ea.equity ?? 0) / totalEquity) * 100 : 0;
                   return (
                     <tr key={ea.id} className="border-b border-[rgba(255,255,255,0.03)]">
-                      <td className="py-2 pr-3 text-[#CBD5E1]">{ea.eaName}</td>
-                      <td className="py-2 pr-3 text-right text-[#CBD5E1]">
+                      <td className="py-2 pr-3 text-[#FAFAFA]">{ea.eaName}</td>
+                      <td className="py-2 pr-3 text-right text-[#FAFAFA]">
                         {formatCurrency(ea.equity ?? 0)}
                       </td>
                       <td
@@ -187,11 +187,11 @@ export function RiskDashboardClient() {
                       >
                         {formatCurrency(ea.totalProfit)}
                       </td>
-                      <td className="py-2 pr-3 text-right text-[#CBD5E1]">{dd.toFixed(1)}%</td>
-                      <td className="py-2 pr-3 text-right text-[#CBD5E1]">
+                      <td className="py-2 pr-3 text-right text-[#FAFAFA]">{dd.toFixed(1)}%</td>
+                      <td className="py-2 pr-3 text-right text-[#FAFAFA]">
                         {pctOfPortfolio.toFixed(1)}%
                       </td>
-                      <td className="py-2 text-right text-[#CBD5E1]">{ea.openTrades}</td>
+                      <td className="py-2 text-right text-[#FAFAFA]">{ea.openTrades}</td>
                     </tr>
                   );
                 })}
@@ -237,7 +237,7 @@ export function RiskDashboardClient() {
                       return (
                         <td
                           key={j}
-                          className="p-2 text-center text-[#CBD5E1] font-mono"
+                          className="p-2 text-center text-[#FAFAFA] font-mono"
                           style={{ background: color }}
                         >
                           {val.toFixed(2)}

@@ -36,7 +36,7 @@ export default async function StrategyDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#0D0D12]">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* 1. Header — name, status, lifecycle, health, last eval */}
         <StrategyHeader data={data} />

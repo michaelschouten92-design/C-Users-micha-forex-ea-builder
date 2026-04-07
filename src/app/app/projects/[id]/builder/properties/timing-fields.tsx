@@ -58,12 +58,12 @@ export function TradingSessionFields({
       ) : (
         <div className="bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] rounded-lg p-3">
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-[#94A3B8]">Time (GMT):</span>
+            <span className="text-[#A1A1AA]">Time (GMT):</span>
             <span className="text-white font-medium">
               {sessionInfo.start} - {sessionInfo.end}
             </span>
           </div>
-          <div className="text-xs text-[#94A3B8]">
+          <div className="text-xs text-[#A1A1AA]">
             {data.session === "LONDON_NY_OVERLAP"
               ? "Highest volatility period"
               : `${sessionInfo.label} trading hours`}
@@ -85,7 +85,7 @@ export function TradingSessionFields({
         onChange={(days) => onChange({ tradingDays: days })}
       />
       <div className="mt-2 space-y-2">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.closeOnSessionEnd ?? false}
@@ -98,7 +98,7 @@ export function TradingSessionFields({
           />
           Close trades on session end
         </label>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={!(data.useServerTime ?? true)}
@@ -138,7 +138,7 @@ export function AlwaysFields({
   void data;
   return (
     <div
-      className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+      className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
       role="note"
     >
       This node enables trading at all times with no time filter. The EA will evaluate entry
@@ -174,7 +174,7 @@ export function CustomTimesFields({
   return (
     <>
       <div className="space-y-3">
-        <span className="text-xs font-medium text-[#CBD5E1]">Time Slots</span>
+        <span className="text-xs font-medium text-[#FAFAFA]">Time Slots</span>
         {timeSlots.map((slot, index) => (
           <div
             key={index}
@@ -255,7 +255,7 @@ export function CustomTimesFields({
         onChange={(days) => onChange({ days })}
       />
       <div className="mt-2 space-y-2">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.closeOnSessionEnd ?? false}
@@ -268,7 +268,7 @@ export function CustomTimesFields({
           />
           Close trades outside time slots
         </label>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={!(data.useServerTime ?? true)}
@@ -423,7 +423,7 @@ export function VolumeFilterFields({
         tooltip="Above Average: only trade when volume is high. Below Average: only trade during quiet periods. Spike: detect sudden volume surges."
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Filters entries based on volume relative to its moving average. High volume confirms
@@ -455,7 +455,7 @@ export function FridayCloseFields({
         <OptimizableFieldCheckbox fieldName="closeHour" data={data} onChange={onChange} />
         <OptimizableFieldCheckbox fieldName="closeMinute" data={data} onChange={onChange} />
       </div>
-      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
         <input
           type="checkbox"
           checked={!(data.useServerTime ?? true)}
@@ -468,7 +468,7 @@ export function FridayCloseFields({
         />
         Use GMT instead of server time
       </label>
-      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
         <input
           type="checkbox"
           checked={data.closePending ?? true}
@@ -482,7 +482,7 @@ export function FridayCloseFields({
         Also cancel pending orders
       </label>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Closes all positions and blocks new entries on Friday after {String(hour).padStart(2, "0")}:
@@ -529,8 +529,8 @@ export function NewsFilterFields({
         <OptimizableFieldCheckbox fieldName="hoursAfter" data={data} onChange={onChange} />
       </div>
       <div className="mt-2 space-y-1.5">
-        <span className="text-xs font-medium text-[#CBD5E1]">Impact Levels</span>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <span className="text-xs font-medium text-[#FAFAFA]">Impact Levels</span>
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.highImpact}
@@ -543,7 +543,7 @@ export function NewsFilterFields({
           />
           High Impact
         </label>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.mediumImpact}
@@ -556,7 +556,7 @@ export function NewsFilterFields({
           />
           Medium Impact
         </label>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.lowImpact}
@@ -570,7 +570,7 @@ export function NewsFilterFields({
           Low Impact
         </label>
       </div>
-      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer mt-2">
+      <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer mt-2">
         <input
           type="checkbox"
           checked={data.closePositions}
@@ -584,7 +584,7 @@ export function NewsFilterFields({
         Close open positions during news
       </label>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Blocks new entries {data.hoursBefore}h before and {data.hoursAfter}h after{" "}
@@ -612,9 +612,9 @@ function TradingDaysCheckboxes({
 }) {
   return (
     <div className="mt-3 space-y-1.5">
-      <span className="text-xs font-medium text-[#CBD5E1]">Trading Days</span>
+      <span className="text-xs font-medium text-[#FAFAFA]">Trading Days</span>
       {DAY_LABELS.map(({ key, label }) => (
-        <label key={key} className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label key={key} className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={days[key]}

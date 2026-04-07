@@ -150,7 +150,7 @@ export function AlertsModal({
 
         {/* Create New Alert */}
         <div className="p-6 border-b border-[rgba(79,70,229,0.15)]">
-          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Create New Alert</h3>
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-4">Create New Alert</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Alert Type */}
             <div>
@@ -160,7 +160,7 @@ export function AlertsModal({
               <select
                 value={newAlertType}
                 onChange={(e) => setNewAlertType(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="DRAWDOWN">Floating Drawdown</option>
                 <option value="OFFLINE">EA Offline</option>
@@ -180,7 +180,7 @@ export function AlertsModal({
               <select
                 value={newInstanceId}
                 onChange={(e) => setNewInstanceId(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="">All Instances</option>
                 {instances.map((inst) => (
@@ -204,7 +204,7 @@ export function AlertsModal({
                   min="0.1"
                   max="100"
                   step="0.1"
-                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
                   placeholder="5.0"
                 />
               </div>
@@ -218,7 +218,7 @@ export function AlertsModal({
               <select
                 value={newChannel}
                 onChange={(e) => setNewChannel(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
               >
                 <option value="BROWSER_PUSH">Browser Push</option>
                 <option value="TELEGRAM">Telegram</option>
@@ -235,7 +235,7 @@ export function AlertsModal({
                   type="url"
                   value={newWebhookUrl}
                   onChange={(e) => setNewWebhookUrl(e.target.value)}
-                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
+                  className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(79,70,229,0.2)] text-[#FAFAFA] px-3 py-2 text-xs focus:outline-none focus:border-[#6366F1]"
                   placeholder="https://hooks.example.com/alert"
                 />
               </div>
@@ -245,7 +245,7 @@ export function AlertsModal({
           <button
             onClick={handleCreateAlert}
             disabled={saving}
-            className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50"
+            className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50"
           >
             {saving ? "Creating..." : "Create Alert"}
           </button>
@@ -253,7 +253,7 @@ export function AlertsModal({
 
         {/* Existing Alerts */}
         <div className="p-6">
-          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Active Alerts</h3>
+          <h3 className="text-sm font-medium text-[#FAFAFA] mb-4">Active Alerts</h3>
 
           {loading ? (
             <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading alerts...</div>
@@ -269,12 +269,12 @@ export function AlertsModal({
                   className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
                     alert.alertState === "ACTIVE"
                       ? "bg-[rgba(79,70,229,0.05)] border-[rgba(79,70,229,0.15)]"
-                      : "bg-[#0A0118]/50 border-[rgba(79,70,229,0.08)] opacity-60"
+                      : "bg-[#0D0D12]/50 border-[rgba(79,70,229,0.08)] opacity-60"
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-[#CBD5E1]">
+                      <span className="text-xs font-medium text-[#FAFAFA]">
                         {ALERT_TYPE_LABELS[alert.alertType] ?? alert.alertType}
                       </span>
                       {alert.threshold !== null && (

@@ -30,7 +30,7 @@ export function OptimizableFieldCheckbox<T extends BuilderNodeData>({
   };
 
   return (
-    <label className="flex items-center gap-1.5 text-[10px] text-[#94A3B8] cursor-pointer hover:text-[#CBD5E1] mt-1">
+    <label className="flex items-center gap-1.5 text-[10px] text-[#A1A1AA] cursor-pointer hover:text-[#FAFAFA] mt-1">
       <input
         type="checkbox"
         checked={isOptimizable}
@@ -117,7 +117,7 @@ export function ToggleField({
 }) {
   return (
     <div>
-      <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+      <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
         <input
           type="checkbox"
           checked={checked}
@@ -146,14 +146,14 @@ export function AdvancedToggleSection({ children }: { children: React.ReactNode 
         className="flex items-center gap-2 w-full text-left"
       >
         <svg
-          className={`w-3 h-3 text-[#94A3B8] transition-transform ${open ? "rotate-90" : ""}`}
+          className={`w-3 h-3 text-[#A1A1AA] transition-transform ${open ? "rotate-90" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">Advanced</span>
+        <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wide">Advanced</span>
         <span className="text-[10px] text-[#64748B]">— Optional</span>
       </button>
       {open && <div className="mt-2 space-y-3">{children}</div>}

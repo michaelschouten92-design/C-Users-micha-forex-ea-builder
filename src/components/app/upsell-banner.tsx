@@ -59,13 +59,13 @@ export function UpsellBanner({ variant, exportsUsed, exportLimit }: UpsellBanner
   }
 
   return (
-    <div className="relative bg-gradient-to-r from-[#4F46E5]/15 via-[#A78BFA]/10 to-[#22D3EE]/15 border border-[rgba(79,70,229,0.3)] rounded-xl p-4 overflow-hidden">
+    <div className="relative bg-gradient-to-r from-[#6366F1]/15 via-[#A78BFA]/10 to-[#22D3EE]/15 border border-[rgba(79,70,229,0.3)] rounded-xl p-4 overflow-hidden">
       {/* Gradient accent top border */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#4F46E5] via-[#A78BFA] to-[#22D3EE]" />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#6366F1] via-[#A78BFA] to-[#22D3EE]" />
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#4F46E5]/20 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#6366F1]/20 flex items-center justify-center flex-shrink-0">
             <svg
               className="w-4 h-4 text-[#A78BFA]"
               fill="none"
@@ -80,13 +80,13 @@ export function UpsellBanner({ variant, exportsUsed, exportLimit }: UpsellBanner
               />
             </svg>
           </div>
-          <p className="text-sm text-[#CBD5E1]">{config.message}</p>
+          <p className="text-sm text-[#FAFAFA]">{config.message}</p>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <Link
             href="/pricing"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(79,70,229,0.3)] whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#6366F1] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(79,70,229,0.3)] whitespace-nowrap"
           >
             {config.cta}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

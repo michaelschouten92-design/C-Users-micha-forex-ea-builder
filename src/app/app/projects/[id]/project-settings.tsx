@@ -97,7 +97,7 @@ export function ProjectSettings({ project }: { project: Project }) {
           setOpen(!open);
           if (!open) setShowEdit(false);
         }}
-        className="text-[#94A3B8] hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-[rgba(79,70,229,0.15)]"
+        className="text-[#A1A1AA] hover:text-white transition-colors duration-200 p-1 rounded-lg hover:bg-[rgba(79,70,229,0.15)]"
         title="Project settings"
         aria-label="Project settings"
       >
@@ -117,13 +117,13 @@ export function ProjectSettings({ project }: { project: Project }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50">
+        <div className="absolute right-0 top-full mt-2 w-64 bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50">
           {showEdit ? (
             <div className="p-3 space-y-3">
               <div>
                 <label
                   htmlFor="edit-project-name"
-                  className="block text-xs font-medium text-[#CBD5E1] mb-1"
+                  className="block text-xs font-medium text-[#FAFAFA] mb-1"
                 >
                   Name
                 </label>
@@ -138,7 +138,7 @@ export function ProjectSettings({ project }: { project: Project }) {
               <div>
                 <label
                   htmlFor="edit-project-desc"
-                  className="block text-xs font-medium text-[#CBD5E1] mb-1"
+                  className="block text-xs font-medium text-[#FAFAFA] mb-1"
                 >
                   Description
                 </label>
@@ -153,7 +153,7 @@ export function ProjectSettings({ project }: { project: Project }) {
               <div>
                 <label
                   htmlFor="edit-project-notes"
-                  className="block text-xs font-medium text-[#CBD5E1] mb-1"
+                  className="block text-xs font-medium text-[#FAFAFA] mb-1"
                 >
                   Notes
                 </label>
@@ -171,7 +171,7 @@ export function ProjectSettings({ project }: { project: Project }) {
                 <button
                   onClick={handleSave}
                   disabled={saving || !name.trim()}
-                  className="bg-[#4F46E5] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="bg-[#6366F1] text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
@@ -182,7 +182,7 @@ export function ProjectSettings({ project }: { project: Project }) {
                     setDescription(project.description || "");
                     setNotes(project.notes || "");
                   }}
-                  className="text-[#94A3B8] px-3 py-1.5 rounded-lg text-xs hover:text-white transition-colors duration-200"
+                  className="text-[#A1A1AA] px-3 py-1.5 rounded-lg text-xs hover:text-white transition-colors duration-200"
                 >
                   Cancel
                 </button>
@@ -192,7 +192,7 @@ export function ProjectSettings({ project }: { project: Project }) {
             <div className="py-1">
               <button
                 onClick={() => setShowEdit(true)}
-                className="w-full text-left px-4 py-2.5 text-sm text-[#CBD5E1] hover:bg-[rgba(79,70,229,0.15)] hover:text-white flex items-center gap-2.5 transition-all duration-200"
+                className="w-full text-left px-4 py-2.5 text-sm text-[#FAFAFA] hover:bg-[rgba(79,70,229,0.15)] hover:text-white flex items-center gap-2.5 transition-all duration-200"
               >
                 <svg
                   className="w-4 h-4 text-[#64748B]"
@@ -248,7 +248,7 @@ export function ProjectSettings({ project }: { project: Project }) {
             role="alertdialog"
             aria-labelledby="settings-delete-title"
             aria-describedby="settings-delete-desc"
-            className="bg-[#1A0626] border border-[rgba(239,68,68,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
+            className="bg-[#111114] border border-[rgba(239,68,68,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(239,68,68,0.15)] flex items-center justify-center">
@@ -272,7 +272,7 @@ export function ProjectSettings({ project }: { project: Project }) {
             >
               Delete Project
             </h3>
-            <p id="settings-delete-desc" className="text-sm text-[#94A3B8] text-center mb-6">
+            <p id="settings-delete-desc" className="text-sm text-[#A1A1AA] text-center mb-6">
               Are you sure you want to delete{" "}
               <span className="text-white font-medium">&ldquo;{project.name}&rdquo;</span>? This
               action cannot be undone.
@@ -280,7 +280,7 @@ export function ProjectSettings({ project }: { project: Project }) {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#CBD5E1] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-[#FAFAFA] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
               >
                 Cancel
               </button>

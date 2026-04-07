@@ -53,18 +53,18 @@ export function GovernanceContextPanel({ data }: GovernanceContextPanelProps) {
             </div>
             <div>
               <span className="text-[10px] text-[#7C8DB0]">Phase Entered</span>
-              <p className="text-[#CBD5E1]">{formatDateMedium(data.phaseEnteredAt)}</p>
+              <p className="text-[#FAFAFA]">{formatDateMedium(data.phaseEnteredAt)}</p>
             </div>
             {data.provenAt && (
               <div>
                 <span className="text-[10px] text-[#7C8DB0]">Proven At</span>
-                <p className="text-[#CBD5E1]">{formatDateMedium(data.provenAt)}</p>
+                <p className="text-[#FAFAFA]">{formatDateMedium(data.provenAt)}</p>
               </div>
             )}
             {data.retiredAt && (
               <div>
                 <span className="text-[10px] text-[#7C8DB0]">Retired</span>
-                <p className="text-[#CBD5E1]">
+                <p className="text-[#FAFAFA]">
                   {formatDateMedium(data.retiredAt)}
                   {data.retiredReason && ` (${data.retiredReason})`}
                 </p>
@@ -89,7 +89,7 @@ export function GovernanceContextPanel({ data }: GovernanceContextPanelProps) {
               {data.peakScoreAt && (
                 <div>
                   <span className="text-[10px] text-[#7C8DB0]">Achieved</span>
-                  <p className="text-[#CBD5E1]">
+                  <p className="text-[#FAFAFA]">
                     {new Date(data.peakScoreAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -150,25 +150,25 @@ export function GovernanceContextPanel({ data }: GovernanceContextPanelProps) {
             {data.broker && (
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Broker</span>
-                <span className="text-[#CBD5E1]">{data.broker}</span>
+                <span className="text-[#FAFAFA]">{data.broker}</span>
               </div>
             )}
             {data.symbol && (
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Symbol</span>
-                <span className="text-[#CBD5E1]">{data.symbol}</span>
+                <span className="text-[#FAFAFA]">{data.symbol}</span>
               </div>
             )}
             {data.timeframe && (
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Timeframe</span>
-                <span className="text-[#CBD5E1]">{data.timeframe}</span>
+                <span className="text-[#FAFAFA]">{data.timeframe}</span>
               </div>
             )}
             {data.latestRun?.configVersion && (
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Config Version</span>
-                <span className="text-[#CBD5E1]">v{data.latestRun.configVersion}</span>
+                <span className="text-[#FAFAFA]">v{data.latestRun.configVersion}</span>
               </div>
             )}
           </div>

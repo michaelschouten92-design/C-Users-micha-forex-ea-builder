@@ -56,7 +56,7 @@ export function ChannelsOverview({ channels }: ChannelsOverviewProps) {
         </div>
         <Link
           href="/app/settings"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path

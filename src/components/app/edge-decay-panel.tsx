@@ -69,7 +69,7 @@ export function EdgeDecayPanel({ projection, eaName, instanceId }: EdgeDecayPane
           return (
             <div key={label}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-[#94A3B8]">{label}</span>
+                <span className="text-[11px] text-[#A1A1AA]">{label}</span>
                 <span className="text-[11px] font-semibold text-[#EF4444] tabular-nums">
                   {formatCurrency(value)}
                 </span>
@@ -87,7 +87,7 @@ export function EdgeDecayPanel({ projection, eaName, instanceId }: EdgeDecayPane
 
       {/* Break-even point */}
       {projection.daysUntilBreak !== null && (
-        <p className="text-[11px] text-[#94A3B8] mb-4">
+        <p className="text-[11px] text-[#A1A1AA] mb-4">
           Edge score projected to break below threshold in{" "}
           <span className="text-white font-medium">~{projection.daysUntilBreak} days</span> if trend
           continues.

@@ -20,7 +20,7 @@ interface ActivityFeedProps {
 export function ActivityFeed({ items }: ActivityFeedProps) {
   if (items.length === 0) {
     return (
-      <div className="flex items-center justify-center py-6 text-[11px] text-[#475569]">
+      <div className="flex items-center justify-center py-6 text-[11px] text-[#52525B]">
         <span className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
           Waiting for trades...
@@ -50,13 +50,13 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
           </span>
 
           {/* Symbol */}
-          <span className="text-[11px] font-semibold text-[#CBD5E1] w-[70px] truncate">
+          <span className="text-[11px] font-semibold text-[#FAFAFA] w-[70px] truncate">
             {item.symbol}
           </span>
 
           {/* Lots */}
           {item.lots != null && (
-            <span className="text-[10px] text-[#475569] tabular-nums w-[40px]">
+            <span className="text-[10px] text-[#52525B] tabular-nums w-[40px]">
               {item.lots.toFixed(2)}
             </span>
           )}
@@ -75,7 +75,7 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
           </span>
 
           {/* EA name + time */}
-          <span className="text-[9px] text-[#475569] truncate max-w-[120px] text-right">
+          <span className="text-[9px] text-[#52525B] truncate max-w-[120px] text-right">
             {item.eaName}
           </span>
           <span className="text-[9px] text-[#334155] w-[50px] text-right flex-shrink-0">

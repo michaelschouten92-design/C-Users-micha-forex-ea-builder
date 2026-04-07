@@ -125,7 +125,7 @@ export function NodeToolbar({
 
   return (
     <div
-      className="w-[260px] h-full bg-[#1A0626] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
+      className="w-[260px] h-full bg-[#111114] border-r border-[rgba(79,70,229,0.2)] flex flex-col flex-shrink-0"
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
@@ -139,7 +139,7 @@ export function NodeToolbar({
           {onClose && (
             <button
               onClick={onClose}
-              className="md:hidden p-1.5 text-[#94A3B8] hover:text-white transition-colors"
+              className="md:hidden p-1.5 text-[#A1A1AA] hover:text-white transition-colors"
               title="Close"
               aria-label="Close blocks panel"
             >
@@ -174,7 +174,7 @@ export function NodeToolbar({
             onChange={(e) => setSearch(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             placeholder="Search blocks..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#0F172A] border border-[rgba(79,70,229,0.2)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#0F172A] border border-[rgba(79,70,229,0.2)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:border-[#6366F1] transition-colors"
           />
         </div>
       </div>
@@ -243,7 +243,7 @@ export function NodeToolbar({
                             {template.label}
                           </div>
                         </div>
-                        <div className="text-xs text-[#94A3B8] truncate mt-0.5">
+                        <div className="text-xs text-[#A1A1AA] truncate mt-0.5">
                           {template.description}
                         </div>
                       </div>

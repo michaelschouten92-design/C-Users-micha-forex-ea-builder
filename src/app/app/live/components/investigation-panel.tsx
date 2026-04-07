@@ -31,7 +31,7 @@ export function InvestigationPanel({
   const hs = HEALTH_STYLES[health];
 
   return (
-    <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] space-y-3">
+    <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0D0D12]/60 border border-t-0 border-[rgba(79,70,229,0.15)] space-y-3">
       {/* Status Header */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
         <span className={`inline-flex items-center gap-1 font-medium ${hs.text}`}>
@@ -39,20 +39,20 @@ export function InvestigationPanel({
           {health}
         </span>
         <span className="text-[#7C8DB0]">
-          Lifecycle: <span className="text-[#CBD5E1]">{instance.lifecycleState ?? "—"}</span>
+          Lifecycle: <span className="text-[#FAFAFA]">{instance.lifecycleState ?? "—"}</span>
         </span>
         {snap && (
           <span className="text-[#7C8DB0]">
-            Snapshot: <span className="text-[#CBD5E1]">{snap.status}</span>
+            Snapshot: <span className="text-[#FAFAFA]">{snap.status}</span>
           </span>
         )}
         <span className="text-[#7C8DB0]">
-          Baseline: <span className="text-[#CBD5E1]">{isLinked ? "Linked" : "Not linked"}</span>
+          Baseline: <span className="text-[#FAFAFA]">{isLinked ? "Linked" : "Not linked"}</span>
         </span>
       </div>
 
       {/* Signal Summary */}
-      <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+      <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
         {deriveSignalSummary(health, snap, isLinked)}
       </p>
 
@@ -60,11 +60,11 @@ export function InvestigationPanel({
       {snap && (
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px]">
           <span className="text-[#7C8DB0]">
-            CUSUM severity: <span className="text-[#CBD5E1]">{snap.driftSeverity.toFixed(3)}</span>
+            CUSUM severity: <span className="text-[#FAFAFA]">{snap.driftSeverity.toFixed(3)}</span>
           </span>
           <span className="text-[#7C8DB0]">
             Drift detected:{" "}
-            <span className="text-[#CBD5E1]">{snap.driftDetected ? "Yes" : "No"}</span>
+            <span className="text-[#FAFAFA]">{snap.driftDetected ? "Yes" : "No"}</span>
           </span>
         </div>
       )}
@@ -99,7 +99,7 @@ export function InvestigationPanel({
         </span>
         <span>
           Heartbeat:{" "}
-          <span className="text-[#CBD5E1]">
+          <span className="text-[#FAFAFA]">
             {instance.lastHeartbeat ? formatRelativeTime(instance.lastHeartbeat) : "Never"}
           </span>
         </span>

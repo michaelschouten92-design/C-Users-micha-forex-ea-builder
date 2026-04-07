@@ -657,7 +657,7 @@ export default function EvaluatePage() {
                           setRenamingId(item.runId);
                           setRenameValue(item.eaName || item.fileName || "");
                         }}
-                        className="px-2.5 py-1 text-[11px] font-medium rounded-md border border-[rgba(255,255,255,0.12)] text-[#CBD5E1] hover:text-white hover:border-[rgba(255,255,255,0.25)] bg-transparent transition-colors"
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md border border-[rgba(255,255,255,0.12)] text-[#FAFAFA] hover:text-white hover:border-[rgba(255,255,255,0.25)] bg-transparent transition-colors"
                         title="Rename"
                       >
                         Rename
@@ -666,7 +666,7 @@ export default function EvaluatePage() {
                     {item.runId && (
                       <Link
                         href={`/app/evaluate/${item.runId}`}
-                        className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-colors"
+                        className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[#6366F1] text-white hover:bg-[#6366F1] transition-colors"
                       >
                         View
                       </Link>

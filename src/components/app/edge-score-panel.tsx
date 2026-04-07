@@ -45,7 +45,7 @@ export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
         </div>
         <div className="h-1.5 rounded-full bg-[#1E293B] overflow-hidden">
           <div
-            className="h-full rounded-full bg-[#475569] transition-all"
+            className="h-full rounded-full bg-[#52525B] transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -91,13 +91,13 @@ export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
             return (
               <div key={key}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-[#94A3B8]">
+                  <span className="text-[11px] text-[#A1A1AA]">
                     {METRIC_LABELS[key]}
                     <InfoTooltip text={METRIC_TIPS[key]} />
                   </span>
                   <div className="flex items-center gap-3 text-[10px] tabular-nums">
                     <span className="text-[#64748B]">BL: {formatMetric(key, metric.baseline)}</span>
-                    <span className="text-[#CBD5E1] font-medium">
+                    <span className="text-[#FAFAFA] font-medium">
                       Live: {formatMetric(key, metric.live)}
                     </span>
                     <span className="font-semibold w-10 text-right" style={{ color: barColor }}>
@@ -119,7 +119,7 @@ export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
               </div>
             );
           })}
-          <p className="text-[9px] text-[#475569] pt-1">
+          <p className="text-[9px] text-[#52525B] pt-1">
             Based on {edgeScore.tradesCompleted} live trades. 100% = matching backtest baseline.
           </p>
         </div>

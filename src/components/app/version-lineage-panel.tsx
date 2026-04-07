@@ -79,7 +79,7 @@ export function VersionLineagePanel({ versionNo, currency, lineage }: VersionLin
 
         {/* Summary counts */}
         <div className="flex items-center gap-6 mb-3">
-          <CountItem label="Versions" value={lineage.versions.length} color="#CBD5E1" />
+          <CountItem label="Versions" value={lineage.versions.length} color="#FAFAFA" />
           <CountItem label="Current" value={lineage.currentDeployments} color="#10B981" />
           {lineage.outdatedDeployments > 0 && (
             <CountItem label="Outdated" value={lineage.outdatedDeployments} color="#F59E0B" />
@@ -105,7 +105,7 @@ export function VersionLineagePanel({ versionNo, currency, lineage }: VersionLin
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#CBD5E1] font-medium">
+                    <span className="text-xs text-[#FAFAFA] font-medium">
                       v{entry.version.versionNo}
                     </span>
                     {entry.isCurrent && (

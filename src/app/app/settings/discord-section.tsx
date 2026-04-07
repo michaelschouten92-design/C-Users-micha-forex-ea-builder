@@ -121,7 +121,7 @@ export function DiscordSection() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-            <span className="text-sm text-[#94A3B8]">Discord connected</span>
+            <span className="text-sm text-[#A1A1AA]">Discord connected</span>
             {status.discordId && (
               <span className="text-xs text-[#7C8DB0] truncate max-w-[200px] inline-block align-bottom">
                 ({status.discordId})
@@ -145,7 +145,7 @@ export function DiscordSection() {
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-[#94A3B8]">
+          <p className="text-sm text-[#A1A1AA]">
             Connect your Discord account to automatically join our server and get your subscription
             role.
           </p>

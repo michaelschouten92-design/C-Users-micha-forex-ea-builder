@@ -57,7 +57,7 @@ function DeviationRow({
         </div>
       </div>
       {/* Deviation bar */}
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{

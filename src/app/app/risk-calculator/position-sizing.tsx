@@ -134,7 +134,7 @@ function SizingInput({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#CBD5E1] mb-1">{label}</label>
+      <label className="block text-sm font-medium text-[#FAFAFA] mb-1">{label}</label>
       <div className="relative">
         {prefix && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C8DB0] text-sm">
@@ -172,7 +172,7 @@ function SizingInput({
 
 function ComparisonBars({ results }: { results: SizingResults }) {
   const methods = [
-    { label: "Kelly Criterion", lots: results.kelly.lots, color: "#4F46E5" },
+    { label: "Kelly Criterion", lots: results.kelly.lots, color: "#6366F1" },
     { label: "Fixed Fractional", lots: results.fixedFractional.lots, color: "#22D3EE" },
     { label: "Optimal-f", lots: results.optimalF.lots, color: "#10B981" },
   ];
@@ -186,12 +186,12 @@ function ComparisonBars({ results }: { results: SizingResults }) {
         return (
           <div key={method.label}>
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-[#CBD5E1]">{method.label}</span>
+              <span className="text-xs text-[#FAFAFA]">{method.label}</span>
               <span className="text-xs font-semibold text-white">
                 {method.lots.toFixed(2)} lots
               </span>
             </div>
-            <div className="w-full bg-[#0A0118] rounded-full h-5 overflow-hidden">
+            <div className="w-full bg-[#0D0D12] rounded-full h-5 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
                 style={{
@@ -240,7 +240,7 @@ export function PositionSizing() {
   return (
     <div className="space-y-6">
       {/* Input Parameters */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-1">Position Sizing Calculator</h2>
         <p className="text-xs text-[#7C8DB0] mb-4">
           Compare three methods to determine optimal lot size for your next trade.
@@ -318,12 +318,12 @@ export function PositionSizing() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Kelly Criterion */}
         <div
-          className={`bg-[#1A0626] border rounded-xl p-5 ${
+          className={`bg-[#111114] border rounded-xl p-5 ${
             results.kelly.warning ? "border-[#F59E0B]/40" : "border-[rgba(79,70,229,0.2)]"
           }`}
         >
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#4F46E5]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#6366F1]" />
             <h3 className="text-sm font-semibold text-white">Kelly Criterion</h3>
           </div>
           <p className="text-2xl font-bold text-white mb-1">
@@ -357,7 +357,7 @@ export function PositionSizing() {
         </div>
 
         {/* Fixed Fractional */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
+        <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2.5 h-2.5 rounded-full bg-[#22D3EE]" />
             <h3 className="text-sm font-semibold text-white">Fixed Fractional</h3>
@@ -376,7 +376,7 @@ export function PositionSizing() {
         </div>
 
         {/* Optimal-f */}
-        <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
+        <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
             <h3 className="text-sm font-semibold text-white">Optimal-f</h3>
@@ -392,15 +392,15 @@ export function PositionSizing() {
       </div>
 
       {/* Visual Comparison */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
         <h3 className="text-sm font-semibold text-white mb-4">Lot Size Comparison</h3>
         <ComparisonBars results={results} />
         <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
           <p className="text-[10px] text-[#7C8DB0]">
-            <strong className="text-[#CBD5E1]">Kelly Criterion</strong> maximizes long-term growth
-            but is aggressive. <strong className="text-[#CBD5E1]">Fixed Fractional</strong> is the
+            <strong className="text-[#FAFAFA]">Kelly Criterion</strong> maximizes long-term growth
+            but is aggressive. <strong className="text-[#FAFAFA]">Fixed Fractional</strong> is the
             most conservative and commonly used.{" "}
-            <strong className="text-[#CBD5E1]">Optimal-f</strong> finds the fraction that maximizes
+            <strong className="text-[#FAFAFA]">Optimal-f</strong> finds the fraction that maximizes
             geometric return but can produce large drawdowns.
           </p>
         </div>

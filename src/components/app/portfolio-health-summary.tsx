@@ -77,7 +77,7 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
             {summary.avgHealthScore !== null && (
               <div className="text-center">
                 <p className="text-[10px] text-[#7C8DB0]">Avg Score</p>
-                <p className="text-xs font-medium text-[#CBD5E1]">{summary.avgHealthScore}%</p>
+                <p className="text-xs font-medium text-[#FAFAFA]">{summary.avgHealthScore}%</p>
               </div>
             )}
             {summary.driftCount > 0 && (
@@ -88,7 +88,7 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
             )}
             <div className="text-center">
               <p className="text-[10px] text-[#7C8DB0]">Online</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">
+              <p className="text-xs font-medium text-[#FAFAFA]">
                 {summary.onlineCount}/{summary.totalInstances}
               </p>
             </div>

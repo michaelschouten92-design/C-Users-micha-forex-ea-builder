@@ -25,7 +25,7 @@ export function AppBreadcrumbs({ items }: AppBreadcrumbsProps): React.ReactNode 
                 {item.label}
               </Link>
             ) : (
-              <span className="text-[#CBD5E1]" aria-current="page">
+              <span className="text-[#FAFAFA]" aria-current="page">
                 {item.label}
               </span>
             )}

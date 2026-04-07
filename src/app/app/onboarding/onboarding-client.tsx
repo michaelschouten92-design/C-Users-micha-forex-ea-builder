@@ -118,7 +118,7 @@ function StepIndicator({ step, currentStep }: { step: number; currentStep: numbe
           isComplete
             ? "bg-[#10B981]/15 border border-[#10B981]/30"
             : isActive
-              ? "bg-[#4F46E5]/20 border-2 border-[#818CF8]"
+              ? "bg-[#6366F1]/20 border-2 border-[#818CF8]"
               : "bg-[#1A1A2E] border border-[rgba(255,255,255,0.08)]"
         }`}
       >
@@ -187,7 +187,7 @@ function TroubleshootToggle() {
               <>
                 Go to <strong className="text-white">Tools → Options → Expert Advisors</strong> and
                 make sure{" "}
-                <code className="text-xs bg-[#0A0118] px-1 py-0.5 rounded text-[#22D3EE]">
+                <code className="text-xs bg-[#0D0D12] px-1 py-0.5 rounded text-[#22D3EE]">
                   https://algo-studio.com
                 </code>{" "}
                 is in the allowed list.
@@ -248,7 +248,7 @@ function TroubleshootItem({ title, description }: { title: string; description: 
       </div>
       <div>
         <p className="text-xs font-medium text-white">{title}</p>
-        <p className="text-[11px] text-[#94A3B8] mt-0.5 leading-relaxed">{description}</p>
+        <p className="text-[11px] text-[#A1A1AA] mt-0.5 leading-relaxed">{description}</p>
       </div>
     </div>
   );
@@ -274,7 +274,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
         <>
           <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             <h4 className="text-sm font-medium text-white">Quick Setup</h4>
-            <ol className="space-y-3 text-sm text-[#94A3B8]">
+            <ol className="space-y-3 text-sm text-[#A1A1AA]">
               <li className="flex gap-3">
                 <StepBullet n={1} />
                 <span>
@@ -287,7 +287,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
                     AlgoStudio_Monitor.ex5
                   </a>{" "}
                   and copy it to your MetaTrader{" "}
-                  <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#CBD5E1]">
+                  <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#FAFAFA]">
                     MQL5/Experts
                   </code>{" "}
                   folder.
@@ -302,7 +302,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
                   </strong>{" "}
                   and enable <strong className="text-white">Allow WebRequest for listed URL</strong>
                   . Add:{" "}
-                  <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#22D3EE]">
+                  <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
                     https://algo-studio.com
                   </code>
                 </span>
@@ -319,7 +319,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
             <a
               href="/downloads/AlgoStudio_Monitor.ex5"
               download
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -449,11 +449,11 @@ function StepStrategyDiscovered({
       {!complete && strategies.length > 0 && (
         <div className="rounded-xl bg-[rgba(79,70,229,0.04)] border border-[rgba(79,70,229,0.12)] p-4 space-y-2">
           <p className="text-xs font-medium text-[#818CF8]">What happens next?</p>
-          <p className="text-[11px] text-[#94A3B8] leading-relaxed">
+          <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
             Once you link a baseline backtest, Algo Studio will continuously compare your live
             results against it. You&apos;ll get:
           </p>
-          <ul className="space-y-1.5 text-[11px] text-[#94A3B8]">
+          <ul className="space-y-1.5 text-[11px] text-[#A1A1AA]">
             <li className="flex items-start gap-2">
               <span className="text-[#10B981] mt-0.5">&#10003;</span>
               <span>
@@ -546,14 +546,14 @@ function InlineBacktestUpload({ onUploaded }: { onUploaded: () => void }) {
       }}
       className={`relative rounded-xl border-2 border-dashed transition-colors p-6 text-center ${
         dragging
-          ? "border-[#4F46E5] bg-[rgba(79,70,229,0.08)]"
+          ? "border-[#6366F1] bg-[rgba(79,70,229,0.08)]"
           : "border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] hover:border-[rgba(255,255,255,0.15)]"
       }`}
     >
       {uploading ? (
         <div className="flex items-center justify-center gap-2">
           <SpinnerIcon />
-          <span className="text-sm text-[#94A3B8]">Uploading and analyzing...</span>
+          <span className="text-sm text-[#A1A1AA]">Uploading and analyzing...</span>
         </div>
       ) : (
         <>
@@ -570,9 +570,9 @@ function InlineBacktestUpload({ onUploaded }: { onUploaded: () => void }) {
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
             />
           </svg>
-          <p className="text-sm text-[#94A3B8] mb-1">Drag your MT5 backtest report here</p>
+          <p className="text-sm text-[#A1A1AA] mb-1">Drag your MT5 backtest report here</p>
           <p className="text-[11px] text-[#7C8DB0] mb-3">or click to browse</p>
-          <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors cursor-pointer">
+          <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors cursor-pointer">
             Choose File
             <input
               type="file"
@@ -635,7 +635,7 @@ function StepLinkBaseline({
       {!complete && !hasLinkableBaseline && (
         <>
           <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
-            <p className="text-sm text-[#94A3B8]">
+            <p className="text-sm text-[#A1A1AA]">
               Upload your strategy&apos;s backtest report from MT5 Strategy Tester. Algo Studio uses
               it to detect when live performance drifts from what you tested.
             </p>
@@ -692,7 +692,7 @@ function StepLinkBaseline({
                 </div>
                 <Link
                   href={`/app/live?relink=${displayStrategy.instanceId}`}
-                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -823,7 +823,7 @@ function StepMonitoringActive({
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/app/live"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
         >
           Go to Command Center
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -833,7 +833,7 @@ function StepMonitoringActive({
         {instance && (
           <Link
             href={`/app/strategy/${instance.instanceId}`}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-[#A78BFA] text-sm font-medium hover:bg-[#4F46E5]/10 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-[#A78BFA] text-sm font-medium hover:bg-[#6366F1]/10 transition-colors"
           >
             View Strategy Detail
           </Link>
@@ -862,14 +862,14 @@ function StepHeader({
         Step {stepNumber} of {TOTAL_STEPS}
       </p>
       <h2 className="text-xl font-bold text-white">{title}</h2>
-      <p className="text-sm text-[#94A3B8] mt-1">{subtitle}</p>
+      <p className="text-sm text-[#A1A1AA] mt-1">{subtitle}</p>
     </div>
   );
 }
 
 function StepBullet({ n }: { n: number }) {
   return (
-    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#4F46E5]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium mt-0.5">
+    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#6366F1]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium mt-0.5">
       {n}
     </span>
   );
@@ -896,7 +896,7 @@ function WaitingPulse({ message }: { message: string }) {
         <span className="block w-2.5 h-2.5 rounded-full bg-[#818CF8] animate-pulse" />
         <span className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-[#818CF8] animate-ping opacity-30" />
       </div>
-      <p className="text-xs text-[#94A3B8]">{message}</p>
+      <p className="text-xs text-[#A1A1AA]">{message}</p>
     </div>
   );
 }

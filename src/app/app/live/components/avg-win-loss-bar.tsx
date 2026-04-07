@@ -9,7 +9,7 @@ export function AvgWinLossBar({ avgWin, avgLoss }: { avgWin: number; avgLoss: nu
   if (total === 0) {
     return (
       <div className="w-full">
-        <p className="text-[10px] text-[#475569]">No closed trades</p>
+        <p className="text-[10px] text-[#52525B]">No closed trades</p>
       </div>
     );
   }
@@ -22,7 +22,7 @@ export function AvgWinLossBar({ avgWin, avgLoss }: { avgWin: number; avgLoss: nu
           <span className="text-[10px] font-medium tabular-nums text-[#10B981]">
             Avg Win: ${absWin.toFixed(2)}
           </span>
-          <span className="text-[10px] text-[#475569]">No losses</span>
+          <span className="text-[10px] text-[#52525B]">No losses</span>
         </div>
         <div className="flex h-[6px] rounded-full overflow-hidden">
           <div className="bg-[#10B981] w-full" />
@@ -36,7 +36,7 @@ export function AvgWinLossBar({ avgWin, avgLoss }: { avgWin: number; avgLoss: nu
     return (
       <div className="w-full">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-[#475569]">No wins</span>
+          <span className="text-[10px] text-[#52525B]">No wins</span>
           <span className="text-[10px] font-medium tabular-nums text-[#EF4444]">
             Avg Loss: ${absLoss.toFixed(2)}
           </span>

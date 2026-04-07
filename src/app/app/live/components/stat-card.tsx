@@ -24,7 +24,7 @@ export function StatCard({
   onAction,
 }: StatCardProps) {
   return (
-    <div className="rounded-xl bg-[#0A0118]/60 border border-[#1E293B]/40 p-4 flex flex-col justify-between min-h-[130px]">
+    <div className="rounded-xl bg-[#0D0D12]/60 border border-[#1E293B]/40 p-4 flex flex-col justify-between min-h-[130px]">
       {/* Header: label + icon */}
       <div className="flex items-start justify-between mb-3">
         <p className="text-[11px] uppercase tracking-[0.12em] text-[#64748B] font-medium leading-tight">

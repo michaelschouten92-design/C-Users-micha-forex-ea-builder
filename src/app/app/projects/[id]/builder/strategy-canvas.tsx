@@ -66,7 +66,7 @@ function HelpButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={handleClick}
-      className={`absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-all duration-200 text-sm font-medium ${glowing ? "help-btn-glow" : ""}`}
+      className={`absolute bottom-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#6366F1] text-white hover:bg-[#6366F1] transition-all duration-200 text-sm font-medium ${glowing ? "help-btn-glow" : ""}`}
       style={!glowing ? { boxShadow: "0 4px 16px rgba(79,70,229,0.4)" } : undefined}
       title="Show getting started guide"
       aria-label="Show getting started guide"
@@ -141,7 +141,7 @@ function BuilderProgressStepper({
 
   return (
     <div
-      className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center bg-[#1A0626]/90 border border-[rgba(79,70,229,0.25)] rounded-full px-4 py-1.5 backdrop-blur-sm"
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center bg-[#111114]/90 border border-[rgba(79,70,229,0.25)] rounded-full px-4 py-1.5 backdrop-blur-sm"
       style={{ maxWidth: 400, height: 36 }}
     >
       {steps.map((s, i) => {
@@ -150,16 +150,16 @@ function BuilderProgressStepper({
           <div key={i} className="flex items-center">
             {i > 0 && (
               <div
-                className={`w-6 h-px mx-1.5 ${steps[i - 1].done ? "bg-[#4F46E5]" : "bg-[#334155]"}`}
+                className={`w-6 h-px mx-1.5 ${steps[i - 1].done ? "bg-[#6366F1]" : "bg-[#334155]"}`}
               />
             )}
             <div className="flex items-center gap-1.5">
               <div
                 className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold ${
                   s.done
-                    ? "bg-[#4F46E5] text-white"
+                    ? "bg-[#6366F1] text-white"
                     : isActive
-                      ? "bg-[#4F46E5]/30 text-[#A78BFA] ring-1 ring-[#4F46E5]"
+                      ? "bg-[#6366F1]/30 text-[#A78BFA] ring-1 ring-[#6366F1]"
                       : "bg-[#334155] text-[#7C8DB0]"
                 }`}
               >
@@ -637,13 +637,13 @@ export function StrategyCanvas({
       {/* Skip navigation links for keyboard users */}
       <a
         href="#builder-canvas"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#4F46E5] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#6366F1] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
       >
         Skip to canvas
       </a>
       <a
         href="#properties-panel"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-40 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#4F46E5] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-40 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#6366F1] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
       >
         Skip to properties
       </a>
@@ -686,7 +686,7 @@ export function StrategyCanvas({
           <div className="text-center py-16">
             <div className="w-14 h-14 rounded-2xl bg-[rgba(79,70,229,0.1)] flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-7 h-7 text-[#4F46E5]"
+                className="w-7 h-7 text-[#6366F1]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -699,7 +699,7 @@ export function StrategyCanvas({
                 />
               </svg>
             </div>
-            <p className="text-[#CBD5E1] text-sm font-medium">No blocks added yet</p>
+            <p className="text-[#FAFAFA] text-sm font-medium">No blocks added yet</p>
             <p className="text-[#7C8DB0] text-xs mt-1.5 max-w-[240px] mx-auto">
               Open this project on a desktop or tablet to start building your strategy.
             </p>
@@ -780,7 +780,7 @@ export function StrategyCanvas({
                           <span className="text-[#7C8DB0] capitalize">
                             {key.replace(/([A-Z])/g, " $1").trim()}
                           </span>
-                          <span className="text-[#CBD5E1] font-mono text-[11px] truncate max-w-[50%] text-right">
+                          <span className="text-[#FAFAFA] font-mono text-[11px] truncate max-w-[50%] text-right">
                             {value}
                           </span>
                         </div>
@@ -799,7 +799,7 @@ export function StrategyCanvas({
 
             {/* Connection summary */}
             {edges.length > 0 && (
-              <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.1)] rounded-xl p-3.5">
+              <div className="bg-[#111114] border border-[rgba(79,70,229,0.1)] rounded-xl p-3.5">
                 <p className="text-xs text-[#7C8DB0]">
                   <span className="text-[#A78BFA] font-medium">{edges.length}</span> connection
                   {edges.length !== 1 ? "s" : ""} between blocks
@@ -854,7 +854,7 @@ export function StrategyCanvas({
               snapGrid={[15, 15]}
               defaultEdgeOptions={{
                 animated: true,
-                style: { stroke: "#4F46E5", strokeWidth: 2 },
+                style: { stroke: "#6366F1", strokeWidth: 2 },
               }}
               selectNodesOnDrag={false}
             >
@@ -865,15 +865,15 @@ export function StrategyCanvas({
                   <div
                     className={`flex flex-col items-center text-center px-10 py-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${
                       isDraggingOver
-                        ? "border-[#4F46E5] bg-[rgba(79,70,229,0.12)] shadow-[0_0_40px_rgba(79,70,229,0.25)]"
-                        : "border-[rgba(79,70,229,0.25)] bg-[#1A0626]/60 empty-canvas-pulse"
+                        ? "border-[#6366F1] bg-[rgba(79,70,229,0.12)] shadow-[0_0_40px_rgba(79,70,229,0.25)]"
+                        : "border-[rgba(79,70,229,0.25)] bg-[#111114]/60 empty-canvas-pulse"
                     }`}
                     style={{ maxWidth: 380 }}
                   >
                     {/* Animated drag hand icon */}
                     <div className="mb-4 relative">
                       <svg
-                        className="w-12 h-12 text-[#4F46E5] drag-hand-anim"
+                        className="w-12 h-12 text-[#6366F1] drag-hand-anim"
                         viewBox="0 0 48 48"
                         fill="none"
                       >
@@ -932,11 +932,11 @@ export function StrategyCanvas({
                         Drag a block from the toolbar
                       </p>
                     </div>
-                    <p className="text-sm text-[#94A3B8] md:hidden mb-3">
+                    <p className="text-sm text-[#A1A1AA] md:hidden mb-3">
                       Tap the + button to add your first block
                     </p>
 
-                    <p className="text-sm text-[#94A3B8] mb-2">
+                    <p className="text-sm text-[#A1A1AA] mb-2">
                       Add indicators, trade execution, and filter blocks to build your trading bot
                     </p>
                   </div>
@@ -951,7 +951,7 @@ export function StrategyCanvas({
           {/* Mobile: Floating button to open blocks toolbar */}
           <button
             onClick={() => setMobileToolbarOpen(true)}
-            className="md:hidden absolute top-4 left-4 z-10 p-3 bg-[#4F46E5] text-white rounded-xl shadow-[0_4px_16px_rgba(79,70,229,0.4)] hover:bg-[#6366F1] transition-all duration-200"
+            className="md:hidden absolute top-4 left-4 z-10 p-3 bg-[#6366F1] text-white rounded-xl shadow-[0_4px_16px_rgba(79,70,229,0.4)] hover:bg-[#6366F1] transition-all duration-200"
             title="Open blocks"
             aria-label="Open blocks toolbar"
           >
@@ -971,7 +971,7 @@ export function StrategyCanvas({
           <div className="hidden md:block absolute bottom-4 left-4 z-10">
             <span className="text-xs text-[#7C8DB0]">
               Press{" "}
-              <kbd className="px-1 py-0.5 bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8]">
+              <kbd className="px-1 py-0.5 bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#A1A1AA]">
                 Shift + ?
               </kbd>{" "}
               for keyboard shortcuts
@@ -1104,10 +1104,10 @@ export function StrategyCanvas({
               <div
                 role="status"
                 onClick={() => setDeleteHint(null)}
-                className="pointer-events-auto bg-[#1E293B] text-[#CBD5E1] px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex items-center gap-2 border border-[rgba(79,70,229,0.3)] max-w-[90vw] cursor-pointer"
+                className="pointer-events-auto bg-[#1E293B] text-[#FAFAFA] px-3 md:px-4 py-2 md:py-2.5 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.4)] flex items-center gap-2 border border-[rgba(79,70,229,0.3)] max-w-[90vw] cursor-pointer"
               >
                 <svg
-                  className="w-4 h-4 flex-shrink-0 text-[#94A3B8]"
+                  className="w-4 h-4 flex-shrink-0 text-[#A1A1AA]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1177,7 +1177,7 @@ export function StrategyCanvas({
               onClick={() => setShowShortcuts(false)}
             >
               <div
-                className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4 p-6"
+                className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-md mx-4 p-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-5">
@@ -1216,8 +1216,8 @@ export function StrategyCanvas({
                     ];
                   })().map(([key, desc]) => (
                     <div key={key} className="flex items-center justify-between">
-                      <span className="text-sm text-[#94A3B8]">{desc}</span>
-                      <kbd className="px-2.5 py-1 text-xs font-mono bg-[#1E293B] text-[#CBD5E1] rounded border border-[rgba(79,70,229,0.3)]">
+                      <span className="text-sm text-[#A1A1AA]">{desc}</span>
+                      <kbd className="px-2.5 py-1 text-xs font-mono bg-[#1E293B] text-[#FAFAFA] rounded border border-[rgba(79,70,229,0.3)]">
                         {key}
                       </kbd>
                     </div>
@@ -1257,10 +1257,10 @@ export function StrategyCanvas({
 
         {/* Mobile properties panel - slide up from bottom */}
         {selectedNode && (
-          <div className="md:hidden fixed inset-x-0 bottom-12 z-30 max-h-[60vh] bg-[#1A0626] border-t border-[rgba(79,70,229,0.3)] rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.5)] overflow-y-auto">
+          <div className="md:hidden fixed inset-x-0 bottom-12 z-30 max-h-[60vh] bg-[#111114] border-t border-[rgba(79,70,229,0.3)] rounded-t-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.5)] overflow-y-auto">
             <button
               onClick={() => setNodes((nds) => nds.map((n) => ({ ...n, selected: false })))}
-              className="absolute top-2 right-2 z-40 p-1.5 rounded-full bg-[rgba(79,70,229,0.2)] text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.4)] transition-colors"
+              className="absolute top-2 right-2 z-40 p-1.5 rounded-full bg-[rgba(79,70,229,0.2)] text-[#FAFAFA] hover:text-white hover:bg-[rgba(79,70,229,0.4)] transition-colors"
               aria-label="Close properties panel"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

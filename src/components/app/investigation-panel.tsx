@@ -181,7 +181,7 @@ function DegradedMetricRow({ metric }: { metric: MetricDegradation }) {
           </div>
         )}
       </div>
-      <div className="h-1 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full"
           style={{ width: `${scorePct}%`, backgroundColor: barColor }}

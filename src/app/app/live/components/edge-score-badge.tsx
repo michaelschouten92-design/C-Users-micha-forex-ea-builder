@@ -17,7 +17,7 @@ export function EdgeScoreBadge({ edgeScore }: { edgeScore: EdgeScore }) {
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#1E293B]/60 text-[9px] text-[#64748B] tabular-nums">
         <span className="relative w-6 h-1 rounded-full bg-[#0F172A] overflow-hidden">
           <span
-            className="absolute inset-y-0 left-0 rounded-full bg-[#475569] transition-all"
+            className="absolute inset-y-0 left-0 rounded-full bg-[#52525B] transition-all"
             style={{ width: `${pct}%` }}
           />
         </span>

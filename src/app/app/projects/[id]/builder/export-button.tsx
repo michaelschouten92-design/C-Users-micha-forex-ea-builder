@@ -300,7 +300,7 @@ export function ExportButton({
         disabled={isDisabled}
         className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ${
           !canExportMQL5 && !isDisabled
-            ? "bg-[#4F46E5] text-white hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(79,70,229,0.3)]"
+            ? "bg-[#6366F1] text-white hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(79,70,229,0.3)]"
             : "bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-[0_0_16px_rgba(16,185,129,0.3)]"
         }`}
         title={
@@ -370,7 +370,7 @@ export function ExportButton({
             role="dialog"
             aria-modal="true"
             aria-label="Export modal"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
+            className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col"
           >
             {/* Header */}
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
@@ -408,7 +408,7 @@ export function ExportButton({
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
               {showUpgradePrompt ? (
                 <div className="py-8 space-y-6 text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[#4F46E5]/30 to-[#22D3EE]/30 flex items-center justify-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[#6366F1]/30 to-[#22D3EE]/30 flex items-center justify-center">
                     <svg
                       className="w-8 h-8 text-[#A78BFA]"
                       fill="none"
@@ -425,7 +425,7 @@ export function ExportButton({
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-white mb-2">Export limit reached</h4>
-                    <p className="text-[#94A3B8] text-sm max-w-sm mx-auto">
+                    <p className="text-[#A1A1AA] text-sm max-w-sm mx-auto">
                       You&apos;ve used all exports for this month. Upgrade to increase your limits
                       and monitor more trading accounts.
                     </p>
@@ -436,7 +436,7 @@ export function ExportButton({
                   <div className="flex flex-col items-center gap-3">
                     <Link
                       href="/pricing"
-                      className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                      className="inline-flex items-center gap-2 bg-[#6366F1] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
                     >
                       View Plans
                       <svg
@@ -489,7 +489,7 @@ export function ExportButton({
                         {strategySummaryLines.map((line, i) => (
                           <li
                             key={i}
-                            className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                            className="flex items-start gap-2 text-xs text-[#FAFAFA] leading-relaxed"
                           >
                             <svg
                               className="w-3 h-3 text-[#22D3EE] flex-shrink-0 mt-0.5"
@@ -514,13 +514,13 @@ export function ExportButton({
                   {/* Export Format */}
                   <div className="bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg px-4 py-2.5">
                     <div className="font-semibold text-sm text-white">MQL5</div>
-                    <div className="text-xs text-[#94A3B8] mt-0.5">MetaTrader 5</div>
+                    <div className="text-xs text-[#A1A1AA] mt-0.5">MetaTrader 5</div>
                   </div>
 
                   <div>
                     <label
                       htmlFor="magic-number"
-                      className="block text-sm font-medium text-[#CBD5E1] mb-2"
+                      className="block text-sm font-medium text-[#FAFAFA] mb-2"
                     >
                       EA Identifier (Magic Number)
                     </label>
@@ -542,13 +542,13 @@ export function ExportButton({
                             setConfigMagicNumber(val);
                           }
                         }}
-                        className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-sm focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-white text-sm focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <button
                         onClick={() =>
                           setConfigMagicNumber(Math.floor(Math.random() * 2147383647) + 100000)
                         }
-                        className="px-3 py-2 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200 whitespace-nowrap"
+                        className="px-3 py-2 bg-[#1E293B] text-[#FAFAFA] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200 whitespace-nowrap"
                       >
                         Randomize
                       </button>
@@ -623,7 +623,7 @@ export function ExportButton({
                   {/* Progress bar */}
                   <div className="h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#4F46E5] to-[#22D3EE] rounded-full transition-all duration-700 ease-out"
+                      className="h-full bg-gradient-to-r from-[#6366F1] to-[#22D3EE] rounded-full transition-all duration-700 ease-out"
                       style={{ width: `${((exportStep + 1) / exportSteps.length) * 100}%` }}
                     />
                   </div>
@@ -653,7 +653,7 @@ export function ExportButton({
                 <div className="space-y-4 flex-1 flex flex-col overflow-hidden">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[#CBD5E1]">
+                      <p className="text-[#FAFAFA]">
                         <span className="text-[#22D3EE] font-medium">{result.fileName}</span>
                         <span className="text-[#7C8DB0] ml-2">v{result.versionNo}</span>
                       </p>
@@ -682,7 +682,7 @@ export function ExportButton({
                       <button
                         onClick={copyToClipboard}
                         aria-label="Copy code to clipboard"
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1E293B] text-[#FAFAFA] text-sm rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white border border-[rgba(79,70,229,0.3)] transition-all duration-200"
                       >
                         <svg
                           className="w-4 h-4"
@@ -706,7 +706,7 @@ export function ExportButton({
                   <div className="flex-1 overflow-hidden rounded-lg border border-[rgba(79,70,229,0.2)]">
                     <pre
                       data-export-code
-                      className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#CBD5E1] font-mono"
+                      className="h-full overflow-auto p-4 bg-[#0F172A] text-xs text-[#FAFAFA] font-mono"
                     >
                       {highlightMQL(result.code)}
                     </pre>
@@ -723,7 +723,7 @@ export function ExportButton({
 
                   {/* Upsell for FREE users */}
                   {userTier === "FREE" && (
-                    <div className="bg-gradient-to-r from-[#4F46E5]/20 via-[#A78BFA]/20 to-[#22D3EE]/20 border border-[rgba(79,70,229,0.3)] rounded-lg p-4 space-y-3">
+                    <div className="bg-gradient-to-r from-[#6366F1]/20 via-[#A78BFA]/20 to-[#22D3EE]/20 border border-[rgba(79,70,229,0.3)] rounded-lg p-4 space-y-3">
                       <div className="flex items-center gap-2">
                         <svg
                           className="w-5 h-5 text-[#22D3EE]"
@@ -742,12 +742,12 @@ export function ExportButton({
                           Your strategy has been exported.
                         </span>
                       </div>
-                      <p className="text-sm text-[#CBD5E1]">
+                      <p className="text-sm text-[#FAFAFA]">
                         Need to monitor more trading accounts? Upgrade your plan.
                       </p>
                       <Link
                         href="/pricing"
-                        className="inline-flex items-center gap-2 bg-[#4F46E5] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+                        className="inline-flex items-center gap-2 bg-[#6366F1] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#6366F1] transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
                       >
                         Upgrade
                         <svg
@@ -781,7 +781,7 @@ export function ExportButton({
                         if (!showHistory && historyItems.length === 0) fetchHistory();
                         setShowHistory(!showHistory);
                       }}
-                      className="flex items-center gap-2 text-xs text-[#94A3B8] hover:text-white transition-colors duration-200"
+                      className="flex items-center gap-2 text-xs text-[#A1A1AA] hover:text-white transition-colors duration-200"
                     >
                       <svg
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${showHistory ? "rotate-90" : ""}`}
@@ -810,7 +810,7 @@ export function ExportButton({
                               key={item.id}
                               className="flex items-center justify-between px-2 py-1.5 rounded text-xs bg-[rgba(79,70,229,0.05)] border border-[rgba(79,70,229,0.1)]"
                             >
-                              <span className="text-[#CBD5E1] truncate mr-2">
+                              <span className="text-[#FAFAFA] truncate mr-2">
                                 {item.outputName}
                               </span>
                               <div className="flex items-center gap-2 flex-shrink-0">
@@ -878,7 +878,7 @@ export function ExportButton({
             <div className="p-4 border-t border-[rgba(79,70,229,0.2)] flex justify-end">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-[#CBD5E1] hover:text-white transition-colors duration-200"
+                className="px-4 py-2 text-[#FAFAFA] hover:text-white transition-colors duration-200"
               >
                 Close
               </button>
@@ -1053,7 +1053,7 @@ function NextStepsGuide() {
     <div className="border border-[rgba(79,70,229,0.2)] rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
       >
         <span className="flex items-center gap-2">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1077,10 +1077,10 @@ function NextStepsGuide() {
       </button>
       {expanded && (
         <div className="px-4 pb-3">
-          <ol className="space-y-2 text-xs text-[#94A3B8]">
+          <ol className="space-y-2 text-xs text-[#A1A1AA]">
             {steps.map((step, i) => (
               <li key={i} className="flex gap-2">
-                <span className="bg-[#4F46E5] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                <span className="bg-[#6366F1] text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                   {i + 1}
                 </span>
                 <span>{step}</span>
@@ -1109,7 +1109,7 @@ function BacktestChecklist() {
     <div className="border border-[rgba(79,70,229,0.2)] rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-[rgba(79,70,229,0.05)] transition-colors duration-200"
       >
         <span className="flex items-center gap-2">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1134,7 +1134,7 @@ function BacktestChecklist() {
       {expanded && (
         <div className="px-4 pb-3 space-y-2">
           {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-[#CBD5E1]">
+            <div key={i} className="flex items-start gap-2 text-xs text-[#FAFAFA]">
               <span className="text-[#7C8DB0] flex-shrink-0 mt-px">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path

@@ -134,7 +134,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
     return (
       <aside
         aria-label="Properties Panel"
-        className="w-full h-full bg-[#1A0626] border-l border-[rgba(79,70,229,0.2)] p-4"
+        className="w-full h-full bg-[#111114] border-l border-[rgba(79,70,229,0.2)] p-4"
       >
         {nodes.length > 0 ? (
           <div>
@@ -157,13 +157,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 {nodes.length} {nodes.length === 1 ? "block" : "blocks"}
               </span>
             </div>
-            <p className="text-xs font-medium text-[#94A3B8] mb-2">Strategy overview:</p>
+            <p className="text-xs font-medium text-[#A1A1AA] mb-2">Strategy overview:</p>
             {summaryLines.length > 0 ? (
               <ul className="space-y-1.5">
                 {summaryLines.map((line, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2 text-xs text-[#CBD5E1] leading-relaxed"
+                    className="flex items-start gap-2 text-xs text-[#FAFAFA] leading-relaxed"
                   >
                     <svg
                       className="w-3.5 h-3.5 text-[#22D3EE] flex-shrink-0 mt-0.5"
@@ -209,7 +209,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
               />
             </svg>
-            <p className="text-sm font-medium text-[#94A3B8] mb-1">Get started</p>
+            <p className="text-sm font-medium text-[#A1A1AA] mb-1">Get started</p>
             <p className="text-xs text-[#7C8DB0] leading-relaxed">
               Drag blocks from the left toolbar onto the canvas to build your strategy
             </p>
@@ -231,7 +231,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
     <aside
       aria-label="Properties Panel"
       aria-describedby={panelId}
-      className="w-full h-full bg-[#1A0626] border-l border-[rgba(79,70,229,0.2)] overflow-y-auto"
+      className="w-full h-full bg-[#111114] border-l border-[rgba(79,70,229,0.2)] overflow-y-auto"
     >
       <div className="p-4 border-b border-[rgba(79,70,229,0.2)]">
         <div className="flex items-center justify-between">
@@ -241,7 +241,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           <div className="flex items-center gap-1">
             <button
               onClick={() => setConfirmAction("reset")}
-              className="text-[#94A3B8] hover:text-[#CBD5E1] p-1.5 rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+              className="text-[#A1A1AA] hover:text-[#FAFAFA] p-1.5 rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
               aria-label={`Reset ${data.label} to defaults`}
               title="Reset to defaults"
             >
@@ -283,7 +283,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           </div>
         </div>
         {nodeTemplate?.description && (
-          <p className="text-xs text-[#94A3B8] mt-1">
+          <p className="text-xs text-[#A1A1AA] mt-1">
             {categoryLabel && (
               <span className="text-[#7C8DB0] font-medium">{categoryLabel} · </span>
             )}
@@ -295,13 +295,13 @@ export const PropertiesPanel = memo(function PropertiesPanel({
           <div
             className={`mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs ${confirmAction === "delete" ? "bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)]" : "bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.3)]"}`}
           >
-            <span className="text-[#CBD5E1]">
+            <span className="text-[#FAFAFA]">
               {confirmAction === "delete" ? "Delete this block?" : "Reset to defaults?"}
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setConfirmAction(null)}
-                className="px-2 py-1 text-[#94A3B8] hover:text-white rounded transition-colors"
+                className="px-2 py-1 text-[#A1A1AA] hover:text-white rounded transition-colors"
               >
                 Cancel
               </button>
@@ -319,7 +319,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
                   }
                   setConfirmAction(null);
                 }}
-                className={`px-2 py-1 rounded font-medium transition-colors ${confirmAction === "delete" ? "bg-[#EF4444] text-white hover:bg-[#DC2626]" : "bg-[#4F46E5] text-white hover:bg-[#6366F1]"}`}
+                className={`px-2 py-1 rounded font-medium transition-colors ${confirmAction === "delete" ? "bg-[#EF4444] text-white hover:bg-[#DC2626]" : "bg-[#6366F1] text-white hover:bg-[#6366F1]"}`}
               >
                 {confirmAction === "delete" ? "Delete" : "Reset"}
               </button>
@@ -331,7 +331,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
       <div className="p-4 space-y-4">
         {/* Label Field (all nodes) */}
         <div>
-          <label htmlFor={labelInputId} className="block text-xs font-medium text-[#CBD5E1] mb-1">
+          <label htmlFor={labelInputId} className="block text-xs font-medium text-[#FAFAFA] mb-1">
             Label
           </label>
           <input
@@ -357,7 +357,7 @@ export const PropertiesPanel = memo(function PropertiesPanel({
         <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
           <button
             onClick={toggleOptimization}
-            className="flex items-center gap-1.5 text-[10px] text-[#7C8DB0] hover:text-[#94A3B8] transition-colors"
+            className="flex items-center gap-1.5 text-[10px] text-[#7C8DB0] hover:text-[#A1A1AA] transition-colors"
           >
             <svg
               className="w-3 h-3"

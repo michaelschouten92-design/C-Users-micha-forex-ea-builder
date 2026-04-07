@@ -18,15 +18,15 @@ export const RSINode = memo(function RSINode({ id, data, selected }: Props) {
     >
       <div className="space-y-1">
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Timeframe:</span>
+          <span className="text-[#A1A1AA]">Timeframe:</span>
           <span className="font-medium">{data.timeframe}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Period:</span>
+          <span className="text-[#A1A1AA]">Period:</span>
           <span className="font-medium">{data.period}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]" title="Overbought / Oversold">
+          <span className="text-[#A1A1AA]" title="Overbought / Oversold">
             OB/OS:
           </span>
           <span className="font-medium">

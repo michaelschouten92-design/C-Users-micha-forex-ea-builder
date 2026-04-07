@@ -310,7 +310,7 @@ export function AccountCard({
         healthCounts["Edge at Risk"] > 0
           ? "border-[#1E293B]"
           : statusChanged
-            ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
+            ? "border-[#52525B] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
             : "border-[#1E293B]/80 hover:border-[#334155]"
       }`}
     >
@@ -441,7 +441,7 @@ export function AccountCard({
       <div className="px-5 pt-3 pb-4">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mb-3">
           <div className="flex items-baseline gap-1">
-            <span className="text-[9px] uppercase tracking-wider text-[#475569]">Equity</span>
+            <span className="text-[9px] uppercase tracking-wider text-[#52525B]">Equity</span>
             <span className="text-sm font-semibold text-white tabular-nums ml-1">
               {formatCurrency(equity)}
             </span>
@@ -450,13 +450,13 @@ export function AccountCard({
             <span className="text-sm font-semibold text-white tabular-nums">
               {winRate.toFixed(1)}%
             </span>
-            <span className="text-[10px] text-[#475569]">win rate</span>
+            <span className="text-[10px] text-[#52525B]">win rate</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-sm font-semibold text-white tabular-nums">
               {profitFactor === Infinity ? "\u221E" : profitFactor.toFixed(2)}
             </span>
-            <span className="text-[10px] text-[#475569]">PF</span>
+            <span className="text-[10px] text-[#52525B]">PF</span>
           </div>
           {edgeAtRiskCount > 0 && (
             <div className="flex items-baseline gap-1 ml-auto">
@@ -508,7 +508,7 @@ export function AccountCard({
             </button>
           )}
 
-          <span className="ml-auto text-[9px] text-[#475569]">
+          <span className="ml-auto text-[9px] text-[#52525B]">
             Heartbeat {formatRelativeTime(lastHeartbeat ?? null)}
           </span>
         </div>
@@ -528,13 +528,13 @@ export function AccountCard({
                   </code>
                   <button
                     onClick={handleCopyKey}
-                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors shrink-0"
+                    className="text-[10px] font-medium text-[#A1A1AA] hover:text-white transition-colors shrink-0"
                   >
                     {copied ? "Copied!" : "Copy"}
                   </button>
                   <button
                     onClick={() => setRotatedKey(null)}
-                    className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors shrink-0"
+                    className="text-[10px] text-[#52525B] hover:text-[#A1A1AA] transition-colors shrink-0"
                   >
                     Dismiss
                   </button>
@@ -568,7 +568,7 @@ export function AccountCard({
                 ) : (
                   <button
                     onClick={() => setShowRotateConfirm(true)}
-                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors"
+                    className="text-[10px] font-medium text-[#A1A1AA] hover:text-white transition-colors"
                   >
                     Regenerate
                   </button>
@@ -602,7 +602,7 @@ export function AccountCard({
                     href={`/track-record/${trackRecordToken}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#4F46E5]/15 border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/25 hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#6366F1]/15 border border-[#6366F1]/30 text-[#818CF8] hover:bg-[#6366F1]/25 hover:text-white transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
@@ -616,7 +616,7 @@ export function AccountCard({
                   </a>
                   <button
                     onClick={handleCopyTrackRecordUrl}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#1E293B]/60 border border-[#334155]/50 text-[#CBD5E1] hover:bg-[#334155] hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#1E293B]/60 border border-[#334155]/50 text-[#FAFAFA] hover:bg-[#334155] hover:text-white transition-colors"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path
@@ -639,7 +639,7 @@ export function AccountCard({
                         "noopener,noreferrer"
                       );
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#1E293B]/60 border border-[#334155]/50 text-[#CBD5E1] hover:bg-[#334155] hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-[#1E293B]/60 border border-[#334155]/50 text-[#FAFAFA] hover:bg-[#334155] hover:text-white transition-colors"
                   >
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -649,7 +649,7 @@ export function AccountCard({
                   <button
                     onClick={() => handleTrackRecordAction("unpublish")}
                     disabled={trackRecordLoading}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[#475569] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[#52525B] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors disabled:opacity-50"
                   >
                     Unpublish
                   </button>
@@ -658,7 +658,7 @@ export function AccountCard({
                 <button
                   onClick={() => handleTrackRecordAction("publish")}
                   disabled={trackRecordLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-medium bg-[#4F46E5]/15 border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/25 hover:text-white transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-medium bg-[#6366F1]/15 border border-[#6366F1]/30 text-[#818CF8] hover:bg-[#6366F1]/25 hover:text-white transition-colors disabled:opacity-50"
                 >
                   {trackRecordLoading ? "Sharing..." : "Share Track Record"}
                 </button>
@@ -679,7 +679,7 @@ export function AccountCard({
               <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 w-2 h-2 rounded-full bg-[#10B981] animate-pulse flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
+                  <p className="text-xs text-[#FAFAFA] font-medium">Awaiting first trade...</p>
                   <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
                     Your Monitor EA is connected and listening. Strategies will appear here
                     automatically once a trade is detected — this typically takes under 60 seconds
@@ -697,7 +697,7 @@ export function AccountCard({
                 <span className="relative group/edge inline-flex items-center gap-1 cursor-help">
                   Edge
                   <svg
-                    className="w-3 h-3 text-[#475569]"
+                    className="w-3 h-3 text-[#52525B]"
                     viewBox="0 0 16 16"
                     fill="none"
                     stroke="currentColor"
@@ -706,7 +706,7 @@ export function AccountCard({
                     <circle cx="8" cy="8" r="6.5" />
                     <path d="M8 7v4M8 5.5v0" strokeLinecap="round" />
                   </svg>
-                  <span className="absolute left-0 top-full mt-1 z-50 w-56 p-2.5 rounded-lg bg-[#1E293B] border border-[#334155] text-[10px] leading-relaxed text-[#CBD5E1] normal-case tracking-normal font-normal shadow-xl opacity-0 pointer-events-none group-hover/edge:opacity-100 group-hover/edge:pointer-events-auto transition-opacity">
+                  <span className="absolute left-0 top-full mt-1 z-50 w-56 p-2.5 rounded-lg bg-[#1E293B] border border-[#334155] text-[10px] leading-relaxed text-[#FAFAFA] normal-case tracking-normal font-normal shadow-xl opacity-0 pointer-events-none group-hover/edge:opacity-100 group-hover/edge:pointer-events-auto transition-opacity">
                     <span className="font-semibold text-white">Edge Score</span> measures how your
                     live performance compares to your backtest baseline. After 10 live trades, we
                     calculate a score based on win rate, profit factor, drawdown and return. 100% =
@@ -747,7 +747,7 @@ export function AccountCard({
                             : "border-[#1E293B] hover:border-[#334155]"
                       }`}
                     >
-                      <p className="text-xs font-semibold text-[#CBD5E1] truncate self-center">
+                      <p className="text-xs font-semibold text-[#FAFAFA] truncate self-center">
                         {sg.symbol}
                       </p>
                       <div className="self-center">
@@ -789,7 +789,7 @@ export function AccountCard({
                               e.stopPropagation();
                               onLinkBaseline(resolvedInstanceId);
                             }}
-                            className="px-3 py-1 rounded-md text-[10px] font-semibold bg-[#4F46E5] text-white hover:bg-[#6366F1] transition-colors"
+                            className="px-3 py-1 rounded-md text-[10px] font-semibold bg-[#6366F1] text-white hover:bg-[#6366F1] transition-colors"
                           >
                             {relinkRequired ? "Relink baseline" : "Add baseline"}
                           </button>
@@ -807,7 +807,7 @@ export function AccountCard({
                                 onDelete(resolvedInstanceId);
                               }
                             }}
-                            className="ml-auto text-[#475569] hover:text-[#EF4444] transition-colors"
+                            className="ml-auto text-[#52525B] hover:text-[#EF4444] transition-colors"
                           >
                             <svg
                               className="w-3.5 h-3.5"
@@ -835,7 +835,7 @@ export function AccountCard({
                       />
                     )}
                     {isExpanded && !owningInstance && (
-                      <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] text-[11px] text-[#64748B]">
+                      <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0D0D12]/60 border border-t-0 border-[rgba(79,70,229,0.15)] text-[11px] text-[#64748B]">
                         No instance data available for investigation.
                       </div>
                     )}

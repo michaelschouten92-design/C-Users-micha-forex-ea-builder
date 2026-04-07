@@ -354,7 +354,7 @@ export function ATRFields({
         onChange={(v) => onChange({ signalMode: v as ATRNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         ATR measures market volatility. Commonly used for dynamic SL/TP levels.
@@ -408,7 +408,7 @@ export function ADXFields({
         onChange={(v) => onChange({ signalMode: v as ADXNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         ADX &gt; {data.trendLevel} indicates a trending market. +DI &gt; -DI suggests uptrend, -DI
@@ -514,7 +514,7 @@ export function StochasticFields({
         <FieldError message="Overbought level must be higher than oversold level" />
       )}
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Stochastic measures momentum. %K crossing above %D in oversold suggests buy, crossing below
@@ -663,7 +663,7 @@ export function IchimokuFields({
         onChange={(v) => onChange({ signalMode: v as IchimokuNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         {mode === "TENKAN_KIJUN_CROSS" &&
@@ -713,7 +713,7 @@ export function ConditionFields({
         tooltip="The value to compare against (e.g. RSI > 70, price > 1.2000)"
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Connect an indicator block above. The condition compares the indicator value against your
@@ -770,7 +770,7 @@ export function CustomIndicatorFields({
         <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       </div>
       <div>
-        <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Indicator Name</label>
+        <label className="block text-xs font-medium text-[#FAFAFA] mb-1">Indicator Name</label>
         <input
           type="text"
           value={data.indicatorName}
@@ -809,7 +809,7 @@ export function CustomIndicatorFields({
       {/* Parameters */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-[#CBD5E1]">Parameters ({params.length}/8)</span>
+          <span className="text-xs font-medium text-[#FAFAFA]">Parameters ({params.length}/8)</span>
           {params.length < 8 && (
             <button
               type="button"
@@ -878,7 +878,7 @@ export function CustomIndicatorFields({
                 updateParamType(i, e.target.value as CustomIndicatorParamType | "");
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#94A3B8] focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
+              className="w-full px-2 py-1 text-[10px] bg-[#1E293B] border border-[rgba(79,70,229,0.2)] rounded text-[#A1A1AA] focus:ring-1 focus:ring-[#22D3EE] focus:outline-none"
             >
               <option value="">Auto-detect type</option>
               <option value="int">int</option>
@@ -896,7 +896,7 @@ export function CustomIndicatorFields({
       )}
 
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Generates an iCustom() call in MQL5. Parameters are passed in order to the indicator. Values
@@ -942,7 +942,7 @@ export function OBVFields({
         onChange={(v) => onChange({ signalMode: v as OBVNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         On-Balance Volume measures buying/selling pressure. Buy when OBV crosses above its SMA
@@ -988,7 +988,7 @@ export function VWAPFields({
         onChange={(v) => onChange({ signalMode: v as VWAPNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Volume Weighted Average Price shows institutional fair value. Buy when price is above VWAP,
@@ -1069,7 +1069,7 @@ export function BBSqueezeFields({
         onChange={(v) => onChange({ signalMode: v as BBSqueezeNodeData["signalMode"] })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Detects when Bollinger Bands contract inside Keltner Channels (squeeze). Buy when the

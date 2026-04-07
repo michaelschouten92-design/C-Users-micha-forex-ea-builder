@@ -300,14 +300,14 @@ export function VersionControls({
   }, [diffVersions, versions]);
 
   return (
-    <div className="h-12 bg-[#1A0626] border-t border-[rgba(79,70,229,0.2)] px-2 md:px-4 flex items-center justify-between gap-1 md:gap-0">
+    <div className="h-12 bg-[#111114] border-t border-[rgba(79,70,229,0.2)] px-2 md:px-4 flex items-center justify-between gap-1 md:gap-0">
       {/* Left side - Save and Load */}
       <div className="flex items-center gap-1 md:gap-2">
         <button
           onClick={handleSave}
           disabled={saving}
           title={`Creates version ${nextVersion}`}
-          className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(34,211,238,0.25)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#6366F1] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] hover:shadow-[0_0_16px_rgba(34,211,238,0.25)] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {saving ? (
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -343,7 +343,7 @@ export function VersionControls({
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             disabled={versions.length === 0}
-            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#1E293B] text-[#CBD5E1] text-sm font-medium rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-[rgba(79,70,229,0.3)] transition-all duration-200"
+            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 bg-[#1E293B] text-[#FAFAFA] text-sm font-medium rounded-lg hover:bg-[rgba(79,70,229,0.2)] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-[rgba(79,70,229,0.3)] transition-all duration-200"
           >
             <svg
               className="w-4 h-4 flex-shrink-0"
@@ -384,7 +384,7 @@ export function VersionControls({
                   <div className="flex gap-2">
                     <button
                       onClick={() => setPendingLoadId(null)}
-                      className="flex-1 px-2 py-1 text-xs text-[#CBD5E1] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
+                      className="flex-1 px-2 py-1 text-xs text-[#FAFAFA] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
                     >
                       Cancel
                     </button>
@@ -442,7 +442,7 @@ export function VersionControls({
           <button
             onClick={onUndo}
             disabled={!canUndo}
-            className="relative p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            className="relative p-1.5 text-[#FAFAFA] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
             title={
               canUndo
                 ? `Undo (Ctrl+Z) · ${undoDepth} step${undoDepth !== 1 ? "s" : ""}`
@@ -459,7 +459,7 @@ export function VersionControls({
               />
             </svg>
             {canUndo && undoDepth > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#4F46E5] text-white rounded-full px-0.5">
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#6366F1] text-white rounded-full px-0.5">
                 {undoDepth}
               </span>
             )}
@@ -467,7 +467,7 @@ export function VersionControls({
           <button
             onClick={onRedo}
             disabled={!canRedo}
-            className="relative p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            className="relative p-1.5 text-[#FAFAFA] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
             title={
               canRedo
                 ? `Redo (Ctrl+Y) · ${redoDepth} step${redoDepth !== 1 ? "s" : ""}`
@@ -484,7 +484,7 @@ export function VersionControls({
               />
             </svg>
             {canRedo && redoDepth > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#4F46E5] text-white rounded-full px-0.5">
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center text-[8px] font-bold bg-[#6366F1] text-white rounded-full px-0.5">
                 {redoDepth}
               </span>
             )}
@@ -499,7 +499,7 @@ export function VersionControls({
           <button
             onClick={handleExportJson}
             disabled={!hasNodes}
-            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
+            className="p-1.5 text-[#FAFAFA] hover:text-white hover:bg-[rgba(79,70,229,0.2)] disabled:opacity-30 disabled:cursor-not-allowed rounded-md transition-all duration-200"
             title={
               exportCopied ? "Copied to clipboard!" : "Share Strategy — copy JSON to clipboard"
             }
@@ -536,7 +536,7 @@ export function VersionControls({
               setImportError(null);
               setShowImportModal(true);
             }}
-            className="p-1.5 text-[#CBD5E1] hover:text-white hover:bg-[rgba(79,70,229,0.2)] rounded-md transition-all duration-200"
+            className="p-1.5 text-[#FAFAFA] hover:text-white hover:bg-[rgba(79,70,229,0.2)] rounded-md transition-all duration-200"
             title="Load Shared Strategy — paste JSON"
             aria-label="Load Shared Strategy"
           >
@@ -572,7 +572,7 @@ export function VersionControls({
       <div className="flex items-center gap-2 md:gap-4 text-sm">
         {/* Save status */}
         {autoSaveStatus === "saving" ? (
-          <span className="flex items-center gap-1.5 text-[#94A3B8]" title="Autosaving...">
+          <span className="flex items-center gap-1.5 text-[#A1A1AA]" title="Autosaving...">
             <svg className="animate-spin h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
@@ -664,7 +664,7 @@ export function VersionControls({
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 flex flex-col"
+            className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
@@ -684,14 +684,14 @@ export function VersionControls({
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <p className="text-xs text-[#94A3B8]">
+              <p className="text-xs text-[#A1A1AA]">
                 Paste a shared strategy JSON below. This will replace your current strategy.
               </p>
               <textarea
                 value={importJson}
                 onChange={(e) => setImportJson(e.target.value)}
                 placeholder='{"version": "1.1", "nodes": [...], ...}'
-                className="w-full h-48 px-3 py-2 text-xs font-mono bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] placeholder-[#475569] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none resize-none"
+                className="w-full h-48 px-3 py-2 text-xs font-mono bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#FAFAFA] placeholder-[#52525B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none resize-none"
               />
               {importError && (
                 <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] text-[#EF4444] p-3 rounded-lg text-xs whitespace-pre-wrap">
@@ -702,14 +702,14 @@ export function VersionControls({
             <div className="p-3 border-t border-[rgba(79,70,229,0.2)] flex justify-end gap-2">
               <button
                 onClick={() => setShowImportModal(false)}
-                className="px-4 py-1.5 text-sm text-[#CBD5E1] hover:text-white transition-colors"
+                className="px-4 py-1.5 text-sm text-[#FAFAFA] hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleImportJson}
                 disabled={!importJson.trim()}
-                className="px-4 py-1.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="px-4 py-1.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Import
               </button>
@@ -724,14 +724,14 @@ export function VersionControls({
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6 text-center"
+            className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4 p-6 text-center"
           >
-            <p className="text-sm text-[#94A3B8] mb-4">
+            <p className="text-sm text-[#A1A1AA] mb-4">
               Version not found. One or both selected versions may have been deleted.
             </p>
             <button
               onClick={() => setDiffVersions(null)}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] transition-colors"
             >
               Close
             </button>
@@ -745,7 +745,7 @@ export function VersionControls({
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 max-h-[70vh] flex flex-col"
+            className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] w-full max-w-lg mx-4 max-h-[70vh] flex flex-col"
           >
             <div className="p-4 border-b border-[rgba(79,70,229,0.2)] flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">
@@ -782,7 +782,7 @@ export function VersionControls({
                       </h4>
                       <ul className="space-y-1 pl-4">
                         {diff.nodesAdded.map((n) => (
-                          <li key={n.id} className="text-[#CBD5E1]">
+                          <li key={n.id} className="text-[#FAFAFA]">
                             {n.data.label} <span className="text-[#7C8DB0]">({n.type})</span>
                           </li>
                         ))}
@@ -797,7 +797,7 @@ export function VersionControls({
                       </h4>
                       <ul className="space-y-1 pl-4">
                         {diff.nodesRemoved.map((n) => (
-                          <li key={n.id} className="text-[#CBD5E1]">
+                          <li key={n.id} className="text-[#FAFAFA]">
                             {n.data.label} <span className="text-[#7C8DB0]">({n.type})</span>
                           </li>
                         ))}
@@ -813,10 +813,10 @@ export function VersionControls({
                       <ul className="space-y-2 pl-4">
                         {diff.nodesChanged.map(({ node, changes }) => (
                           <li key={node.id}>
-                            <span className="text-[#CBD5E1] font-medium">{node.data.label}</span>
+                            <span className="text-[#FAFAFA] font-medium">{node.data.label}</span>
                             <ul className="mt-1 space-y-0.5">
                               {changes.map((c, i) => (
-                                <li key={i} className="text-xs text-[#94A3B8] pl-3">
+                                <li key={i} className="text-xs text-[#A1A1AA] pl-3">
                                   {c}
                                 </li>
                               ))}
@@ -832,7 +832,7 @@ export function VersionControls({
                         <span className="w-2 h-2 rounded-full bg-[#A78BFA]" />
                         Connections
                       </h4>
-                      <div className="pl-4 text-[#CBD5E1] space-y-1">
+                      <div className="pl-4 text-[#FAFAFA] space-y-1">
                         {diff.edgesAdded > 0 && <p>+{diff.edgesAdded} added</p>}
                         {diff.edgesRemoved > 0 && <p>-{diff.edgesRemoved} removed</p>}
                       </div>
@@ -844,7 +844,7 @@ export function VersionControls({
             <div className="p-3 border-t border-[rgba(79,70,229,0.2)] flex justify-end">
               <button
                 onClick={() => setDiffVersions(null)}
-                className="px-4 py-1.5 text-sm text-[#CBD5E1] hover:text-white transition-colors"
+                className="px-4 py-1.5 text-sm text-[#FAFAFA] hover:text-white transition-colors"
               >
                 Close
               </button>

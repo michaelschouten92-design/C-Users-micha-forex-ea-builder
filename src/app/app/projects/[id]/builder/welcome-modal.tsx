@@ -14,21 +14,21 @@ const STEPS = [
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
           <radialGradient id="wg1" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="#6366F1" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#6366F1" stopOpacity="0.05" />
           </radialGradient>
         </defs>
         <circle cx="40" cy="40" r="36" fill="url(#wg1)" />
         <path
           d="M40 18 L44 30 H56 L46 38 L50 50 L40 42 L30 50 L34 38 L24 30 H36 Z"
-          fill="#4F46E5"
+          fill="#6366F1"
           opacity="0.15"
         />
-        <path d="M40 24V25" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-        <path d="M52.5 27.5L51.8 28.2" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-        <path d="M56 40H55" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-        <path d="M25 40H24" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-        <path d="M28.2 28.2L27.5 27.5" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M40 24V25" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
+        <path d="M52.5 27.5L51.8 28.2" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
+        <path d="M56 40H55" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
+        <path d="M25 40H24" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
+        <path d="M28.2 28.2L27.5 27.5" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" />
         <path
           d="M34.5 52H45.5M40 28V29a7 7 0 01-3 5.745l-.774.774A4.5 4.5 0 0035 38.691V40a3 3 0 006 0v-1.309a4.5 4.5 0 00-1.226-3.172L39 34.745A7 7 0 0140 29z"
           stroke="#A78BFA"
@@ -157,8 +157,8 @@ const STEPS = [
         <rect x="47" y="34" width="10" height="2" rx="1" fill="#A78BFA" opacity="0.5" />
         <rect x="47" y="38" width="7" height="2" rx="1" fill="#A78BFA" opacity="0.3" />
         {/* Connection line with animated dot */}
-        <line x1="36" y1="37" x2="44" y2="37" stroke="#4F46E5" strokeWidth="2" />
-        <circle cx="40" cy="37" r="2.5" fill="#4F46E5" />
+        <line x1="36" y1="37" x2="44" y2="37" stroke="#6366F1" strokeWidth="2" />
+        <circle cx="40" cy="37" r="2.5" fill="#6366F1" />
       </svg>
     ),
   },
@@ -215,8 +215,8 @@ const STEPS = [
       <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
         <defs>
           <radialGradient id="wg6" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.05" />
+            <stop offset="0%" stopColor="#6366F1" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#6366F1" stopOpacity="0.05" />
           </radialGradient>
         </defs>
         <circle cx="40" cy="40" r="36" fill="url(#wg6)" />
@@ -228,7 +228,7 @@ const STEPS = [
           height="40"
           rx="4"
           fill="#1E293B"
-          stroke="#4F46E5"
+          stroke="#6366F1"
           strokeWidth="1.5"
           opacity="0.6"
         />
@@ -237,9 +237,9 @@ const STEPS = [
           cx="31"
           cy="29"
           r="3"
-          fill="#4F46E5"
+          fill="#6366F1"
           opacity="0.3"
-          stroke="#4F46E5"
+          stroke="#6366F1"
           strokeWidth="1"
         />
         <path
@@ -249,14 +249,14 @@ const STEPS = [
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <rect x="37" y="27.5" width="14" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
+        <rect x="37" y="27.5" width="14" height="2" rx="1" fill="#6366F1" opacity="0.4" />
         <circle
           cx="31"
           cy="38"
           r="3"
-          fill="#4F46E5"
+          fill="#6366F1"
           opacity="0.3"
-          stroke="#4F46E5"
+          stroke="#6366F1"
           strokeWidth="1"
         />
         <path
@@ -266,14 +266,14 @@ const STEPS = [
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <rect x="37" y="36.5" width="12" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
+        <rect x="37" y="36.5" width="12" height="2" rx="1" fill="#6366F1" opacity="0.4" />
         <circle
           cx="31"
           cy="47"
           r="3"
-          fill="#4F46E5"
+          fill="#6366F1"
           opacity="0.3"
-          stroke="#4F46E5"
+          stroke="#6366F1"
           strokeWidth="1"
         />
         <path
@@ -283,7 +283,7 @@ const STEPS = [
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <rect x="37" y="45.5" width="10" height="2" rx="1" fill="#4F46E5" opacity="0.4" />
+        <rect x="37" y="45.5" width="10" height="2" rx="1" fill="#6366F1" opacity="0.4" />
       </svg>
     ),
   },
@@ -441,10 +441,10 @@ export function WelcomeModal({
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl p-8 max-w-lg w-full mx-4 shadow-[0_8px_32px_rgba(79,70,229,0.2)]">
+      <div className="bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-2xl p-8 max-w-lg w-full mx-4 shadow-[0_8px_32px_rgba(79,70,229,0.2)]">
         <div className="flex justify-center mb-6">{current.icon}</div>
         <h2 className="text-xl font-bold text-white text-center mb-3">{current.title}</h2>
-        <p className="text-[#94A3B8] text-center text-sm leading-relaxed mb-8">
+        <p className="text-[#A1A1AA] text-center text-sm leading-relaxed mb-8">
           {current.description}
         </p>
 
@@ -459,7 +459,7 @@ export function WelcomeModal({
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                i === step ? "bg-[#4F46E5] w-6" : "bg-[#334155]"
+                i === step ? "bg-[#6366F1] w-6" : "bg-[#334155]"
               }`}
             />
           ))}
@@ -469,21 +469,21 @@ export function WelcomeModal({
           {step === 0 ? (
             <button
               onClick={dismiss}
-              className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+              className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#A1A1AA] hover:text-white border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
             >
               Skip intro
             </button>
           ) : (
             <button
               onClick={() => setStep(step - 1)}
-              className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#94A3B8] hover:text-white border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
+              className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-[#A1A1AA] hover:text-white border border-[rgba(79,70,229,0.3)] hover:bg-[rgba(79,70,229,0.1)] transition-all duration-200"
             >
               Back
             </button>
           )}
           <button
             onClick={() => (isLast ? dismiss() : setStep(step + 1))}
-            className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200"
+            className="flex-1 py-2.5 px-4 rounded-lg text-sm font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] transition-all duration-200"
           >
             {isLast ? "Start Building" : "Next"}
           </button>
@@ -494,7 +494,7 @@ export function WelcomeModal({
           <div className="text-center mt-3">
             <button
               onClick={dismiss}
-              className="text-xs text-[#7C8DB0] hover:text-[#94A3B8] transition-colors"
+              className="text-xs text-[#7C8DB0] hover:text-[#A1A1AA] transition-colors"
             >
               Skip tutorial
             </button>

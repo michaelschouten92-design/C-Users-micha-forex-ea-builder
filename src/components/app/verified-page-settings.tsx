@@ -84,7 +84,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
 
   if (loading) {
     return (
-      <div className="p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] animate-pulse">
+      <div className="p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] animate-pulse">
         <div className="h-4 bg-[#111114] rounded w-40 mb-3" />
         <div className="space-y-2">
           <div className="h-8 bg-[#111114] rounded" />
@@ -95,7 +95,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
   }
 
   return (
-    <div className="p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
+    <div className="p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
       <h3 className="text-sm font-medium text-white">Verified Strategy Page</h3>
 
       {!config ? (
@@ -106,7 +106,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
           <button
             onClick={() => handleSave({ isPublic: false })}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium bg-[#4F46E5] text-white rounded-lg hover:bg-[#4338CA] disabled:opacity-50 transition-all"
+            className="px-4 py-2 text-sm font-medium bg-[#6366F1] text-white rounded-lg hover:bg-[#4338CA] disabled:opacity-50 transition-all"
           >
             {saving ? "Creating..." : "Create Page"}
           </button>
@@ -147,7 +147,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
             <select
               value={config.pinnedInstanceId || ""}
               onChange={(e) => handleSave({ pinnedInstanceId: e.target.value || null })}
-              className="w-full px-3 py-2 text-sm bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-lg text-white focus:border-[#4F46E5] focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-lg text-white focus:border-[#6366F1] focus:outline-none"
             >
               <option value="">Select an instance...</option>
               {instances.map((inst) => (
@@ -167,7 +167,7 @@ export function VerifiedPageSettings({ projectId, instances }: VerifiedPageSetti
             />
             <button
               onClick={copyPublicUrl}
-              className="px-3 py-2 text-xs font-medium bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/20 rounded-lg hover:bg-[#4F46E5]/30 transition-all"
+              className="px-3 py-2 text-xs font-medium bg-[#6366F1]/20 text-[#A78BFA] border border-[#6366F1]/20 rounded-lg hover:bg-[#6366F1]/30 transition-all"
             >
               Copy
             </button>
@@ -198,7 +198,7 @@ function ToggleRow({
       <button
         onClick={onChange}
         className={`relative w-10 h-5 rounded-full transition-colors ${
-          checked ? "bg-[#4F46E5]" : "bg-[#111114] border border-[rgba(79,70,229,0.2)]"
+          checked ? "bg-[#6366F1]" : "bg-[#111114] border border-[rgba(79,70,229,0.2)]"
         }`}
       >
         <span

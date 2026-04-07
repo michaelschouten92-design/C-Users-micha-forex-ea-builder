@@ -54,7 +54,7 @@ export function StrategyAggregateSummary({ aggregate }: StrategyAggregateSummary
 
         {/* Counts grid */}
         <div className="flex items-center gap-6">
-          <CountItem label="Deployments" value={aggregate.instanceCount} color="#CBD5E1" />
+          <CountItem label="Deployments" value={aggregate.instanceCount} color="#FAFAFA" />
           <CountItem label="Healthy" value={aggregate.healthyCount} color="#10B981" />
           <CountItem label="At Risk" value={aggregate.atRiskCount} color="#F59E0B" />
           <CountItem label="Invalidated" value={aggregate.invalidatedCount} color="#EF4444" />

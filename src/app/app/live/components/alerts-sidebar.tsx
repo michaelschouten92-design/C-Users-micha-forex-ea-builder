@@ -36,7 +36,7 @@ export function AlertsSidebar({
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
 
   return (
-    <div className="rounded-xl bg-[#0A0118]/60 border border-[#1E293B]/40 p-4 flex flex-col flex-1 min-h-0">
+    <div className="rounded-xl bg-[#0D0D12]/60 border border-[#1E293B]/40 p-4 flex flex-col flex-1 min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
@@ -64,7 +64,7 @@ export function AlertsSidebar({
         </div>
         <button
           onClick={onConfigureAlerts}
-          className="p-1.5 rounded-md text-[#64748B] hover:text-[#94A3B8] hover:bg-white/5 transition-colors"
+          className="p-1.5 rounded-md text-[#64748B] hover:text-[#A1A1AA] hover:bg-white/5 transition-colors"
           title="Configure alerts"
           aria-label="Configure alert rules"
         >
@@ -139,10 +139,10 @@ export function AlertsSidebar({
                     <div key={m.id} className="flex items-center justify-between gap-1 group/alert">
                       <button
                         onClick={m.onClick}
-                        className="text-[11px] text-[#CBD5E1] hover:text-white transition-colors truncate text-left font-medium"
+                        className="text-[11px] text-[#FAFAFA] hover:text-white transition-colors truncate text-left font-medium"
                       >
                         {m.identity}
-                        <span className="text-[#475569] mx-1">&rarr;</span>
+                        <span className="text-[#52525B] mx-1">&rarr;</span>
                         <span className="font-semibold" style={{ color: group.color }}>
                           {group.actionLabel}
                         </span>

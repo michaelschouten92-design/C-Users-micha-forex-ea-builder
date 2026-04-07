@@ -174,15 +174,15 @@ export function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; e
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Chain Length</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{data.chain.length.toLocaleString()}</p>
+          <p className="text-sm font-medium text-[#FAFAFA]">{data.chain.length.toLocaleString()}</p>
         </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Checkpoints</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{data.checkpoints.count}</p>
+          <p className="text-sm font-medium text-[#FAFAFA]">{data.checkpoints.count}</p>
         </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">HMAC Status</p>
           <p
             className={`text-sm font-medium ${data.checkpoints.verified ? "text-[#10B981]" : data.checkpoints.count === 0 ? "text-[#7C8DB0]" : "text-[#EF4444]"}`}
@@ -190,7 +190,7 @@ export function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; e
             {data.checkpoints.count === 0 ? "N/A" : data.checkpoints.verified ? "Valid" : "Invalid"}
           </p>
         </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
           <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Integrity</p>
           <p
             className={`text-sm font-medium ${data.verified ? "text-[#10B981]" : "text-[#EF4444]"}`}
@@ -203,31 +203,31 @@ export function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; e
       {/* Risk Metrics */}
       {metrics && (metrics.sharpeRatio !== 0 || metrics.sortinoRatio !== 0) && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3">
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+          <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Sharpe</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.sharpeRatio.toFixed(2)}</p>
+            <p className="text-sm font-medium text-[#FAFAFA]">{metrics.sharpeRatio.toFixed(2)}</p>
           </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+          <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Sortino</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.sortinoRatio.toFixed(2)}</p>
+            <p className="text-sm font-medium text-[#FAFAFA]">{metrics.sortinoRatio.toFixed(2)}</p>
           </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+          <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Calmar</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.calmarRatio.toFixed(2)}</p>
+            <p className="text-sm font-medium text-[#FAFAFA]">{metrics.calmarRatio.toFixed(2)}</p>
           </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+          <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
               Profit Factor
             </p>
-            <p className="text-sm font-medium text-[#CBD5E1]">
+            <p className="text-sm font-medium text-[#FAFAFA]">
               {metrics.profitFactor === Infinity ? "\u221E" : metrics.profitFactor.toFixed(2)}
             </p>
           </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
+          <div className="bg-[#0D0D12]/50 rounded-lg p-2.5">
             <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
               Max DD Duration
             </p>
-            <p className="text-sm font-medium text-[#CBD5E1]">
+            <p className="text-sm font-medium text-[#FAFAFA]">
               {formatMetricsDuration(metrics.drawdownDuration)}
             </p>
           </div>

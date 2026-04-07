@@ -208,7 +208,7 @@ export function DiagnosticsPanel({ latestRun, health }: DiagnosticsPanelProps) {
                         rule.status !== "PASS" ? `${STATUS_COLORS[rule.status]}08` : "transparent",
                     }}
                   >
-                    <span className="text-xs text-[#CBD5E1] font-medium">{rule.name}</span>
+                    <span className="text-xs text-[#FAFAFA] font-medium">{rule.name}</span>
                     <span className="w-14 flex justify-center">
                       <RuleStatusBadge status={rule.status} />
                     </span>
@@ -280,23 +280,23 @@ export function DiagnosticsPanel({ latestRun, health }: DiagnosticsPanelProps) {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px]">
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">DD Breach</span>
-                <span className="text-[#CBD5E1] tabular-nums">
+                <span className="text-[#FAFAFA] tabular-nums">
                   {MONITORING.DRAWDOWN_BREACH_MULTIPLIER}x baseline
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Sharpe Min</span>
-                <span className="text-[#CBD5E1] tabular-nums">
+                <span className="text-[#FAFAFA] tabular-nums">
                   {MONITORING.SHARPE_MIN_RATIO}x baseline
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Max Loss Streak</span>
-                <span className="text-[#CBD5E1] tabular-nums">{MONITORING.MAX_LOSING_STREAK}</span>
+                <span className="text-[#FAFAFA] tabular-nums">{MONITORING.MAX_LOSING_STREAK}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#7C8DB0]">Inactivity</span>
-                <span className="text-[#CBD5E1] tabular-nums">
+                <span className="text-[#FAFAFA] tabular-nums">
                   {MONITORING.MAX_INACTIVITY_DAYS}d
                 </span>
               </div>

@@ -28,7 +28,7 @@ function MetricCard({
           : null;
 
   return (
-    <div className="rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] p-3">
+    <div className="rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] p-3">
       <p className="text-[10px] text-[#7C8DB0] mb-1">{label}</p>
       <div className="flex items-baseline gap-1.5">
         <span className="text-base font-bold text-white tabular-nums">{value}</span>

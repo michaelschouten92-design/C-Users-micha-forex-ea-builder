@@ -54,12 +54,12 @@ export function CandlestickPatternFields({
         <OptimizableFieldCheckbox fieldName="timeframe" data={data} onChange={onChange} />
       </div>
       <div>
-        <label className="block text-xs font-medium text-[#CBD5E1] mb-2">Patterns to Detect</label>
+        <label className="block text-xs font-medium text-[#FAFAFA] mb-2">Patterns to Detect</label>
         <div className="space-y-1 max-h-48 overflow-y-auto bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg p-2">
           {CANDLESTICK_PATTERN_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer hover:bg-[rgba(79,70,229,0.1)] p-1.5 rounded"
+              className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer hover:bg-[rgba(79,70,229,0.1)] p-1.5 rounded"
             >
               <input
                 type="checkbox"
@@ -84,7 +84,7 @@ export function CandlestickPatternFields({
         <OptimizableFieldCheckbox fieldName="minBodySize" data={data} onChange={onChange} />
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Detects selected candlestick patterns. Minimum body size filters out weak signals.
@@ -142,7 +142,7 @@ export function SupportResistanceFields({
         <OptimizableFieldCheckbox fieldName="zoneSize" data={data} onChange={onChange} />
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Identifies key price levels based on historical touches. Higher touch count = stronger
@@ -173,7 +173,7 @@ export function RangeBreakoutFields({
 
       {/* Range Definition */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+        <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wide">
           Range Definition
         </span>
       </div>
@@ -265,7 +265,7 @@ export function RangeBreakoutFields({
 
       {/* Timezone toggle */}
       <div className="mt-2">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={!(data.useServerTime ?? true)}
@@ -288,7 +288,7 @@ export function RangeBreakoutFields({
 
       {/* Breakout Settings */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <span className="text-xs font-medium text-[#94A3B8] uppercase tracking-wide">
+        <span className="text-xs font-medium text-[#A1A1AA] uppercase tracking-wide">
           Breakout Settings
         </span>
       </div>
@@ -319,7 +319,7 @@ export function RangeBreakoutFields({
       </div>
 
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
         role="note"
       >
         Triggers entry when price breaks above range high (buy) or below range low (sell). Connect
@@ -413,7 +413,7 @@ export function OrderBlockFields({
         onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Detects order blocks (ICT). Bullish OB = last bearish candle before a strong bullish
@@ -478,7 +478,7 @@ export function FairValueGapFields({
         onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Detects Fair Value Gaps (ICT). A 3-candle pattern where a gap forms between candle[2] high
@@ -517,7 +517,7 @@ export function MarketStructureFields({
         <OptimizableFieldCheckbox fieldName="swingStrength" data={data} onChange={onChange} />
       </div>
       <div>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.detectBOS}
@@ -532,7 +532,7 @@ export function MarketStructureFields({
         </label>
       </div>
       <div>
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.detectChoCh}
@@ -553,7 +553,7 @@ export function MarketStructureFields({
         onChange={(v) => onChange({ signalMode: v as "every_tick" | "candle_close" })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Tracks market structure (SMC). Uptrend = HH + HL, Downtrend = LL + LH. Buy on HL in uptrend,
