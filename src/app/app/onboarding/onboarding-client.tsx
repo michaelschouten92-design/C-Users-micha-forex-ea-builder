@@ -158,8 +158,17 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
 
 // ── Troubleshoot toggle ──────────────────────────────────
 
-function TroubleshootToggle() {
+function TroubleshootToggle({
+  autoExpandAfterMs = 5 * 60 * 1000,
+}: { autoExpandAfterMs?: number } = {}) {
   const [open, setOpen] = useState(false);
+
+  // Auto-expand troubleshooting after waiting period to proactively help stuck users
+  useEffect(() => {
+    if (open) return;
+    const timer = setTimeout(() => setOpen(true), autoExpandAfterMs);
+    return () => clearTimeout(timer);
+  }, [open, autoExpandAfterMs]);
 
   return (
     <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] overflow-hidden">

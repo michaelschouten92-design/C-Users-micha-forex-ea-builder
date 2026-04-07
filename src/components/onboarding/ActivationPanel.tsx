@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { OnboardingStep } from "./OnboardingStep";
 
+/** Fire Plausible custom event (no-op if Plausible not loaded) */
+function trackEvent(name: string, props?: Record<string, string | number>) {
+  if (typeof window !== "undefined" && "plausible" in window) {
+    (
+      window as unknown as {
+        plausible: (name: string, opts?: { props: Record<string, string | number> }) => void;
+      }
+    ).plausible(name, props ? { props } : undefined);
+  }
+}
+
 interface OnboardingStatus {
   hasBacktest: boolean;
   monitorConnected: boolean;
@@ -26,7 +37,10 @@ export function ActivationPanel() {
   });
   const [panelDismissed, setPanelDismissed] = useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem("algostudio:onboarding-dismissed") === "1";
+    const dismissedAt = localStorage.getItem("algostudio:onboarding-dismissed-at");
+    if (!dismissedAt) return false;
+    // Re-show after 24 hours so users don't permanently lose guidance
+    return Date.now() - parseInt(dismissedAt, 10) < 24 * 60 * 60 * 1000;
   });
 
   useEffect(() => {
@@ -34,7 +48,18 @@ export function ActivationPanel() {
       fetch("/api/onboarding/status")
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data) setStatus(data);
+          if (data) {
+            setStatus((prev) => {
+              // Track milestone events on first detection
+              if (!prev?.hasBacktest && data.hasBacktest)
+                trackEvent("onboarding_backtest_uploaded");
+              if (!prev?.monitorConnected && data.monitorConnected)
+                trackEvent("onboarding_terminal_connected");
+              if (!prev?.baselineLinked && data.baselineLinked)
+                trackEvent("onboarding_baseline_linked");
+              return data;
+            });
+          }
         })
         .catch(() => {})
         .finally(() => setLoading(false));
@@ -50,7 +75,38 @@ export function ActivationPanel() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  if (loading || !status || panelDismissed) return null;
+  if (loading || !status) return null;
+
+  // Compact fallback banner when panel is temporarily dismissed
+  if (panelDismissed && !status.baselineLinked) {
+    const completedCount = [
+      status.hasBacktest,
+      status.monitorConnected,
+      status.baselineLinked,
+    ].filter(Boolean).length;
+    return (
+      <Link
+        href="/app/onboarding"
+        className="block rounded-lg border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.03)] px-4 py-2.5 mb-6 group hover:border-[rgba(79,70,229,0.3)] transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[#818CF8] font-medium group-hover:text-white transition-colors">
+            Continue setup — {completedCount}/3 steps completed
+          </span>
+          <svg
+            className="w-3.5 h-3.5 text-[#818CF8] group-hover:text-white transition-colors"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </Link>
+    );
+  }
+
+  if (panelDismissed) return null;
 
   // ── Success state: activation complete ──
   if (status.baselineLinked) {
@@ -124,11 +180,12 @@ export function ActivationPanel() {
         <button
           onClick={() => {
             setPanelDismissed(true);
-            localStorage.setItem("algostudio:onboarding-dismissed", "1");
+            localStorage.setItem("algostudio:onboarding-dismissed-at", String(Date.now()));
+            trackEvent("onboarding_panel_dismissed", { step: activeStep });
           }}
           className="flex-shrink-0 text-[#64748B] hover:text-white transition-colors p-1"
-          aria-label="Dismiss onboarding"
-          title="Dismiss"
+          aria-label="Remind me later"
+          title="Remind me later"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
