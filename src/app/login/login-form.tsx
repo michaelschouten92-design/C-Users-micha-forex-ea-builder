@@ -162,15 +162,15 @@ function LoginFormInner({
   }
 
   return (
-    <div className="max-w-md w-full space-y-8 p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <div className="max-w-md w-full space-y-8 p-8 bg-[#0D0D12] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div>
         <Link
           href="/"
-          className="block text-center text-3xl font-bold text-white hover:text-[#A78BFA] transition-colors"
+          className="block text-center text-3xl font-bold text-white hover:text-[#A1A1AA] transition-colors"
         >
           Algo Studio
         </Link>
-        <p className="mt-2 text-center text-sm text-[#94A3B8]">
+        <p className="mt-2 text-center text-sm text-[#A1A1AA]">
           {isRegistration ? "Create a new account" : "Sign in to your account"}
         </p>
       </div>
@@ -215,10 +215,10 @@ function LoginFormInner({
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[rgba(79,70,229,0.3)]"></div>
+              <div className="w-full border-t border-[rgba(255,255,255,0.1)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[#1A0626] text-[#64748B]">or continue with email</span>
+              <span className="px-4 bg-[#0D0D12] text-[#64748B]">or continue with email</span>
             </div>
           </div>
         </>
@@ -230,7 +230,7 @@ function LoginFormInner({
           type="button"
           onClick={() => setIsRegistration(false)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-            !isRegistration ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
+            !isRegistration ? "bg-[#6366F1] text-white" : "text-[#A1A1AA] hover:text-white"
           }`}
         >
           Sign In
@@ -239,7 +239,7 @@ function LoginFormInner({
           type="button"
           onClick={() => setIsRegistration(true)}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-            isRegistration ? "bg-[#4F46E5] text-white" : "text-[#94A3B8] hover:text-white"
+            isRegistration ? "bg-[#6366F1] text-white" : "text-[#A1A1AA] hover:text-white"
           }`}
         >
           Register
@@ -252,7 +252,7 @@ function LoginFormInner({
             role="alert"
             className={`p-3 rounded-lg text-sm border ${
               banner.type === "success"
-                ? "bg-[rgba(34,211,238,0.1)] border-[rgba(34,211,238,0.3)] text-[#22D3EE]"
+                ? "bg-[rgba(34,211,238,0.1)] border-[rgba(34,211,238,0.3)] text-[#6366F1]"
                 : "bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#EF4444]"
             }`}
           >
@@ -270,7 +270,7 @@ function LoginFormInner({
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#CBD5E1]">
+            <label htmlFor="email" className="block text-sm font-medium text-[#FAFAFA]">
               Email<span className="text-red-400 ml-0.5">*</span>
             </label>
             <input
@@ -287,7 +287,7 @@ function LoginFormInner({
               }}
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
-              className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.email ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
+              className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 ${fieldErrors.email ? "border-[#EF4444]" : "border-[rgba(255,255,255,0.1)]"}`}
               placeholder="you@email.com"
             />
             {fieldErrors.email && (
@@ -299,11 +299,11 @@ function LoginFormInner({
 
           <div>
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-[#CBD5E1]">
+              <label htmlFor="password" className="block text-sm font-medium text-[#FAFAFA]">
                 Password<span className="text-red-400 ml-0.5">*</span>
               </label>
               {!isRegistration && (
-                <Link href="/forgot-password" className="text-sm text-[#22D3EE] hover:underline">
+                <Link href="/forgot-password" className="text-sm text-[#6366F1] hover:underline">
                   Forgot password?
                 </Link>
               )}
@@ -322,7 +322,7 @@ function LoginFormInner({
                 }}
                 aria-invalid={!!fieldErrors.password}
                 aria-describedby={fieldErrors.password ? "password-error" : undefined}
-                className={`mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.password ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
+                className={`mt-1 block w-full px-4 py-3 pr-10 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 ${fieldErrors.password ? "border-[#EF4444]" : "border-[rgba(255,255,255,0.1)]"}`}
                 placeholder="Min 8 chars, upper, lower & digit"
               />
               <button
@@ -364,7 +364,7 @@ function LoginFormInner({
               </p>
             )}
             {isRegistration && !fieldErrors.password && (
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-[#A1A1AA] mt-1">
                 Must be at least 8 characters with an uppercase letter, a lowercase letter, and a
                 number. All features included. 1 monitored trading account.
               </p>
@@ -373,7 +373,7 @@ function LoginFormInner({
 
           {isRegistration && (
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#CBD5E1]">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#FAFAFA]">
                 Confirm Password<span className="text-red-400 ml-0.5">*</span>
               </label>
               <input
@@ -391,7 +391,7 @@ function LoginFormInner({
                 aria-describedby={
                   fieldErrors.confirmPassword ? "confirm-password-error" : undefined
                 }
-                className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 ${fieldErrors.confirmPassword ? "border-[#EF4444]" : "border-[rgba(79,70,229,0.3)]"}`}
+                className={`mt-1 block w-full px-4 py-3 bg-[#1E293B] border rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 ${fieldErrors.confirmPassword ? "border-[#EF4444]" : "border-[rgba(255,255,255,0.1)]"}`}
                 placeholder="Repeat your password"
               />
               {fieldErrors.confirmPassword && (
@@ -417,7 +417,7 @@ function LoginFormInner({
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#1A0626] focus:ring-[#22D3EE] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]"
+          className="w-full flex justify-center py-3 px-4 rounded-lg text-sm font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#08080A] focus:ring-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 btn-primary-cta"
         >
           {loading
             ? isRegistration
@@ -430,9 +430,9 @@ function LoginFormInner({
       </form>
 
       {!isRegistration && (
-        <p className="text-sm text-center text-[#94A3B8]">
+        <p className="text-sm text-center text-[#A1A1AA]">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-[#22D3EE] hover:underline font-medium">
+          <Link href="/register" className="text-[#6366F1] hover:underline font-medium">
             Sign up for free
           </Link>
         </p>
@@ -444,7 +444,7 @@ function LoginFormInner({
           <a
             href="/terms"
             target="_blank"
-            className="text-[#A78BFA] hover:text-[#C4B5FD] underline"
+            className="text-[#A1A1AA] hover:text-[#FAFAFA] underline"
           >
             terms of service
           </a>{" "}
@@ -452,7 +452,7 @@ function LoginFormInner({
           <a
             href="/privacy"
             target="_blank"
-            className="text-[#A78BFA] hover:text-[#C4B5FD] underline"
+            className="text-[#A1A1AA] hover:text-[#FAFAFA] underline"
           >
             privacy policy
           </a>
@@ -476,7 +476,7 @@ export function LoginForm({
     <div id="main-content" className="min-h-screen flex items-center justify-center">
       <Suspense
         fallback={
-          <div className="max-w-md w-full p-8 bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl">
+          <div className="max-w-md w-full p-8 bg-[#0D0D12] border border-[rgba(255,255,255,0.08)] rounded-xl">
             <div className="animate-pulse space-y-4">
               <div className="h-8 bg-[#1E293B] rounded w-1/2 mx-auto" />
               <div className="h-4 bg-[#1E293B] rounded w-2/3 mx-auto" />
