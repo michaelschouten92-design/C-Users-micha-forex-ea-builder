@@ -375,6 +375,13 @@ export default function EvaluatePage() {
                     {/* Score Interpretation Guide */}
                     <ScoreGuide />
                   </div>
+                  <p className="text-xs text-[#71717A] mb-2">
+                    {result.healthStatus === "ROBUST"
+                      ? "Strong statistical edge — suitable for live monitoring."
+                      : result.healthStatus === "MODERATE"
+                        ? "Shows potential but has risk factors — review metrics before deploying."
+                        : "Significant weaknesses detected — not recommended for live deployment."}
+                  </p>
                   <h2 className="text-xl font-bold text-white mb-1">
                     {result.metadata.eaName || "Strategy"} — {result.metadata.symbol}
                     {result.symbolSource && result.symbolSource !== "html_report" && (

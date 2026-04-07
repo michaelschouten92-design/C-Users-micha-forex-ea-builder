@@ -54,11 +54,11 @@ export default function SampleEvaluationPage() {
             </p>
           </GridBackground>
 
-          {/* Sample badge */}
-          <div className="flex justify-center mb-8">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] text-sm text-[#A1A1AA]">
+          {/* Sample data notice */}
+          <div className="mb-8 mx-auto max-w-xl rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/5 px-4 py-3">
+            <div className="flex items-center gap-3">
               <svg
-                className="w-4 h-4 text-[#71717A]"
+                className="w-5 h-5 text-[#F59E0B] shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -70,8 +70,16 @@ export default function SampleEvaluationPage() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Sample data — for demonstration only
-            </span>
+              <div>
+                <p className="text-sm font-medium text-[#F59E0B]">
+                  Sample data — for demonstration only
+                </p>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  This evaluation uses example data. Upload your own backtest below to see real
+                  results.
+                </p>
+              </div>
+            </div>
           </div>
 
           <SampleEvaluationDemo />
