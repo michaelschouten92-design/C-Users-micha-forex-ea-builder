@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { createHash } from "crypto";
-import { logger } from "@/lib/logger";
+import { logger, getRequestId } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { apiError, ErrorCode } from "@/lib/error-codes";
@@ -60,6 +60,9 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
 
   const baseInstanceId = auth.instanceId;
+  const requestId = getRequestId(request);
+
+  logger.debug({ requestId, instanceId: baseInstanceId }, "Track record ingest received");
 
   // Per-instance rate limiting (100 events/minute) — scoped to base instance
   // so one API key can't bypass limits by splitting across contexts

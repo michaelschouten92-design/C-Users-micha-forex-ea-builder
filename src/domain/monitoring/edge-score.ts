@@ -151,9 +151,11 @@ export function computeEdgeScore(
   // Filter valid metrics and redistribute weight
   const validMetrics = ratios.filter((r) => r.ratio !== null);
   if (validMetrics.length === 0) {
+    // No comparable metrics (all baseline values ≤ 0 or invalid).
+    // Return null score instead of inflated 100 — baseline is not meaningful.
     return {
-      phase: tradesCompleted < EARLY_THRESHOLD ? "EARLY" : "FULL",
-      score: 100, // no metrics to compare = assume baseline match
+      phase: "COLLECTING" as const,
+      score: null,
       tradesCompleted,
       tradesRequired: COLLECTING_THRESHOLD,
       breakdown: null,

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { canMonitorAdditionalTradingAccount } from "@/lib/plan-limits";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { enqueueNotification } from "@/lib/outbox";
-import { logger } from "@/lib/logger";
+import { logger, getRequestId } from "@/lib/logger";
 import { apiError, ErrorCode } from "@/lib/error-codes";
 
 const log = logger.child({ module: "heartbeat" });
@@ -72,8 +72,11 @@ const heartbeatSchema = z.object({
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
+  const reqLog = log.child({ requestId: getRequestId(request) });
   const auth = await authenticateTelemetry(request);
   if (!auth.success) return auth.response;
+
+  reqLog.debug({ instanceId: auth.instanceId, userId: auth.userId }, "Heartbeat received");
 
   try {
     const body = await request.json();

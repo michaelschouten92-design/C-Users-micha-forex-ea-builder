@@ -80,6 +80,16 @@ export function createApiLogger(route: string, method: string, userId?: string) 
   });
 }
 
+/**
+ * Extract request ID from incoming request headers (set by middleware).
+ * Use this to add correlation to logger child instances.
+ */
+export function getRequestId(request: {
+  headers: { get(name: string): string | null };
+}): string | undefined {
+  return request.headers.get("x-request-id") ?? undefined;
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================

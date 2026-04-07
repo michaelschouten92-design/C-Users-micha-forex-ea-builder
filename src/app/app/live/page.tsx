@@ -219,6 +219,9 @@ function renderDashboard(
           )}
         </div>
 
+        {/* ── Incident Summary Banner ── */}
+        <IncidentSummaryBanner instances={eaInstances} />
+
         {/* ══════════════════════════════════════════════════════
             ONBOARDING — Activation checklist (auto-hides)
             ══════════════════════════════════════════════════════ */}
@@ -233,6 +236,72 @@ function renderDashboard(
           />
         </section>
       </main>
+    </div>
+  );
+}
+
+// ── Incident Summary Banner ──
+
+function IncidentSummaryBanner({
+  instances,
+}: {
+  instances: Array<{
+    id: string;
+    eaName: string;
+    incidents?: Array<{ reasonCodes: unknown }>;
+    strategyStatus: string | null;
+  }>;
+}) {
+  const withIncidents = instances.filter((ea) => ea.incidents && ea.incidents.length > 0);
+  const degradedCount = instances.filter((ea) => ea.strategyStatus === "EDGE_DEGRADED").length;
+  const unstableCount = instances.filter((ea) => ea.strategyStatus === "UNSTABLE").length;
+
+  const totalIssues = withIncidents.length + degradedCount;
+  if (totalIssues === 0) return null;
+
+  const hasCritical = degradedCount > 0;
+
+  return (
+    <div
+      className={`mb-4 rounded-lg border px-4 py-3 flex items-center gap-3 ${
+        hasCritical
+          ? "bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.2)]"
+          : "bg-[rgba(234,179,8,0.08)] border-[rgba(234,179,8,0.2)]"
+      }`}
+    >
+      <svg
+        className={`w-4 h-4 shrink-0 ${hasCritical ? "text-red-400" : "text-amber-400"}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </svg>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-[#E2E8F0]">
+          {degradedCount > 0 && (
+            <span className="font-medium text-red-400">{degradedCount} edge degraded</span>
+          )}
+          {degradedCount > 0 && unstableCount > 0 && <span className="text-[#64748B]"> · </span>}
+          {unstableCount > 0 && (
+            <span className="font-medium text-amber-400">{unstableCount} unstable</span>
+          )}
+          {(degradedCount > 0 || unstableCount > 0) && withIncidents.length > 0 && (
+            <span className="text-[#64748B]"> · </span>
+          )}
+          {withIncidents.length > 0 && (
+            <span className="text-[#94A3B8]">
+              {withIncidents.length} open {withIncidents.length === 1 ? "incident" : "incidents"}
+            </span>
+          )}
+        </p>
+      </div>
+      <span className="text-xs text-[#64748B] shrink-0">Click a strategy for details</span>
     </div>
   );
 }

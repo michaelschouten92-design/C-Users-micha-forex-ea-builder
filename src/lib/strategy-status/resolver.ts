@@ -141,3 +141,17 @@ export function getStatusExplanation(status: StrategyStatus, input: Partial<Stat
       return "Strategy is offline or disconnected";
   }
 }
+
+/** Actionable recovery hints for degraded/unstable statuses */
+export function getRecoveryGuidance(status: StrategyStatus): string | null {
+  switch (status) {
+    case "EDGE_DEGRADED":
+      return "Consider pausing the strategy. Review backtest assumptions against current market conditions. Check broker fill quality and spreads. If the edge has structurally changed, upload a new backtest baseline.";
+    case "UNSTABLE":
+      return "Monitor this strategy closely. If warning signs persist over the next few trading sessions, consider reducing position size or pausing. Check for unusual broker conditions or market regime changes.";
+    case "INACTIVE":
+      return "Verify your MT5 terminal is running and the Monitor EA is loaded on a chart. Check your internet connection and ensure the terminal is logged in.";
+    default:
+      return null;
+  }
+}
