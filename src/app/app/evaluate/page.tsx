@@ -898,7 +898,8 @@ function ScoreGuide() {
             <p className="text-[10px] text-[#52525B] mt-3 pt-2 border-t border-[rgba(255,255,255,0.06)]">
               Score is weighted across 7 metrics: profit factor (20%), max drawdown (25%), total
               trades (10%), expected payoff (10%), win rate (10%), Sharpe (15%), recovery factor
-              (10%).
+              (10%). Status is based on the confidence interval lower bound — with fewer trades, the
+              status is more conservative than the raw score.
             </p>
           </div>
         </>

@@ -221,9 +221,14 @@ export function parseMT5Report(html: string): ParsedReport {
   }
 
   // Derive win rate from long/short win rates if available
+  // Note: this is an unweighted average — accurate only if long/short trade counts are similar.
+  // Weighted average requires trade counts which aren't available in this fallback path.
   if (metrics.winRate === 0 && metrics.longWinRate != null && metrics.shortWinRate != null) {
     metrics.winRate = (metrics.longWinRate + metrics.shortWinRate) / 2;
-    warnings.push("Win rate derived as average of long and short win rates.");
+    warnings.push(
+      "Win rate derived as unweighted average of long/short win rates. " +
+        "May be inaccurate if long/short trade counts are imbalanced."
+    );
   }
 
   // Derive net profit from deals if metrics table had 0
@@ -279,6 +284,9 @@ export function parseMT5Report(html: string): ParsedReport {
  * EN "1,234.56" parsed as EU → 1234.56 (accidentally correct in this direction)
  */
 function metricsLookSuspicious(m: InternalMetrics): boolean {
+  // Negative profit factor is always a parse error (PF = grossProfit / |grossLoss|, always ≥ 0)
+  if (m.profitFactor < 0) return true;
+
   // Profit factor should be between 0.01 and 50 for any realistic strategy
   if (m.profitFactor > 100) return true;
 
