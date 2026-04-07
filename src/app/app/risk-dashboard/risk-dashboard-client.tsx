@@ -112,7 +112,7 @@ export function RiskDashboardClient() {
           </svg>
         </div>
         <h3 className="text-base font-semibold text-white mb-2">No live strategies connected</h3>
-        <p className="text-sm text-[#7C8DB0] max-w-sm mx-auto">
+        <p className="text-sm text-[#71717A] max-w-sm mx-auto">
           Connect a live trading account in the Command Center to see portfolio-level risk metrics,
           correlations, and daily P&L.
         </p>
@@ -132,11 +132,11 @@ export function RiskDashboardClient() {
       {/* Portfolio Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Total Equity</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">Total Equity</p>
           <p className="text-lg font-semibold text-white">{formatCurrency(totalEquity)}</p>
         </div>
         <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Total P&L</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">Total P&L</p>
           <p
             className={`text-lg font-semibold ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
@@ -144,11 +144,11 @@ export function RiskDashboardClient() {
           </p>
         </div>
         <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Max Drawdown</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">Max Drawdown</p>
           <p className="text-lg font-semibold text-[#EF4444]">{totalDrawdown.toFixed(1)}%</p>
         </div>
         <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">Active EAs</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mb-1">Active EAs</p>
           <p className="text-lg font-semibold text-white">
             {instances.filter((ea) => ea.status === "ONLINE").length}
           </p>
@@ -162,7 +162,7 @@ export function RiskDashboardClient() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(255,255,255,0.04)]">
+                <tr className="text-[10px] uppercase tracking-wider text-[#71717A] border-b border-[rgba(255,255,255,0.04)]">
                   <th className="text-left py-2 pr-3">EA Name</th>
                   <th className="text-right py-2 pr-3">Equity</th>
                   <th className="text-right py-2 pr-3">P&L</th>
@@ -213,7 +213,7 @@ export function RiskDashboardClient() {
                   {correlation.labels.map((label, i) => (
                     <th
                       key={i}
-                      className="p-2 text-[10px] text-[#7C8DB0] font-medium max-w-[80px] truncate"
+                      className="p-2 text-[10px] text-[#71717A] font-medium max-w-[80px] truncate"
                     >
                       {label}
                     </th>
@@ -223,7 +223,7 @@ export function RiskDashboardClient() {
               <tbody>
                 {correlation.matrix.map((row, i) => (
                   <tr key={i}>
-                    <td className="p-2 text-[10px] text-[#7C8DB0] font-medium max-w-[80px] truncate">
+                    <td className="p-2 text-[10px] text-[#71717A] font-medium max-w-[80px] truncate">
                       {correlation.labels[i]}
                     </td>
                     {row.map((val, j) => {
@@ -249,7 +249,7 @@ export function RiskDashboardClient() {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-[#7C8DB0] mt-3">
+          <p className="text-[10px] text-[#71717A] mt-3">
             High positive correlation (red) = EAs move together. Negative correlation (green) = EAs
             diversify each other.
           </p>
@@ -262,7 +262,7 @@ export function RiskDashboardClient() {
         {dailyPnl.length > 0 ? (
           <DailyPnlCalendar data={dailyPnl} />
         ) : (
-          <p className="text-xs text-[#7C8DB0]">No trade data available for the last 90 days.</p>
+          <p className="text-xs text-[#71717A]">No trade data available for the last 90 days.</p>
         )}
       </div>
     </div>
