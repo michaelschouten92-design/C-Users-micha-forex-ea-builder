@@ -132,6 +132,7 @@ export default function EvaluatePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [listLimit, setListLimit] = useState(10);
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
 
   const { data: listData, mutate } = useSWR<{
     data: BacktestListItem[];
@@ -371,6 +372,8 @@ export default function EvaluatePage() {
                     >
                       {result.healthStatus}
                     </span>
+                    {/* Score Interpretation Guide */}
+                    <ScoreGuide />
                   </div>
                   <h2 className="text-xl font-bold text-white mb-1">
                     {result.metadata.eaName || "Strategy"} — {result.metadata.symbol}
@@ -406,16 +409,6 @@ export default function EvaluatePage() {
                   positive={result.metrics.totalNetProfit > 0}
                 />
                 <MetricCard
-                  label="Gross Profit"
-                  value={`$${(result.metrics.grossProfit ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  positive={true}
-                />
-                <MetricCard
-                  label="Gross Loss"
-                  value={`$${(result.metrics.grossLoss ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                  positive={false}
-                />
-                <MetricCard
                   label="Profit Factor"
                   value={result.metrics.profitFactor.toFixed(2)}
                   positive={result.metrics.profitFactor > 1}
@@ -430,7 +423,24 @@ export default function EvaluatePage() {
                   value={`${result.metrics.winRate.toFixed(1)}%`}
                   positive={result.metrics.winRate > 50}
                 />
+                <MetricCard
+                  label="Sharpe Ratio"
+                  value={result.metrics.sharpeRatio?.toFixed(2) ?? "N/A"}
+                  positive={(result.metrics.sharpeRatio ?? 0) > 1}
+                />
+                <MetricCard
+                  label="Recovery Factor"
+                  value={result.metrics.recoveryFactor?.toFixed(2) ?? "N/A"}
+                  positive={(result.metrics.recoveryFactor ?? 0) > 2}
+                />
               </div>
+
+              {/* Prop Firm Compliance Check */}
+              <PropFirmCheck
+                maxDrawdownPct={result.metrics.maxDrawdownPct}
+                profitFactor={result.metrics.profitFactor}
+                totalTrades={result.metrics.totalTrades}
+              />
             </div>
 
             {/* Score Breakdown (expandable) */}
@@ -488,25 +498,48 @@ export default function EvaluatePage() {
               )}
             </div>
 
-            {/* Parse Warnings */}
-            {result.parseWarnings.length > 0 && (
-              <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl px-5 py-4">
-                <p className="text-xs font-medium text-[#F59E0B] mb-2">Parse Warnings</p>
-                <ul className="text-xs text-[#A1A1AA] space-y-1">
-                  {result.parseWarnings.map((w, i) => (
-                    <li key={i}>- {w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Warnings — prioritized: red flags first, then informational */}
+            {result.parseWarnings.length > 0 && <WarningsPanel warnings={result.parseWarnings} />}
 
-            {/* Validate Strategy CTA */}
-            <Link
-              href={`/app/evaluate/${result.runId}/validate`}
-              className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 hover:border-[rgba(255,255,255,0.10)] transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+            {/* Next Steps — prominent CTAs */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* Primary: Link as Baseline */}
+              <Link
+                href="/app/live"
+                className="block bg-[#111114] border border-[rgba(16,185,129,0.2)] rounded-xl p-5 hover:border-[rgba(16,185,129,0.4)] transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-[#10B981]/10 flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-5 h-5 text-[#10B981]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.03a4.5 4.5 0 00-6.364-6.364L6.34 5.47a4.5 4.5 0 001.242 7.244"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Link as Baseline</h3>
+                    <p className="text-xs text-[#71717A]">
+                      Use this backtest as the reference for live drift detection
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#10B981]">Recommended next step &rarr;</p>
+              </Link>
+
+              {/* Secondary: Monte Carlo */}
+              <Link
+                href={`/app/evaluate/${result.runId}/validate`}
+                className="block bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5 hover:border-[rgba(255,255,255,0.10)] transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-[#6366F1]/10 flex items-center justify-center flex-shrink-0">
                     <svg
                       className="w-5 h-5 text-[#6366F1]"
@@ -523,36 +556,31 @@ export default function EvaluatePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white group-hover:text-white transition-colors">
-                      Validate Strategy
-                    </h3>
+                    <h3 className="text-sm font-semibold text-white">Run Monte Carlo</h3>
                     <p className="text-xs text-[#71717A]">
-                      Run a Monte Carlo simulation to test survival probability
+                      Test survival probability with 1,000 randomized simulations
                     </p>
                   </div>
                 </div>
-                <svg
-                  className="w-5 h-5 text-[#71717A] group-hover:text-white transition-colors flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </div>
-            </Link>
+              </Link>
+            </div>
           </div>
         )}
 
         {/* Previous Uploads */}
         {listData && listData.data.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Previous Uploads</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Previous Uploads</h2>
+              {compareIds.size === 2 && (
+                <CompareButton
+                  items={listData.data.filter((d) => d.runId && compareIds.has(d.runId))}
+                />
+              )}
+              {compareIds.size === 1 && (
+                <span className="text-xs text-[#71717A]">Select one more to compare</span>
+              )}
+            </div>
             <div className="space-y-3">
               {listData.data.map((item) => (
                 <div
@@ -651,6 +679,31 @@ export default function EvaluatePage() {
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Compare checkbox */}
+                    {item.runId && (
+                      <label
+                        className="flex items-center gap-1 cursor-pointer mr-2"
+                        title="Select for comparison"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={compareIds.has(item.runId)}
+                          onChange={() => {
+                            setCompareIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(item.runId!)) {
+                                next.delete(item.runId!);
+                              } else if (next.size < 2) {
+                                next.add(item.runId!);
+                              }
+                              return next;
+                            });
+                          }}
+                          className="w-3.5 h-3.5 rounded border-[rgba(255,255,255,0.2)] bg-[#18181B] accent-[#6366F1]"
+                        />
+                        <span className="text-[10px] text-[#71717A]">Compare</span>
+                      </label>
+                    )}
                     {item.runId && (
                       <button
                         onClick={() => {
@@ -777,5 +830,368 @@ function MetricCard({
         {value}
       </p>
     </div>
+  );
+}
+
+// ============================================
+// Score Interpretation Guide
+// ============================================
+
+function ScoreGuide() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-[#71717A] hover:text-[#A1A1AA] transition-colors"
+        aria-label="What does this score mean?"
+        title="What does this score mean?"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-2 z-50 w-72 bg-[#111114] border border-[rgba(255,255,255,0.1)] rounded-xl p-4 shadow-2xl">
+            <h4 className="text-sm font-semibold text-white mb-3">Score Interpretation</h4>
+            <div className="space-y-2.5">
+              <div className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#10B981] mt-1.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-[#10B981]">75-100: Robust</p>
+                  <p className="text-[11px] text-[#71717A]">
+                    Strong statistical edge. Good profit factor, controlled drawdown, sufficient
+                    sample size.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#F59E0B] mt-1.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-[#F59E0B]">40-74: Moderate</p>
+                  <p className="text-[11px] text-[#71717A]">
+                    Shows potential but has weaknesses. May need more trades, lower drawdown, or
+                    better risk/reward.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-[#EF4444] mt-1.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-[#EF4444]">0-39: Weak</p>
+                  <p className="text-[11px] text-[#71717A]">
+                    Significant risks detected. High drawdown, low profit factor, or insufficient
+                    trade data.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-[#52525B] mt-3 pt-2 border-t border-[rgba(255,255,255,0.06)]">
+              Score is weighted across 7 metrics: profit factor (20%), max drawdown (25%), total
+              trades (10%), expected payoff (10%), win rate (10%), Sharpe (15%), recovery factor
+              (10%).
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Prop Firm Compliance Check
+// ============================================
+
+function PropFirmCheck({
+  maxDrawdownPct,
+  profitFactor,
+  totalTrades,
+}: {
+  maxDrawdownPct: number;
+  profitFactor: number;
+  totalTrades: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const checks = [
+    {
+      label: "Max Drawdown ≤ 10%",
+      pass: maxDrawdownPct <= 10,
+      detail: `${maxDrawdownPct.toFixed(1)}%`,
+      critical: maxDrawdownPct > 10,
+    },
+    {
+      label: "Daily Drawdown ≤ 5%",
+      pass: maxDrawdownPct <= 5,
+      detail: maxDrawdownPct <= 5 ? "Within limit" : "Exceeds — check daily DD separately",
+      critical: false,
+    },
+    {
+      label: "Profit Factor > 1.2",
+      pass: profitFactor > 1.2,
+      detail: profitFactor.toFixed(2),
+      critical: profitFactor <= 1.0,
+    },
+    {
+      label: "Minimum 50 trades",
+      pass: totalTrades >= 50,
+      detail: `${totalTrades} trades`,
+      critical: totalTrades < 30,
+    },
+  ];
+
+  const passCount = checks.filter((c) => c.pass).length;
+  const allPass = passCount === checks.length;
+
+  return (
+    <div className="mt-5 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs w-full text-left"
+      >
+        <span className={`font-medium ${allPass ? "text-[#10B981]" : "text-[#F59E0B]"}`}>
+          Prop Firm Check: {passCount}/{checks.length} passed
+        </span>
+        <svg
+          className={`w-3 h-3 text-[#71717A] transition-transform ${expanded ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="mt-3 space-y-2">
+          {checks.map((check) => (
+            <div key={check.label} className="flex items-center gap-2 text-xs">
+              {check.pass ? (
+                <svg
+                  className="w-3.5 h-3.5 text-[#10B981] shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-3.5 h-3.5 text-[#EF4444] shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
+              <span className={check.pass ? "text-[#A1A1AA]" : "text-[#EF4444]"}>
+                {check.label}
+              </span>
+              <span className="text-[#71717A] ml-auto">{check.detail}</span>
+            </div>
+          ))}
+          <p className="text-[10px] text-[#52525B] mt-2">
+            Based on common prop firm rules (FTMO, MFF, E8). Check your specific firm&apos;s
+            requirements.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Warnings Panel — prioritized
+// ============================================
+
+const RED_FLAG_PATTERNS = [
+  "martingale",
+  "overfitting",
+  "outlier",
+  "single trade",
+  "catastrophic",
+  "ruin",
+  "blow",
+  "grid pattern",
+];
+
+function WarningsPanel({ warnings }: { warnings: string[] }) {
+  const redFlags = warnings.filter((w) =>
+    RED_FLAG_PATTERNS.some((p) => w.toLowerCase().includes(p))
+  );
+  const informational = warnings.filter(
+    (w) => !RED_FLAG_PATTERNS.some((p) => w.toLowerCase().includes(p))
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* Red flags first */}
+      {redFlags.length > 0 && (
+        <div className="bg-[#EF4444]/5 border border-[#EF4444]/20 rounded-xl px-5 py-4">
+          <div className="flex items-center gap-2 mb-2">
+            <svg
+              className="w-4 h-4 text-[#EF4444]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+            <p className="text-xs font-semibold text-[#EF4444]">Red Flags</p>
+          </div>
+          <ul className="text-xs text-[#A1A1AA] space-y-1">
+            {redFlags.map((w, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-[#EF4444] mt-0.5">•</span>
+                {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Informational warnings */}
+      {informational.length > 0 && (
+        <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl px-5 py-4">
+          <p className="text-xs font-medium text-[#F59E0B] mb-2">Parse Notes</p>
+          <ul className="text-xs text-[#71717A] space-y-1">
+            {informational.map((w, i) => (
+              <li key={i}>- {w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Compare Button + Side-by-Side Modal
+// ============================================
+
+function CompareButton({ items }: { items: BacktestListItem[] }) {
+  const [open, setOpen] = useState(false);
+
+  if (items.length !== 2) return null;
+  const [a, b] = items;
+
+  const metrics = [
+    { label: "Health Score", a: a.healthScore ?? 0, b: b.healthScore ?? 0, higher: true },
+    { label: "Profit Factor", a: a.profitFactor ?? 0, b: b.profitFactor ?? 0, higher: true },
+    { label: "Max Drawdown", a: a.maxDrawdownPct ?? 0, b: b.maxDrawdownPct ?? 0, higher: false },
+    { label: "Win Rate", a: a.winRate ?? 0, b: b.winRate ?? 0, higher: true },
+    { label: "Total Trades", a: a.totalTrades ?? 0, b: b.totalTrades ?? 0, higher: true },
+    { label: "Net Profit", a: a.totalNetProfit ?? 0, b: b.totalNetProfit ?? 0, higher: true },
+  ];
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="px-3 py-1.5 text-xs font-medium bg-[#6366F1] text-white rounded-lg hover:bg-[#818CF8] transition-colors"
+      >
+        Compare Selected
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+          <div className="relative bg-[#111114] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 max-w-lg w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base font-semibold text-white">Strategy Comparison</h3>
+              <button onClick={() => setOpen(false)} className="text-[#71717A] hover:text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Header row */}
+            <div className="grid grid-cols-3 gap-3 mb-4 text-xs">
+              <div />
+              <div className="text-center font-medium text-[#A1A1AA] truncate">
+                {a.symbol && a.symbol !== "UNKNOWN" ? a.symbol : a.eaName || "Strategy A"}
+              </div>
+              <div className="text-center font-medium text-[#A1A1AA] truncate">
+                {b.symbol && b.symbol !== "UNKNOWN" ? b.symbol : b.eaName || "Strategy B"}
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="space-y-2">
+              {metrics.map((m) => {
+                const aWins = m.higher ? m.a > m.b : m.a < m.b;
+                const bWins = m.higher ? m.b > m.a : m.b < m.a;
+                const isDraw = m.a === m.b;
+
+                return (
+                  <div
+                    key={m.label}
+                    className="grid grid-cols-3 gap-3 py-2 border-b border-[rgba(255,255,255,0.04)]"
+                  >
+                    <span className="text-xs text-[#71717A]">{m.label}</span>
+                    <span
+                      className={`text-xs text-center font-mono ${isDraw ? "text-[#A1A1AA]" : aWins ? "text-[#10B981] font-semibold" : "text-[#A1A1AA]"}`}
+                    >
+                      {m.label === "Net Profit"
+                        ? `$${m.a.toFixed(2)}`
+                        : m.label === "Max Drawdown" || m.label === "Win Rate"
+                          ? `${m.a.toFixed(1)}%`
+                          : m.a.toFixed(2)}
+                    </span>
+                    <span
+                      className={`text-xs text-center font-mono ${isDraw ? "text-[#A1A1AA]" : bWins ? "text-[#10B981] font-semibold" : "text-[#A1A1AA]"}`}
+                    >
+                      {m.label === "Net Profit"
+                        ? `$${m.b.toFixed(2)}`
+                        : m.label === "Max Drawdown" || m.label === "Win Rate"
+                          ? `${m.b.toFixed(1)}%`
+                          : m.b.toFixed(2)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] text-[#52525B] mt-4">
+              Green = better performer for that metric. Lower drawdown is better.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
