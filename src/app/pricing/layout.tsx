@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — MT5 Strategy Monitoring Plans | AlgoStudio",
+  title: "Pricing — MT5 Strategy Monitoring Plans | Algo Studio",
   description:
     "Monitor MetaTrader 5 strategies from €0/month. Baseline (free, 1 account), Control (€39, 3 accounts), Authority (€79, 10 accounts). All features included. No hidden fees.",
   alternates: { canonical: "/pricing" },
@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "AlgoStudio Pricing",
+  name: "Algo Studio Pricing",
   description: "MT5 strategy monitoring plans. Baseline, Control, and Authority tiers.",
   mainEntity: {
     "@type": "SoftwareApplication",
-    name: "AlgoStudio",
+    name: "Algo Studio",
     applicationCategory: "FinanceApplication",
     offers: [
       {

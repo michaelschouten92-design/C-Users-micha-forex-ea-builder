@@ -4,13 +4,13 @@ import { Footer } from "@/components/marketing/footer";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
-  title: "Contact | AlgoStudio",
+  title: "Contact | Algo Studio",
   description:
-    "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our monitoring and governance platform.",
+    "Get in touch with Algo Studio. Contact us for support, questions, or feedback about our monitoring and governance platform.",
   alternates: { canonical: "/contact" },
   openGraph: {
-    title: "Contact | AlgoStudio",
-    description: "Get in touch with AlgoStudio. Contact us for support, questions, or feedback.",
+    title: "Contact | Algo Studio",
+    description: "Get in touch with Algo Studio. Contact us for support, questions, or feedback.",
   },
 };
 

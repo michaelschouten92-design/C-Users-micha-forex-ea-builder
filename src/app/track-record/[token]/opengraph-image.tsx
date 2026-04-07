@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio Verified Trading Record";
+export const alt = "Algo Studio Verified Trading Record";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -279,7 +279,7 @@ export default async function OGImage({ params }: { params: Promise<{ token: str
               backgroundColor: "#4F46E5",
             }}
           />
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#94A3B8" }}>AlgoStudio</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#94A3B8" }}>Algo Studio</div>
         </div>
         <div style={{ fontSize: 12, color: "#475569" }}>algo-studio.com</div>
       </div>

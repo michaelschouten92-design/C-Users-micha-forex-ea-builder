@@ -168,7 +168,7 @@ function LoginFormInner({
           href="/"
           className="block text-center text-3xl font-bold text-white hover:text-[#A78BFA] transition-colors"
         >
-          AlgoStudio
+          Algo Studio
         </Link>
         <p className="mt-2 text-center text-sm text-[#94A3B8]">
           {isRegistration ? "Create a new account" : "Sign in to your account"}

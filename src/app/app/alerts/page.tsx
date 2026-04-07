@@ -7,7 +7,7 @@ import { AlertHistoryClient } from "./alert-history-client";
 import { ChannelsOverview } from "./channels-overview";
 
 export const metadata = {
-  title: "Alerts | AlgoStudio",
+  title: "Alerts | Algo Studio",
 };
 
 export default async function AlertHistoryPage() {

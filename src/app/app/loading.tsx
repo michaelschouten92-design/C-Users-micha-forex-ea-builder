@@ -5,7 +5,7 @@ export default function DashboardLoading() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
+              <h1 className="text-xl font-bold text-white">Algo Studio</h1>
             </div>
             <div className="flex items-center gap-4">
               <div className="h-4 w-32 bg-[#18181B] rounded animate-pulse hidden sm:block" />

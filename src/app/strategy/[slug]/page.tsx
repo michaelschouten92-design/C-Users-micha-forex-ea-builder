@@ -25,10 +25,10 @@ export async function generateMetadata({ params }: Props) {
   }
 
   return {
-    title: `${page.strategyIdentity.project?.name ?? "Strategy"} | AlgoStudio Verified Strategy`,
+    title: `${page.strategyIdentity.project?.name ?? "Strategy"} | Algo Studio Verified Strategy`,
     description:
       page.strategyIdentity.project?.description ||
-      `Verified trading strategy ${page.strategyIdentity.strategyId} on AlgoStudio`,
+      `Verified trading strategy ${page.strategyIdentity.strategyId} on Algo Studio`,
   };
 }
 

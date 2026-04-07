@@ -7,9 +7,9 @@ import { CTASection } from "@/components/marketing/cta-section";
 import { FAQContent } from "./faq-content";
 
 export const metadata: Metadata = {
-  title: "FAQ — Frequently Asked Questions | AlgoStudio",
+  title: "FAQ — Frequently Asked Questions | Algo Studio",
   description:
-    "Common questions about AlgoStudio: strategy monitoring, verification, Monte Carlo analysis, verified track records, health monitoring, pricing, and technical details.",
+    "Common questions about Algo Studio: strategy monitoring, verification, Monte Carlo analysis, verified track records, health monitoring, pricing, and technical details.",
   alternates: { canonical: "/faq" },
 };
 
@@ -21,23 +21,23 @@ const breadcrumbs = [
 const faqItems = [
   // General
   {
-    q: "What is AlgoStudio?",
-    a: "AlgoStudio is a monitoring and governance platform for algorithmic trading strategies. It monitors live strategy performance against validated baselines, detects structural deviation, verifies track records with cryptographic proof, and provides lifecycle monitoring and health signals for deployed strategies.",
+    q: "What is Algo Studio?",
+    a: "Algo Studio is a monitoring and governance platform for algorithmic trading strategies. It monitors live strategy performance against validated baselines, detects structural deviation, verifies track records with cryptographic proof, and provides lifecycle monitoring and health signals for deployed strategies.",
     category: "General" as const,
   },
   {
     q: "What is strategy verification?",
-    a: "Strategy verification is the process of objectively measuring whether a trading strategy operates within its validated parameters. AlgoStudio combines Monte Carlo risk analysis, verified track records, and live health monitoring to give you a complete picture of strategy integrity.",
+    a: "Strategy verification is the process of objectively measuring whether a trading strategy operates within its validated parameters. Algo Studio combines Monte Carlo risk analysis, verified track records, and live health monitoring to give you a complete picture of strategy integrity.",
     category: "General" as const,
   },
   {
-    q: "Does AlgoStudio place trades?",
-    a: "No. AlgoStudio does not place trades, generate signals, or manage positions. It monitors and verifies strategy performance. Trading decisions remain with you and your strategy.",
+    q: "Does Algo Studio place trades?",
+    a: "No. Algo Studio does not place trades, generate signals, or manage positions. It monitors and verifies strategy performance. Trading decisions remain with you and your strategy.",
     category: "General" as const,
   },
   {
-    q: "How is AlgoStudio different from a trading dashboard?",
-    a: "Dashboards show you what happened. AlgoStudio measures whether your strategy is still operating within the statistical bounds that justified running it. It combines Monte Carlo analysis, verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison).",
+    q: "How is Algo Studio different from a trading dashboard?",
+    a: "Dashboards show you what happened. Algo Studio measures whether your strategy is still operating within the statistical bounds that justified running it. It combines Monte Carlo analysis, verified track records (tamper-resistant hash chain), strategy identity (permanent versioned IDs), and health monitoring (live vs. baseline comparison).",
     category: "General" as const,
   },
 
@@ -54,7 +54,7 @@ const faqItems = [
   },
   {
     q: "How do I get my strategy evaluated?",
-    a: "Upload a backtest report from MetaTrader 5 or connect your trading account. AlgoStudio analyzes the trade history, scores strategy health, and runs Monte Carlo validation automatically.",
+    a: "Upload a backtest report from MetaTrader 5 or connect your trading account. Algo Studio analyzes the trade history, scores strategy health, and runs Monte Carlo validation automatically.",
     category: "Verification" as const,
   },
 
@@ -77,13 +77,13 @@ const faqItems = [
 
   // Technical
   {
-    q: "How do strategies enter AlgoStudio?",
+    q: "How do strategies enter Algo Studio?",
     a: "Strategies can enter through broker connection or backtest report upload. Connect your MT5 account to stream live performance data, or upload an MT5 Strategy Tester report (.html) for instant evaluation.",
     category: "Technical" as const,
   },
   {
     q: "Which brokers are supported?",
-    a: "AlgoStudio supports any broker that provides MetaTrader 5 trade history. Compatible with prop firms like FTMO, E8 Markets, and FundingPips.",
+    a: "Algo Studio supports any broker that provides MetaTrader 5 trade history. Compatible with prop firms like FTMO, E8 Markets, and FundingPips.",
     category: "Technical" as const,
   },
 
@@ -132,7 +132,7 @@ export default function FAQPage() {
             <h1 className="text-4xl md:text-5xl font-bold text-[#FAFAFA] leading-tight mb-6">
               Frequently Asked Questions
             </h1>
-            <p className="text-lg text-[#A1A1AA]">Everything you need to know about AlgoStudio.</p>
+            <p className="text-lg text-[#A1A1AA]">Everything you need to know about Algo Studio.</p>
           </section>
 
           <FAQContent items={faqItems} />

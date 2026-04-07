@@ -45,7 +45,7 @@ export function AppNav({ activeItem, session, tier, monitorStatus }: AppNavProps
               href="/app"
               className="text-xl font-bold text-white hover:text-[#818CF8] transition-colors"
             >
-              AlgoStudio
+              Algo Studio
             </Link>
           </div>
           <div className="flex items-center gap-4">

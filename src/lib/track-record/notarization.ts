@@ -4,7 +4,7 @@
  * Provides a pluggable interface for periodically notarizing checkpoint hashes
  * with an external timestamping service. This achieves Level 3 verification:
  * a third party can prove that a certain state existed at a certain time,
- * even if the AlgoStudio server is compromised.
+ * even if the Algo Studio server is compromised.
  *
  * IMPORTANT: The core system is fully standalone. Notarization is an optional
  * enhancement that adds external timestamped proof. Without it, Level 1

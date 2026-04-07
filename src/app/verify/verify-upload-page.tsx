@@ -124,7 +124,7 @@ export function VerifyUploadPage() {
               <span className="bg-[#4F46E5]/20 text-[#A78BFA] rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-bold">
                 1
               </span>
-              <p>Upload a proof bundle JSON exported from an AlgoStudio track record.</p>
+              <p>Upload a proof bundle JSON exported from an Algo Studio track record.</p>
             </div>
             <div className="flex items-start gap-3">
               <span className="bg-[#4F46E5]/20 text-[#A78BFA] rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-[10px] font-bold">
@@ -147,7 +147,7 @@ export function VerifyUploadPage() {
         {/* CTA */}
         <div className="text-center mt-10">
           <Link href="/" className="text-sm text-[#7C8DB0] hover:text-[#A78BFA] transition-colors">
-            Powered by AlgoStudio
+            Powered by Algo Studio
           </Link>
         </div>
       </div>

@@ -265,7 +265,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
         subtitle={
           complete
             ? "Terminal connected"
-            : "Install the AlgoStudio Monitor EA to start sending live data."
+            : "Install the Algo Studio Monitor EA to start sending live data."
         }
         complete={complete}
       />
@@ -361,7 +361,7 @@ function StepWaitingForTrades({
         subtitle={
           complete
             ? "Strategy detected from trade activity"
-            : "AlgoStudio will auto-discover strategies from your trade history."
+            : "Algo Studio will auto-discover strategies from your trade history."
         }
         complete={complete}
       />
@@ -450,7 +450,7 @@ function StepStrategyDiscovered({
         <div className="rounded-xl bg-[rgba(79,70,229,0.04)] border border-[rgba(79,70,229,0.12)] p-4 space-y-2">
           <p className="text-xs font-medium text-[#818CF8]">What happens next?</p>
           <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-            Once you link a baseline backtest, AlgoStudio will continuously compare your live
+            Once you link a baseline backtest, Algo Studio will continuously compare your live
             results against it. You&apos;ll get:
           </p>
           <ul className="space-y-1.5 text-[11px] text-[#94A3B8]">
@@ -627,7 +627,7 @@ function StepLinkBaseline({
             ? "Baseline linked to strategy"
             : hasLinkableBaseline
               ? "Link your backtest baseline to activate monitoring for your discovered strategy."
-              : "AlgoStudio compares live behavior against a baseline backtest. This enables health scoring, drift detection, and edge-at-risk alerts."
+              : "Algo Studio compares live behavior against a baseline backtest. This enables health scoring, drift detection, and edge-at-risk alerts."
         }
         complete={complete}
       />
@@ -636,7 +636,7 @@ function StepLinkBaseline({
         <>
           <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             <p className="text-sm text-[#94A3B8]">
-              Upload your strategy&apos;s backtest report from MT5 Strategy Tester. AlgoStudio uses
+              Upload your strategy&apos;s backtest report from MT5 Strategy Tester. Algo Studio uses
               it to detect when live performance drifts from what you tested.
             </p>
             <InlineBacktestUpload onUploaded={onRefresh} />
@@ -921,7 +921,7 @@ export function OnboardingClient() {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white">Setting up AlgoStudio</h1>
+          <h1 className="text-2xl font-bold text-white">Setting up Algo Studio</h1>
           <p className="text-sm text-[#7C8DB0] mt-2">Loading your setup progress...</p>
         </div>
         <div className="flex justify-center py-12">
@@ -946,7 +946,7 @@ export function OnboardingClient() {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-white">
-          {currentStep === 5 ? "You're all set" : "Get started with AlgoStudio"}
+          {currentStep === 5 ? "You're all set" : "Get started with Algo Studio"}
         </h1>
         <p className="text-sm text-[#7C8DB0] mt-2">
           {currentStep === 5

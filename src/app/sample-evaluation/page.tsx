@@ -8,12 +8,12 @@ import { HealthScorePreview } from "@/components/marketing/health-score-preview"
 import { SampleEvaluationDemo } from "./sample-evaluation-demo";
 
 export const metadata: Metadata = {
-  title: "Sample Strategy Evaluation — See What You Get | AlgoStudio",
+  title: "Sample Strategy Evaluation — See What You Get | Algo Studio",
   description:
-    "See a real strategy evaluation with health scoring, Monte Carlo validation, verified track record, and edge monitoring. This is what AlgoStudio shows you before you risk real capital.",
+    "See a real strategy evaluation with health scoring, Monte Carlo validation, verified track record, and edge monitoring. This is what Algo Studio shows you before you risk real capital.",
   alternates: { canonical: "/sample-evaluation" },
   openGraph: {
-    title: "Sample Strategy Evaluation — AlgoStudio",
+    title: "Sample Strategy Evaluation — Algo Studio",
     description:
       "See a real strategy evaluation: health score, drift detection, risk metrics, and verified track record.",
   },
@@ -45,7 +45,7 @@ export default function SampleEvaluationPage() {
               This is what a strategy evaluation looks like
             </h1>
             <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto">
-              Below is a real evaluation from AlgoStudio. Health scoring, drift detection, risk
+              Below is a real evaluation from Algo Studio. Health scoring, drift detection, risk
               metrics, verification status, and lifecycle tracking — all generated automatically
               from a single backtest upload.
             </p>
@@ -100,8 +100,8 @@ export default function SampleEvaluationPage() {
                 <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Edge Drift Detection</h3>
                 <p className="text-sm text-[#A1A1AA] leading-relaxed">
                   CUSUM statistical test monitoring for persistent shifts in strategy expectancy.
-                  When your edge starts to fade, AlgoStudio detects it before the drawdown hits your
-                  account.
+                  When your edge starts to fade, Algo Studio detects it before the drawdown hits
+                  your account.
                 </p>
               </div>
               <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">

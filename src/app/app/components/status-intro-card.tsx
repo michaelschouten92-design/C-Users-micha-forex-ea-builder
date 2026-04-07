@@ -35,11 +35,11 @@ export function StatusIntroCard() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h4 className="text-sm font-semibold text-white mb-2">
-            How AlgoStudio evaluates your strategies
+            How Algo Studio evaluates your strategies
           </h4>
           <p className="text-xs text-[#A1A1AA] leading-relaxed mb-4">
             Every live strategy goes through an evaluation process. As your EA trades and builds a
-            track record, AlgoStudio continuously assesses its performance against its baseline.
+            track record, Algo Studio continuously assesses its performance against its baseline.
             Strategies earn their status — nothing is given for free.
           </p>
 

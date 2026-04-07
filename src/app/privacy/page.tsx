@@ -4,9 +4,9 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - AlgoStudio",
+  title: "Privacy Policy - Algo Studio",
   description:
-    "AlgoStudio privacy policy. Learn how we protect your data, handle payments securely, use cookies, and comply with GDPR regulations.",
+    "Algo Studio privacy policy. Learn how we protect your data, handle payments securely, use cookies, and comply with GDPR regulations.",
   alternates: { canonical: "/privacy" },
 };
 

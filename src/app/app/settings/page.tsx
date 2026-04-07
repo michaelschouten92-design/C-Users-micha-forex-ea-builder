@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export const metadata: Metadata = { title: "Settings | AlgoStudio" };
+export const metadata: Metadata = { title: "Settings | Algo Studio" };
 import { redirect } from "next/navigation";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";

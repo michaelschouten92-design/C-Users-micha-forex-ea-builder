@@ -58,7 +58,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         channel: "BROWSER_PUSH",
         destination: userId,
         payload: {
-          title: `AlgoStudio: ${alertType}`,
+          title: `Algo Studio: ${alertType}`,
           body: `${eaName} — ${message}`,
           url: "/app/monitor",
           tag: `${alertType}-${instanceId}`,
@@ -70,7 +70,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       if (rawToken && chatId) {
         const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
         if (botToken) {
-          const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
+          const telegramMessage = `<b>Algo Studio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
           await enqueueNotification({
             userId,
             channel: "TELEGRAM",

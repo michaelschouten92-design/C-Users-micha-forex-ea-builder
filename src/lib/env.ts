@@ -41,7 +41,7 @@ const envSchema = z.object({
 
   // Resend Email (optional in dev, recommended in prod)
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("AlgoStudio <onboarding@resend.dev>"),
+  EMAIL_FROM: z.string().default("Algo Studio <onboarding@resend.dev>"),
 
   // Stripe (optional in dev, required in prod for payments)
   STRIPE_SECRET_KEY: z.string().optional().or(z.literal("")),
@@ -297,7 +297,7 @@ function validateEnv() {
       AUTH_GITHUB_ID: undefined,
       AUTH_GITHUB_SECRET: undefined,
       RESEND_API_KEY: undefined,
-      EMAIL_FROM: "AlgoStudio <onboarding@resend.dev>",
+      EMAIL_FROM: "Algo Studio <onboarding@resend.dev>",
       STRIPE_SECRET_KEY: undefined,
       STRIPE_WEBHOOK_SECRET: undefined,
       STRIPE_PRO_MONTHLY_PRICE_ID: undefined,
@@ -369,7 +369,7 @@ function validateEnv() {
         AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
         AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
         RESEND_API_KEY: process.env.RESEND_API_KEY,
-        EMAIL_FROM: process.env.EMAIL_FROM || "AlgoStudio <onboarding@resend.dev>",
+        EMAIL_FROM: process.env.EMAIL_FROM || "Algo Studio <onboarding@resend.dev>",
         STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
         STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",

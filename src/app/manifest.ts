@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AlgoStudio",
-    short_name: "AlgoStudio",
+    name: "Algo Studio",
+    short_name: "Algo Studio",
     description: "No-Code MT5 Expert Advisor Builder",
     start_url: "/app",
     display: "standalone",

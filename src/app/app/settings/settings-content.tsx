@@ -79,7 +79,7 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
         <h2 className="text-lg font-semibold text-white mb-2">Push Notifications</h2>
         <p className="text-sm text-[#94A3B8] mb-4">
           Receive browser push notifications for alerts (drawdown, offline, new trades, errors).
-          Works even when AlgoStudio is not open.
+          Works even when Algo Studio is not open.
         </p>
         <PushNotificationToggle />
       </div>

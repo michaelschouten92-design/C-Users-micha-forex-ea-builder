@@ -388,10 +388,10 @@ export default function EvaluateDetailPage() {
             </div>
           </div>
 
-          {/* AlgoStudio Interpretation */}
+          {/* Algo Studio Interpretation */}
           <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl px-5 py-4">
             <h3 className="text-xs font-medium text-[#71717A] uppercase tracking-wide mb-3">
-              AlgoStudio Interpretation
+              Algo Studio Interpretation
             </h3>
             <p className="text-sm text-[#E4E4E7] leading-relaxed">
               {getInterpretation(data.healthStatus, data.metrics)}
@@ -656,7 +656,7 @@ export default function EvaluateDetailPage() {
             </h3>
             <p className="text-xs text-[#A1A1AA] leading-relaxed mb-2">
               A baseline defines the expected live behavior of this strategy using this evaluation
-              as the reference. Once linked, AlgoStudio monitors for:
+              as the reference. Once linked, Algo Studio monitors for:
             </p>
             <ul className="text-xs text-[#A1A1AA] space-y-1 mb-3 pl-3">
               <li className="flex items-center gap-2">
@@ -712,7 +712,7 @@ export default function EvaluateDetailPage() {
             </svg>
             <p className="text-xs text-[#A1A1AA]">
               <span className="text-[#818CF8] font-medium">What happens next? </span>
-              After linking a baseline and running your EA live, AlgoStudio monitors every trade
+              After linking a baseline and running your EA live, Algo Studio monitors every trade
               against expected behavior. You&apos;ll see drift alerts, equity tracking, and
               lifecycle progression in the{" "}
               <Link

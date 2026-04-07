@@ -16,14 +16,14 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   const data = await loadTrackRecord(token);
-  if (!data) return { title: "Track Record Not Found | AlgoStudio" };
+  if (!data) return { title: "Track Record Not Found | Algo Studio" };
 
   const displayName =
     data.account.broker && data.account.accountNumberMasked
       ? `${data.account.broker} Account ${data.account.accountNumberMasked}`
       : data.account.eaName;
-  const title = `${displayName} — Verified Trading Record | AlgoStudio`;
-  const description = `Verified trading record for ${displayName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by AlgoStudio.`;
+  const title = `${displayName} — Verified Trading Record | Algo Studio`;
+  const description = `Verified trading record for ${displayName}. ${data.performance.totalTrades} trades, ${data.performance.strategyCount} strategies monitored by Algo Studio.`;
   return {
     title,
     description,
@@ -149,7 +149,7 @@ export default async function TrackRecordPage({ params }: Props) {
                   d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                 />
               </svg>
-              Verified by AlgoStudio
+              Verified by Algo Studio
             </span>
             <ShareActions />
           </div>
@@ -333,7 +333,7 @@ export default async function TrackRecordPage({ params }: Props) {
             <div>
               <h3 className="text-sm font-semibold text-white mb-1">Verified Trading Record</h3>
               <p className="text-xs text-[#64748B] leading-relaxed">
-                This track record is verified through AlgoStudio&apos;s immutable proof chain. All
+                This track record is verified through Algo Studio&apos;s immutable proof chain. All
                 trades are recorded via broker heartbeats and cryptographically linked to prevent
                 tampering. Data sources include live equity snapshots, trade confirmations, and
                 health monitoring.
@@ -345,7 +345,7 @@ export default async function TrackRecordPage({ params }: Props) {
         {/* Footer */}
         <div className="mt-6 flex items-center justify-between text-[10px] text-[#475569]">
           <Link href="/" className="hover:text-[#94A3B8] transition-colors">
-            Monitored by AlgoStudio
+            Monitored by Algo Studio
           </Link>
           <ShareActions />
         </div>

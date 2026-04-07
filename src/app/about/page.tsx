@@ -4,12 +4,12 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "About — AlgoStudio | Strategy Monitoring & Governance Platform",
+  title: "About — Algo Studio | Strategy Monitoring & Governance Platform",
   description:
-    "AlgoStudio is a monitoring and governance platform for live algorithmic strategies. Continuous verification, structural deviation detection, and public proof of strategy integrity.",
+    "Algo Studio is a monitoring and governance platform for live algorithmic strategies. Continuous verification, structural deviation detection, and public proof of strategy integrity.",
   alternates: { canonical: "/about" },
   openGraph: {
-    title: "About AlgoStudio — Monitoring & Governance for Live Strategies",
+    title: "About Algo Studio — Monitoring & Governance for Live Strategies",
     description:
       "Continuous monitoring, verification, and public proof for algorithmic trading strategies.",
   },
@@ -23,11 +23,11 @@ export default function AboutPage() {
       <main className="pt-32 pb-8 px-4 sm:px-6 flex-1">
         <div className="max-w-3xl mx-auto">
           {/* ════════════════════════════════════════════════════════
-              1. HERO — Why AlgoStudio exists
+              1. HERO — Why Algo Studio exists
               ════════════════════════════════════════════════════════ */}
           <section>
             <h1 className="text-3xl md:text-4xl font-bold text-[#FAFAFA] leading-tight">
-              Why AlgoStudio Exists.
+              Why Algo Studio Exists.
             </h1>
 
             <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
@@ -46,7 +46,7 @@ export default function AboutPage() {
                 it in the first place.
               </p>
               <p className="text-[#FAFAFA] font-medium">
-                AlgoStudio exists to close that gap — continuous monitoring that measures strategy
+                Algo Studio exists to close that gap — continuous monitoring that measures strategy
                 integrity against its own statistical baseline.
               </p>
             </div>
@@ -88,7 +88,7 @@ export default function AboutPage() {
 
             <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
               <p>
-                AlgoStudio does not place trades. It does not generate signals. It does not manage
+                Algo Studio does not place trades. It does not generate signals. It does not manage
                 positions or interact with broker execution.
               </p>
               <p>
@@ -143,10 +143,10 @@ export default function AboutPage() {
                 trusted — proven against data.
               </p>
               <p>
-                AlgoStudio records verification evidence at every stage: backtest validation scores,
-                Monte Carlo survival rates, live performance metrics, governance snapshots, and
-                lifecycle transitions. Each record is structurally bound to the data that produced
-                it.
+                Algo Studio records verification evidence at every stage: backtest validation
+                scores, Monte Carlo survival rates, live performance metrics, governance snapshots,
+                and lifecycle transitions. Each record is structurally bound to the data that
+                produced it.
               </p>
             </div>
 

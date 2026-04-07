@@ -3,13 +3,13 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "System Status — AlgoStudio",
+  title: "System Status — Algo Studio",
   description:
-    "Check the current status of AlgoStudio services including the web application, code generation engine, live EA dashboard, and API endpoints.",
+    "Check the current status of Algo Studio services including the web application, code generation engine, live EA dashboard, and API endpoints.",
   alternates: { canonical: "/status" },
   openGraph: {
-    title: "AlgoStudio System Status",
-    description: "Real-time status of all AlgoStudio services and infrastructure.",
+    title: "Algo Studio System Status",
+    description: "Real-time status of all Algo Studio services and infrastructure.",
   },
 };
 
@@ -119,7 +119,7 @@ export default function StatusPage() {
           {/* Hero */}
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">System Status</h1>
-            <p className="text-[#94A3B8]">Current operational status of AlgoStudio services.</p>
+            <p className="text-[#94A3B8]">Current operational status of Algo Studio services.</p>
           </div>
 
           {/* Overall Status */}

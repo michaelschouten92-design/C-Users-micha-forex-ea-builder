@@ -318,7 +318,7 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-14 items-center">
             <div className="flex items-center gap-3">
-              <h1 className="text-base font-semibold text-[#FAFAFA]">AlgoStudio</h1>
+              <h1 className="text-base font-semibold text-[#FAFAFA]">Algo Studio</h1>
               <span className="text-[10px] text-[#71717A] font-semibold tracking-widest uppercase hidden sm:inline">
                 Admin
               </span>

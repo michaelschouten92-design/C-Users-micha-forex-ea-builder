@@ -80,7 +80,7 @@ export function ActivationPanel() {
             Your live deployment is now being verified against its baseline.
           </p>
           <p className="text-[11px] text-[#64748B] mt-1">
-            AlgoStudio will surface edge drift, governance status, and incidents here.
+            Algo Studio will surface edge drift, governance status, and incidents here.
           </p>
         </div>
         <button
@@ -117,7 +117,7 @@ export function ActivationPanel() {
         <div>
           <h3 className="text-sm font-semibold text-white">Start Monitoring Your Strategy</h3>
           <p className="text-xs text-[#7C8DB0] mt-0.5">
-            AlgoStudio verifies whether your live strategy still matches its historical edge.{" "}
+            Algo Studio verifies whether your live strategy still matches its historical edge.{" "}
             {completedCount}/3 steps completed.
           </p>
         </div>
@@ -152,7 +152,7 @@ export function ActivationPanel() {
         <OnboardingStep
           stepNumber={2}
           label="Connect Monitor EA"
-          description="Send live trade facts from your MT5 terminal to AlgoStudio."
+          description="Send live trade facts from your MT5 terminal to Algo Studio."
           completed={status.monitorConnected}
           active={activeStep === 2}
         />

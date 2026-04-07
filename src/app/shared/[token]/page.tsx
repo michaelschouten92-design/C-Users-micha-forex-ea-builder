@@ -22,13 +22,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   if (!share) {
-    return { title: "Shared Strategy | AlgoStudio", robots: { index: false, follow: false } };
+    return { title: "Shared Strategy | Algo Studio", robots: { index: false, follow: false } };
   }
 
   return {
-    title: `${share.project.name} — Shared Strategy | AlgoStudio`,
+    title: `${share.project.name} — Shared Strategy | Algo Studio`,
     description:
-      share.project.description ?? "View this shared trading strategy verified with AlgoStudio.",
+      share.project.description ?? "View this shared trading strategy verified with Algo Studio.",
     robots: { index: false, follow: false },
   };
 }

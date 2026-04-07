@@ -71,6 +71,34 @@ input[type="number"] {
   --interactive-hover: var(--indigo-tech-light);
   --interactive-active: var(--neon-cyan);
   --interactive-disabled: var(--cool-gray-muted);
+
+  /* Gradient Tokens */
+  --gradient-hero: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  --gradient-section-alt: linear-gradient(180deg, rgba(18, 18, 22, 0.5) 0%, #09090b 100%);
+  --gradient-card-hover: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+  --gradient-radial-glow: radial-gradient(
+    700px circle at 50% 0%,
+    rgba(200, 200, 220, 0.06) 0%,
+    rgba(200, 200, 220, 0.02) 40%,
+    transparent 70%
+  );
+
+  /* Glass Tokens */
+  --glass-bg: rgba(22, 22, 28, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+
+  /* Text Gradient Tokens — removed gradient-text-accent (AI cliché) */
+  --text-gradient-warm: linear-gradient(135deg, #fafafa 30%, #71717a 100%);
 }
 
 @theme inline {
@@ -103,6 +131,23 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   min-height: 100vh;
+}
+
+/* ============================================
+   NOISE / GRAIN OVERLAY
+   Breaks digital flatness. Fixed, non-interactive.
+   ============================================ */
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 /* ============================================
@@ -357,6 +402,263 @@ body {
 }
 
 /* ============================================
+   MARKETING — Glass & Gradient Utilities
+   ============================================ */
+
+/* Glassmorphism card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.875rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient text — warm fade only (no colored gradients on headings) */
+.gradient-text-warm {
+  background: var(--text-gradient-warm);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Section glow — radial glow behind section content */
+.section-glow {
+  position: relative;
+}
+
+.section-glow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  height: 400px;
+  background: var(--gradient-radial-glow);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Gradient border using pseudo-element */
+.border-gradient {
+  position: relative;
+  border-radius: 0.875rem;
+  background: #09090b;
+}
+
+.border-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+/* Dot grid background pattern */
+.grid-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Primary CTA — inner highlight + tactile press */
+.btn-primary-cta {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-primary-cta:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary-cta:active {
+  transform: scale(0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Tactile feedback for all interactive elements */
+a[class*="rounded"]:active,
+button:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   MARKETING — Keyframe Animations
+   ============================================ */
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(200, 200, 220, 0.06);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(200, 200, 220, 0.12);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Scroll-triggered animation classes */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-on-scroll.slide-left {
+  transform: translateX(-24px);
+}
+
+.animate-on-scroll.slide-left.is-visible {
+  transform: translateX(0);
+}
+
+.animate-on-scroll.slide-right {
+  transform: translateX(24px);
+}
+
+.animate-on-scroll.slide-right.is-visible {
+  transform: translateX(0);
+}
+
+/* Stagger delays for scroll animations */
+.animate-on-scroll.delay-1 {
+  transition-delay: 100ms;
+}
+.animate-on-scroll.delay-2 {
+  transition-delay: 200ms;
+}
+.animate-on-scroll.delay-3 {
+  transition-delay: 300ms;
+}
+.animate-on-scroll.delay-4 {
+  transition-delay: 400ms;
+}
+
+/* Floating animation */
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Glow pulse for CTAs and important elements */
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Gradient shift for animated backgrounds */
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* ============================================
    BUILDER CANVAS ANIMATIONS
    ============================================ */
 
@@ -602,14 +904,23 @@ body {
   }
 
   /* Show hidden elements immediately without animation */
-  .fade-up-hidden {
+  .fade-up-hidden,
+  .animate-on-scroll {
     opacity: 1;
     transform: none;
   }
 
   .animate-proving-pulse,
-  .animate-health-glow {
+  .animate-health-glow,
+  .animate-float,
+  .animate-glow-pulse,
+  .animate-gradient-shift {
     animation: none !important;
+  }
+
+  .glass-card:hover,
+  .hover-lift:hover {
+    transform: none;
   }
 
   .bar-shimmer {

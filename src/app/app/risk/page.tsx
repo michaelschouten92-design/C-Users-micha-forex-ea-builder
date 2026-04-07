@@ -8,7 +8,7 @@ import { RiskPageTabs } from "./risk-page-tabs";
 import { resolveTier } from "@/lib/plan-limits";
 
 export const metadata: Metadata = {
-  title: "Risk — Monte Carlo Simulator, Position Sizing & Portfolio Risk | AlgoStudio",
+  title: "Risk — Monte Carlo Simulator, Position Sizing & Portfolio Risk | Algo Studio",
   description:
     "Run Monte Carlo simulations, compare position sizing methods, and monitor portfolio-level risk across all your live strategies.",
 };

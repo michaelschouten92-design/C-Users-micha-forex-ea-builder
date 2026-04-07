@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 
   if (!identity || !identity.publicPage?.isPublic) {
-    return { title: "Strategy Not Found | AlgoStudio" };
+    return { title: "Strategy Not Found | Algo Studio" };
   }
 
   // Gather available proof signals
@@ -74,8 +74,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     liveTrades = trackState?.totalTrades ?? null;
   }
 
-  // Build title: "{Name} — {Level} Strategy | AlgoStudio"
-  const title = `${name} — ${levelMeta.label} Strategy | AlgoStudio`;
+  // Build title: "{Name} — {Level} Strategy | Algo Studio"
+  const title = `${name} — ${levelMeta.label} Strategy | Algo Studio`;
 
   // Build description from available signals
   const description = buildProofDescription(name, levelMeta.label, {
@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url,
-      siteName: "AlgoStudio",
+      siteName: "Algo Studio",
       type: "article",
     },
     twitter: {
@@ -140,11 +140,11 @@ function buildProofDescription(
 
   // If we have specific stats, build a data-rich description
   if (parts.length > 0) {
-    return `${levelLabel} strategy proof for ${name}. ${parts.join(". ")}. Public proof report with tamper-evident audit chain by AlgoStudio.`;
+    return `${levelLabel} strategy proof for ${name}. ${parts.join(". ")}. Public proof report with tamper-evident audit chain by Algo Studio.`;
   }
 
   // Fallback: strong generic description
-  return `${levelLabel} strategy proof for ${name}. Public proof report with verification ladder, tamper-evident audit chain, and live monitoring by AlgoStudio.`;
+  return `${levelLabel} strategy proof for ${name}. Public proof report with verification ladder, tamper-evident audit chain, and live monitoring by Algo Studio.`;
 }
 
 export default async function ProofPage({ params }: Props) {

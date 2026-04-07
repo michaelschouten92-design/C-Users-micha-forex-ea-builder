@@ -90,13 +90,13 @@ describe("ProofPageView", () => {
     vi.restoreAllMocks();
   });
 
-  // B7 — "Verified by AlgoStudio" badge renders
-  it("renders the 'Verified by AlgoStudio' badge", async () => {
+  // B7 — "Verified by Algo Studio" badge renders
+  it("renders the 'Verified by Algo Studio' badge", async () => {
     mockFetchResponses(makeProofData(), makeVerification());
     render(<ProofPageView strategyId="AS-10F10DCA" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Verified by AlgoStudio")).toBeInTheDocument();
+      expect(screen.getByText("Verified by Algo Studio")).toBeInTheDocument();
     });
   });
 
@@ -201,7 +201,7 @@ describe("ProofPageView", () => {
     render(<ProofPageView strategyId="AS-10F10DCA" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Verified by AlgoStudio")).toBeInTheDocument();
+      expect(screen.getByText("Verified by Algo Studio")).toBeInTheDocument();
     });
 
     // Verify the verification endpoint was called with correct strategyId
@@ -219,7 +219,7 @@ describe("ProofPageView", () => {
     render(<ProofPageView strategyId="AS-10F10DCA" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Verified by AlgoStudio")).toBeInTheDocument();
+      expect(screen.getByText("Verified by Algo Studio")).toBeInTheDocument();
     });
   });
 });

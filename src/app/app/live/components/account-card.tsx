@@ -591,7 +591,7 @@ export function AccountCard({
                 <p className="text-[10px] text-[#10B981]">Published</p>
               ) : (
                 <p className="text-[10px] text-[#64748B]">
-                  Share a verified live account track record monitored by AlgoStudio.
+                  Share a verified live account track record monitored by Algo Studio.
                 </p>
               )}
             </div>

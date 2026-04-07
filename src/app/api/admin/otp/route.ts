@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         await resend.emails.send({
           from: env.EMAIL_FROM,
           to: session.user.email,
-          subject: "AlgoStudio Admin Verification Code",
+          subject: "Algo Studio Admin Verification Code",
           html: `
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
               <h2>Admin Verification Code</h2>

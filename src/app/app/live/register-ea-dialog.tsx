@@ -139,7 +139,7 @@ export function RegisterEADialog({ onSuccess, triggerRef }: RegisterEADialogProp
               /* Registration form */
               <form onSubmit={handleSubmit} className="px-6 pb-6">
                 <p className="text-sm text-[#94A3B8] mb-4">
-                  Monitor any EA — even those not built with AlgoStudio. Attach the Monitor EA to
+                  Monitor any EA — even those not built with Algo Studio. Attach the Monitor EA to
                   your chart and it will send live telemetry to your dashboard.
                 </p>
 

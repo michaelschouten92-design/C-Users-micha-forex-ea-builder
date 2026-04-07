@@ -48,9 +48,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Send test payload
   const testPayload = {
     type: "TEST",
-    source: "AlgoStudio",
+    source: "Algo Studio",
     timestamp: new Date().toISOString(),
-    message: "This is a test webhook from AlgoStudio. Your webhook is configured correctly.",
+    message: "This is a test webhook from Algo Studio. Your webhook is configured correctly.",
     data: {
       userId: session.user.id,
       testId: crypto.randomUUID(),

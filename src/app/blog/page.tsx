@@ -5,14 +5,14 @@ import { getAllPosts } from "@/lib/blog/posts";
 import { BlogList } from "./blog-list";
 
 export const metadata: Metadata = {
-  title: "Blog — Strategy Monitoring & Governance | AlgoStudio",
+  title: "Blog — Strategy Monitoring & Governance | Algo Studio",
   description:
     "Articles on algorithmic trading strategy monitoring, verification, risk analysis, and governance. Practical insights for systematic traders.",
   alternates: {
     canonical: "/blog",
   },
   openGraph: {
-    title: "Blog | AlgoStudio",
+    title: "Blog | Algo Studio",
     description:
       "Articles on strategy monitoring, verification, and governance for algorithmic trading.",
   },

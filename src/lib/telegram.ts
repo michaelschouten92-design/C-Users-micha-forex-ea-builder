@@ -89,7 +89,7 @@ export async function validateTelegramConfig(
     const sent = await sendTelegramAlert(
       botToken,
       chatId,
-      "AlgoStudio connected successfully. You will receive trade alerts here."
+      "Algo Studio connected successfully. You will receive trade alerts here."
     );
 
     if (!sent) {

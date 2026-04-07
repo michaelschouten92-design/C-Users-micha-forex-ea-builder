@@ -806,7 +806,7 @@ export function LiveDashboardClient({
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Welcome to AlgoStudio</h3>
+                    <h3 className="text-lg font-bold text-white">Welcome to Algo Studio</h3>
                     <p className="text-sm text-[#7C8DB0]">Set up live monitoring in minutes</p>
                   </div>
                 </div>

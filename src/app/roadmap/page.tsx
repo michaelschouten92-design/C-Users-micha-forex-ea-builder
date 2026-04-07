@@ -4,12 +4,12 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Roadmap — AlgoStudio",
+  title: "Roadmap — Algo Studio",
   description:
-    "See what we're building next. AlgoStudio roadmap with recently shipped features, current priorities, and future plans for strategy monitoring and governance.",
+    "See what we're building next. Algo Studio roadmap with recently shipped features, current priorities, and future plans for strategy monitoring and governance.",
   alternates: { canonical: "/roadmap" },
   openGraph: {
-    title: "AlgoStudio Roadmap — See What's Coming",
+    title: "Algo Studio Roadmap — See What's Coming",
     description:
       "From advanced analytics to broker integrations. See every feature we're building for strategy monitoring and governance.",
   },
@@ -168,7 +168,7 @@ export default function RoadmapPage() {
           {/* Hero */}
           <div className="text-center mb-16">
             <h1 className="text-4xl sm:text-5xl font-bold text-[#FAFAFA] mb-4">
-              AlgoStudio Roadmap
+              Algo Studio Roadmap
             </h1>
             <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto">
               See what we have shipped, what we are building now, and what is planned for the
@@ -205,7 +205,7 @@ export default function RoadmapPage() {
           <div className="text-center mt-16 border-t border-[rgba(255,255,255,0.06)] pt-12">
             <h2 className="text-2xl font-bold text-[#FAFAFA] mb-3">Have a feature request?</h2>
             <p className="text-[#A1A1AA] mb-6">
-              We prioritize based on user feedback. Let us know what would make AlgoStudio more
+              We prioritize based on user feedback. Let us know what would make Algo Studio more
               useful for you.
             </p>
             <Link

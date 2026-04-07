@@ -27,21 +27,21 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
-    default: "AlgoStudio — The Proof Layer for Algorithmic Trading",
-    template: "%s | AlgoStudio",
+    default: "Algo Studio — The Proof Layer for Algorithmic Trading",
+    template: "%s | Algo Studio",
   },
   description:
     "Verify your trading strategy with cryptographic proof. Upload a backtest for instant health scoring, validate with Monte Carlo analysis, and build a tamper-proof live track record anyone can audit.",
   openGraph: {
-    title: "AlgoStudio — Proof > Backtests",
+    title: "Algo Studio — Proof > Backtests",
     description:
       "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification. The trust layer algo trading has been missing.",
     type: "website",
-    siteName: "AlgoStudio",
+    siteName: "Algo Studio",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AlgoStudio — The Proof Layer for Algorithmic Trading",
+    title: "Algo Studio — The Proof Layer for Algorithmic Trading",
     description:
       "Verify your trading strategy with cryptographic proof. Tamper-proof track records, Monte Carlo validation, and independent auditing. Free to start.",
   },
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "AlgoStudio",
+  name: "Algo Studio",
   url: process.env.AUTH_URL || "https://algo-studio.com",
   logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
   description:

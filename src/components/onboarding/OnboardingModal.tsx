@@ -107,7 +107,7 @@ const STEPS = [
     step: 5,
     title: "Live Edge Monitoring",
     description:
-      "AlgoStudio compares live behavior against the baseline and signals when edge confidence degrades.",
+      "Algo Studio compares live behavior against the baseline and signals when edge confidence degrades.",
   },
 ];
 
@@ -118,11 +118,11 @@ const GOOD_TO_KNOW = [
   },
   {
     q: "What happens when drift is detected?",
-    a: "AlgoStudio notifies you. It never intervenes in your trading. You decide what action to take.",
+    a: "Algo Studio notifies you. It never intervenes in your trading. You decide what action to take.",
   },
   {
     q: "Can I monitor multiple strategies on one account?",
-    a: "Yes. AlgoStudio groups trades by symbol and magic number automatically.",
+    a: "Yes. Algo Studio groups trades by symbol and magic number automatically.",
   },
   {
     q: "How long until my strategy appears?",
@@ -172,8 +172,8 @@ export function OnboardingHelpButton() {
       <button
         onClick={() => setOpen(true)}
         className="w-7 h-7 rounded-full border border-[rgba(255,255,255,0.12)] text-[#71717A] hover:text-white hover:border-[rgba(255,255,255,0.25)] transition-colors flex items-center justify-center text-xs font-medium"
-        aria-label="How AlgoStudio Works"
-        title="How AlgoStudio Works"
+        aria-label="How Algo Studio Works"
+        title="How Algo Studio Works"
       >
         ?
       </button>
@@ -188,7 +188,7 @@ export function OnboardingHelpButton() {
         <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl w-[90vw] max-w-lg p-6 max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base font-semibold text-white">How AlgoStudio Works</h2>
+            <h2 className="text-base font-semibold text-white">How Algo Studio Works</h2>
             <button
               onClick={() => setOpen(false)}
               className="text-[#64748B] hover:text-white transition-colors p-1"
