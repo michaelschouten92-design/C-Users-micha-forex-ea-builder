@@ -62,6 +62,7 @@ export default async function SettingsPage() {
           email={session.user.email || ""}
           emailVerified={!!user?.emailVerified}
           maxDrawdownPct={user?.maxDrawdownPct ?? null}
+          tier={tier}
         />
       </main>
     </div>

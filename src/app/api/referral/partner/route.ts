@@ -66,6 +66,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Tier check: only paid users can become partners
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: session.user.id },
+    select: { tier: true },
+  });
+  if (!subscription || subscription.tier === "FREE") {
+    return NextResponse.json(
+      { error: "A paid subscription is required to join the referral program." },
+      { status: 403 }
+    );
+  }
+
   let payoutEmail: string | undefined;
   try {
     const body = await request.json();

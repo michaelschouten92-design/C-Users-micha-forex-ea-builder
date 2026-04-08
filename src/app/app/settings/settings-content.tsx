@@ -47,9 +47,15 @@ type SettingsContentProps = {
   email: string;
   emailVerified: boolean;
   maxDrawdownPct: number | null;
+  tier: string;
 };
 
-export function SettingsContent({ email, emailVerified, maxDrawdownPct }: SettingsContentProps) {
+export function SettingsContent({
+  email,
+  emailVerified,
+  maxDrawdownPct,
+  tier,
+}: SettingsContentProps) {
   return (
     <div className="space-y-6">
       {/* Email */}
@@ -87,6 +93,9 @@ export function SettingsContent({ email, emailVerified, maxDrawdownPct }: Settin
 
       {/* Telegram */}
       <TelegramSection />
+
+      {/* Referral Program */}
+      <ReferralSection isPaid={tier !== "FREE"} />
 
       {/* Security */}
       <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
@@ -820,6 +829,198 @@ function DrawdownLimitSection({ initialValue }: { initialValue: number | null })
         When triggered, all your strategies will be paused and you&apos;ll receive an alert. You can
         resume trading manually from the Command Center.
       </p>
+    </div>
+  );
+}
+
+// ── Referral Program Section ──────────────────────────────────
+
+function ReferralSection({ isPaid }: { isPaid: boolean }) {
+  const [status, setStatus] = useState<string | null>(null); // null = not a partner
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [stats, setStats] = useState<{
+    clicks: number;
+    signups: number;
+    confirmedCustomers: number;
+    netEarnedCents: number;
+    unpaidBalanceCents: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const res = await fetch("/api/referral/partner");
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setReferralCode(data.referralCode);
+            setStatus(data.partner?.status ?? null);
+          }
+          if (data.partner?.status === "ACTIVE") {
+            const statsRes = await fetch("/api/referral/stats");
+            if (statsRes.ok && active) {
+              const s = await statsRes.json();
+              setStats({
+                clicks: s.clicks?.total ?? 0,
+                signups: s.signups ?? 0,
+                confirmedCustomers: s.confirmedCustomers ?? 0,
+                netEarnedCents: s.netEarnedCents ?? 0,
+                unpaidBalanceCents: s.unpaidBalanceCents ?? 0,
+              });
+            }
+          }
+        }
+      } catch {
+        // silently fail
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleApply() {
+    setApplying(true);
+    try {
+      const res = await fetch("/api/referral/partner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showSuccess(data.message ?? "Application submitted!");
+        setStatus("PENDING");
+      } else {
+        showError(data.error ?? "Failed to apply");
+      }
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  function handleCopy() {
+    if (!referralCode) return;
+    navigator.clipboard.writeText(`https://algo-studio.com/?ref=${referralCode}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+      <div className="flex items-center gap-3 mb-2">
+        <svg
+          className="w-5 h-5 text-[#818CF8]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
+          />
+        </svg>
+        <h2 className="text-lg font-semibold text-white">Referral Program</h2>
+        {status === "ACTIVE" && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] font-medium">
+            Active
+          </span>
+        )}
+        {status === "PENDING" && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] font-medium">
+            Pending
+          </span>
+        )}
+      </div>
+
+      {!isPaid ? (
+        <>
+          <p className="text-sm text-[#A1A1AA] mb-3">
+            Earn 20% recurring commission on every paying customer you refer.
+          </p>
+          <p className="text-xs text-[#52525B]">
+            Upgrade to a paid plan to join the referral program.
+          </p>
+        </>
+      ) : status === "ACTIVE" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-[#A1A1AA]">
+            Share your link and earn 20% recurring commission.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={`https://algo-studio.com/?ref=${referralCode}`}
+              className="flex-1 px-3 py-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-sm text-white font-mono"
+            />
+            <button
+              onClick={handleCopy}
+              className="px-3 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#5558E6] transition-all"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          {stats && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <div className="text-center">
+                <div className="text-lg font-bold text-white tabular-nums">
+                  {stats.confirmedCustomers}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Customers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-[#10B981] tabular-nums">
+                  €{(stats.netEarnedCents / 100).toFixed(2)}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Earned</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-white tabular-nums">
+                  €{(stats.unpaidBalanceCents / 100).toFixed(2)}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Pending</div>
+              </div>
+            </div>
+          )}
+          <a
+            href="/app/referrals"
+            className="inline-block text-xs text-[#818CF8] hover:text-white transition-colors mt-1"
+          >
+            View full dashboard →
+          </a>
+        </div>
+      ) : status === "PENDING" ? (
+        <p className="text-sm text-[#A1A1AA]">
+          Your application is being reviewed. You&apos;ll be notified once approved.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-[#A1A1AA] mb-3">
+            Earn 20% recurring commission on every paying customer you refer to Algo Studio. Monthly
+            payouts.
+          </p>
+          <button
+            onClick={handleApply}
+            disabled={applying}
+            className="px-5 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#5558E6] disabled:opacity-50 transition-all"
+          >
+            {applying ? "Submitting..." : "Apply to Join"}
+          </button>
+        </>
+      )}
     </div>
   );
 }
