@@ -162,6 +162,8 @@ model User {
   outboxEntries      NotificationOutbox[]
   controlLayerAlerts  ControlLayerAlert[]
   terminalConnections TerminalConnection[]
+  referralPartner     ReferralPartner?
+  referralAttribution ReferralAttribution? @relation("ReferredAttribution")
 
   @@index([createdAt])
   @@index([suspended])
@@ -1424,4 +1426,115 @@ model TerminalDeployment {
   @@unique([terminalConnectionId, deploymentKey])
   @@index([instanceId])
   @@index([terminalConnectionId, lastSeenAt])
+}
+
+// ============================================
+// REFERRAL / AFFILIATE PROGRAM
+// ============================================
+
+model ReferralPartner {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  commissionBps    Int      @default(2000) // Basis points: 2000 = 20%
+  status           String   @default("PENDING") // PENDING, ACTIVE, SUSPENDED, TERMINATED
+  payoutEmail      String?
+  payoutMethod     String?  // "bank_transfer", "paypal"
+  payoutDetails    String?  @db.Text // Encrypted payout instructions
+  totalEarnedCents Int      @default(0) // Cached aggregate (ledger SUM is truth)
+  totalPaidCents   Int      @default(0) // Cached aggregate (ledger SUM is truth)
+  adminNotes       String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks       ReferralClick[]
+  ledger       ReferralLedger[]
+  payouts      ReferralPayout[]
+  attributions ReferralAttribution[]
+
+  @@index([status])
+}
+
+model ReferralAttribution {
+  id                String    @id @default(cuid())
+  referredUserId    String    @unique // One attribution per customer
+  partnerId         String
+  referralCode      String    // Snapshot of the code used at signup
+  status            String    @default("PENDING") // PENDING, CONFIRMED, REJECTED, OVERRIDDEN
+  confirmedAt       DateTime?
+  rejectedAt        DateTime?
+  rejectedReason    String?
+  overriddenBy      String?   // Admin user ID who overrode
+  overriddenAt      DateTime?
+  previousPartnerId String?   // Audit: previous partner before override
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  referredUser User            @relation("ReferredAttribution", fields: [referredUserId], references: [id], onDelete: Cascade)
+  partner      ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId])
+  @@index([status])
+}
+
+model ReferralClick {
+  id          String   @id @default(cuid())
+  partnerId   String
+  landingPath String
+  ipHash      String?  // SHA-256 of IP (privacy-safe)
+  uaHash      String?  // SHA-256 of User-Agent
+  referer     String?  // HTTP Referer header
+  createdAt   DateTime @default(now())
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@index([partnerId, createdAt])
+}
+
+model ReferralLedger {
+  id                   String   @id @default(cuid())
+  partnerId            String
+  type                 String   // COMMISSION_EARNED, COMMISSION_REVERSED, PAYOUT_SENT, ADMIN_ADJUSTMENT
+  referredUserId       String?
+  stripeInvoiceId      String?
+  stripeChargeId       String?
+  payoutId             String?  // Set when included in a payout batch
+  amountCents          Int      // Positive=earned, negative=reversed/paid
+  currency             String   @default("eur")
+  commissionBps        Int?     // Rate snapshot at booking time
+  invoiceSubtotalCents Int?     // Pre-tax invoice amount (cents, audit trail)
+  invoiceTaxCents      Int?     // Tax amount (cents, audit trail)
+  description          String?
+  createdAt            DateTime @default(now())
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  payout  ReferralPayout? @relation(fields: [payoutId], references: [id])
+
+  @@unique([stripeInvoiceId, type], name: "ledger_invoice_type_unique")
+  @@index([partnerId, createdAt])
+  @@index([referredUserId])
+  @@index([payoutId])
+}
+
+model ReferralPayout {
+  id            String    @id @default(cuid())
+  partnerId     String
+  amountCents   Int
+  currency      String    @default("eur")
+  status        String    @default("PENDING") // PENDING, APPROVED, PAID, CANCELLED
+  periodStart   DateTime
+  periodEnd     DateTime
+  approvedBy    String?   // Admin user ID
+  approvedAt    DateTime?
+  paidAt        DateTime?
+  paidReference String?   // Bank ref, PayPal transaction ID, etc.
+  adminNotes    String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  partner       ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  ledgerEntries ReferralLedger[]
+
+  @@index([partnerId, status])
+  @@index([status])
 }

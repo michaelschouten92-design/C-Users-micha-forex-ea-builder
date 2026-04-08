@@ -5,6 +5,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { CookieConsent } from "@/components/cookie-consent";
 import { Analytics } from "@vercel/analytics/next";
+import { Suspense } from "react";
+import { ReferralClickTracker } from "@/components/referral/click-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -88,6 +90,9 @@ export default function RootLayout({
           Skip to main content
         </a>
         <Providers>{children}</Providers>
+        <Suspense fallback={null}>
+          <ReferralClickTracker />
+        </Suspense>
         <Analytics />
         <CookieConsent />
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (

@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         emailVerified: true,
+        referredBy: true,
         subscription: true,
       },
     });
@@ -198,6 +199,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         plan,
         interval,
+        ...(user.referredBy ? { referredBy: user.referredBy } : {}),
       },
     };
 

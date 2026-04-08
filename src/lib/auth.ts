@@ -222,6 +222,12 @@ providers.push(
             },
           });
 
+          // Create referral attribution (fire-and-forget)
+          if (validatedReferredBy) {
+            const { createAttributionForSignup } = await import("@/lib/referral/attribution");
+            createAttributionForSignup(user.id, validatedReferredBy);
+          }
+
           // Send verification email (fire-and-forget, don't block registration)
           const verifyToken = randomBytes(32).toString("hex");
           const hashedToken = createHash("sha256").update(verifyToken).digest("hex");
@@ -405,6 +411,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             _isNewUser = true;
 
+            // Create referral attribution (fire-and-forget)
+            if (oauthReferredBy) {
+              import("@/lib/referral/attribution").then(({ createAttributionForSignup }) =>
+                createAttributionForSignup(existingUser!.id, oauthReferredBy!)
+              );
+            }
+
             // Send welcome email (fire-and-forget)
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
               authLog.error({ err, email: user.email }, "Failed to send welcome email (Google)");
@@ -491,6 +504,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               },
             });
+
+            // Create referral attribution (fire-and-forget)
+            if (oauthReferredBy) {
+              import("@/lib/referral/attribution").then(({ createAttributionForSignup }) =>
+                createAttributionForSignup(existingUser!.id, oauthReferredBy!)
+              );
+            }
 
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
               authLog.error({ err, email: user.email }, "Failed to send welcome email (Discord)");
@@ -596,6 +616,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               },
             });
+
+            // Create referral attribution (fire-and-forget)
+            if (oauthReferredBy) {
+              import("@/lib/referral/attribution").then(({ createAttributionForSignup }) =>
+                createAttributionForSignup(existingUser!.id, oauthReferredBy!)
+              );
+            }
 
             sendWelcomeEmail(user.email, `${env.AUTH_URL}/app`).catch((err) => {
               authLog.error({ err, email: user.email }, "Failed to send welcome email (GitHub)");

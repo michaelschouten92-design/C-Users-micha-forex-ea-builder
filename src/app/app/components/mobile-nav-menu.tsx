@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-type NavItem = "evaluate" | "monitor" | "alerts" | "settings";
+type NavItem = "evaluate" | "monitor" | "alerts" | "referrals" | "settings";
 
 const NAV_ITEMS: { key: NavItem; label: string; href: string }[] = [
   { key: "evaluate", label: "Evaluate", href: "/app/evaluate" },

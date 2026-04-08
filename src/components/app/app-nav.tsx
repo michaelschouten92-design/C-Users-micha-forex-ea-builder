@@ -5,7 +5,7 @@ import { NotificationBell } from "./notification-bell";
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
 import { TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 
-export type NavItem = "evaluate" | "monitor" | "alerts" | "settings";
+export type NavItem = "evaluate" | "monitor" | "alerts" | "referrals" | "settings";
 
 interface AppNavProps {
   activeItem?: NavItem;
