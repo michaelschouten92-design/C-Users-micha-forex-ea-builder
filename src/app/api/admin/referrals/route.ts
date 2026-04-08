@@ -74,28 +74,49 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (!adminCheck.authorized) return adminCheck.response;
 
   const body = await request.json();
-  const { partnerId, status, adminNotes } = body;
+  const { partnerId, status, adminNotes, commissionBps } = body;
 
-  if (!partnerId || !status) {
-    return NextResponse.json({ error: "partnerId and status required" }, { status: 400 });
+  if (!partnerId) {
+    return NextResponse.json({ error: "partnerId required" }, { status: 400 });
   }
 
-  const validStatuses = ["PENDING", "ACTIVE", "SUSPENDED", "TERMINATED"];
-  if (!validStatuses.includes(status)) {
-    return NextResponse.json(
-      { error: `Invalid status. Must be: ${validStatuses.join(", ")}` },
-      { status: 400 }
-    );
+  if (status) {
+    const validStatuses = ["PENDING", "ACTIVE", "SUSPENDED", "TERMINATED"];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be: ${validStatuses.join(", ")}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // commissionPct: percentage (e.g. 20 = 20%), stored as basis points internally
+  const commissionPct = body.commissionPct;
+  let newCommissionBps: number | undefined;
+  if (commissionPct !== undefined) {
+    if (typeof commissionPct !== "number" || commissionPct < 0 || commissionPct > 100) {
+      return NextResponse.json(
+        { error: "commissionPct must be between 0 and 100" },
+        { status: 400 }
+      );
+    }
+    newCommissionBps = Math.round(commissionPct * 100);
   }
 
   const partner = await prisma.referralPartner.update({
     where: { id: partnerId },
     data: {
-      status,
+      ...(status ? { status } : {}),
       ...(adminNotes !== undefined ? { adminNotes } : {}),
+      ...(newCommissionBps !== undefined ? { commissionBps: newCommissionBps } : {}),
     },
-    select: { id: true, status: true, userId: true },
+    select: { id: true, status: true, commissionBps: true, userId: true },
   });
 
-  return NextResponse.json({ partner });
+  return NextResponse.json({
+    partner: {
+      ...partner,
+      commissionPct: partner.commissionBps / 100,
+    },
+  });
 }
