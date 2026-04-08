@@ -169,6 +169,9 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
     closePrice: number | null;
   }>;
 
+  // Build child instance lookup by ID for symbol fallback
+  const childById = new Map(children.map((c) => [c.id, c]));
+
   if (trackStates.length > 0) {
     // Chain-backed: reconstruct closed trades from TRADE_OPEN + TRADE_CLOSE events
     const [openEvents, closeEvents] = await Promise.all([
@@ -180,7 +183,7 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
         where: { instanceId: { in: allInstanceIds }, eventType: "TRADE_CLOSE" },
         orderBy: { timestamp: "desc" },
         take: 500,
-        select: { payload: true, timestamp: true },
+        select: { payload: true, timestamp: true, instanceId: true },
       }),
     ]);
 
@@ -203,16 +206,17 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
       }
     }
 
-    // Join TRADE_CLOSE with TRADE_OPEN on ticket
+    // Join TRADE_CLOSE with TRADE_OPEN on ticket; use child instance symbol as fallback
     allTrades = closeEvents.map((e) => {
       const p = e.payload as Record<string, unknown>;
       const ticket = String(p.ticket ?? "");
       const open = openByTicket.get(ticket);
+      const childInstance = childById.get(e.instanceId);
       return {
         profit: Number(p.profit ?? 0),
         closeTime: e.timestamp,
         openTime: open?.timestamp ?? null,
-        symbol: open?.symbol ?? null,
+        symbol: open?.symbol ?? childInstance?.symbol ?? null,
         type: open?.direction ?? null,
         lots: open?.lots ?? null,
         openPrice: open?.openPrice ?? null,
@@ -378,11 +382,10 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
   }
 
   // Closed trades (newest first, capped at 200 for public page)
+  // Use closeTime as fallback for openTime (trades opened before EA was connected
+  // have no TRADE_OPEN event, so openTime is null)
   const closedTrades = allTrades
-    .filter(
-      (t): t is typeof t & { closeTime: Date; openTime: Date } =>
-        t.closeTime != null && t.openTime != null
-    )
+    .filter((t): t is typeof t & { closeTime: Date } => t.closeTime != null)
     .sort((a, b) => {
       const ta =
         a.closeTime instanceof Date ? a.closeTime.getTime() : new Date(a.closeTime).getTime();
@@ -391,16 +394,19 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
       return tb - ta;
     })
     .slice(0, 200)
-    .map((t) => ({
-      closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
-      openTime: t.openTime instanceof Date ? t.openTime.toISOString() : String(t.openTime),
-      symbol: t.symbol ?? "—",
-      type: t.type ?? "—",
-      lots: t.lots ?? 0,
-      openPrice: t.openPrice ?? 0,
-      closePrice: t.closePrice ?? null,
-      profit: t.profit,
-    }));
+    .map((t) => {
+      const openTime = t.openTime ?? t.closeTime;
+      return {
+        closeTime: t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime),
+        openTime: openTime instanceof Date ? openTime.toISOString() : String(openTime),
+        symbol: t.symbol ?? "—",
+        type: t.type ?? "—",
+        lots: t.lots ?? 0,
+        openPrice: t.openPrice ?? 0,
+        closePrice: t.closePrice ?? null,
+        profit: t.profit,
+      };
+    });
 
   // Mask account number: show only last 5 chars
   const accountNumberMasked = base.accountNumber ? `•••${base.accountNumber.slice(-5)}` : null;
