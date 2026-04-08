@@ -23,7 +23,8 @@ interface AccountTileProps {
 export function AccountTile({ account, isSelected, onClick, changedIds }: AccountTileProps) {
   const { primary, instances } = account;
 
-  const isAccountWide = isAccountContainer(primary);
+  // Mode-agnostic check: isAccountContainer requires mode=LIVE, but paper containers also qualify
+  const isAccountWide = !primary.parentInstanceId && !primary.symbol;
   const balance = isAccountWide
     ? primary.balance
     : instances.reduce((sum, ea) => sum + (ea.balance ?? 0), 0) || null;
