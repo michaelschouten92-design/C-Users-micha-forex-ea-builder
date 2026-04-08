@@ -154,29 +154,94 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
 
   if (!base) return null;
 
-  // Q7: All trades in one batch query (base + children, single IN query)
+  // Q7: All trades — prefer chain events (TrackRecordEvent) when available,
+  // fall back to legacy EATrade table for older instances.
   const allInstanceIds = [base.id, ...children.map((c) => c.id)];
-  const allTradesRaw = await prisma.eATrade.findMany({
-    where: {
-      instanceId: { in: allInstanceIds },
-      closeTime: { not: null },
-    },
-    orderBy: { closeTime: "desc" },
-    take: 500,
-    select: { ...tradeSelect, instanceId: true },
-  });
 
-  // Map trades back to base/children for strategy attribution
-  const allTrades = allTradesRaw.map((t) => ({
-    profit: t.profit,
-    closeTime: t.closeTime,
-    openTime: t.openTime,
-    symbol: t.symbol,
-    type: t.type,
-    lots: t.lots,
-    openPrice: t.openPrice,
-    closePrice: t.closePrice,
-  }));
+  let allTrades: Array<{
+    profit: number;
+    closeTime: Date | null;
+    openTime: Date | null;
+    symbol: string | null;
+    type: string | null;
+    lots: number | null;
+    openPrice: number | null;
+    closePrice: number | null;
+  }>;
+
+  if (trackStates.length > 0) {
+    // Chain-backed: reconstruct closed trades from TRADE_OPEN + TRADE_CLOSE events
+    const [openEvents, closeEvents] = await Promise.all([
+      prisma.trackRecordEvent.findMany({
+        where: { instanceId: { in: allInstanceIds }, eventType: "TRADE_OPEN" },
+        select: { payload: true, timestamp: true },
+      }),
+      prisma.trackRecordEvent.findMany({
+        where: { instanceId: { in: allInstanceIds }, eventType: "TRADE_CLOSE" },
+        orderBy: { timestamp: "desc" },
+        take: 500,
+        select: { payload: true, timestamp: true },
+      }),
+    ]);
+
+    // Index open events by ticket for fast lookup
+    const openByTicket = new Map<
+      string,
+      { symbol: string; direction: string; lots: number; openPrice: number; timestamp: Date }
+    >();
+    for (const e of openEvents) {
+      const p = e.payload as Record<string, unknown>;
+      const ticket = String(p.ticket ?? "");
+      if (ticket) {
+        openByTicket.set(ticket, {
+          symbol: String(p.symbol ?? ""),
+          direction: String(p.direction ?? ""),
+          lots: Number(p.lots ?? 0),
+          openPrice: Number(p.openPrice ?? 0),
+          timestamp: e.timestamp,
+        });
+      }
+    }
+
+    // Join TRADE_CLOSE with TRADE_OPEN on ticket
+    allTrades = closeEvents.map((e) => {
+      const p = e.payload as Record<string, unknown>;
+      const ticket = String(p.ticket ?? "");
+      const open = openByTicket.get(ticket);
+      return {
+        profit: Number(p.profit ?? 0),
+        closeTime: e.timestamp,
+        openTime: open?.timestamp ?? null,
+        symbol: open?.symbol ?? null,
+        type: open?.direction ?? null,
+        lots: open?.lots ?? null,
+        openPrice: open?.openPrice ?? null,
+        closePrice: p.closePrice != null ? Number(p.closePrice) : null,
+      };
+    });
+  } else {
+    // Fallback: legacy EATrade table
+    const allTradesRaw = await prisma.eATrade.findMany({
+      where: {
+        instanceId: { in: allInstanceIds },
+        closeTime: { not: null },
+      },
+      orderBy: { closeTime: "desc" },
+      take: 500,
+      select: { ...tradeSelect, instanceId: true },
+    });
+
+    allTrades = allTradesRaw.map((t) => ({
+      profit: t.profit,
+      closeTime: t.closeTime,
+      openTime: t.openTime,
+      symbol: t.symbol,
+      type: t.type,
+      lots: t.lots,
+      openPrice: t.openPrice,
+      closePrice: t.closePrice,
+    }));
+  }
 
   let totalTrades: number;
   let totalProfit: number;
