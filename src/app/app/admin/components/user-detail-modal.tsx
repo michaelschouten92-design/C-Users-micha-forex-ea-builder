@@ -28,20 +28,6 @@ interface UserDetail {
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
   } | null;
-  projects: {
-    id: string;
-    name: string;
-    updatedAt: string;
-    _count: { versions: number; exports: number };
-  }[];
-  exports: {
-    id: string;
-    exportType: string;
-    status: string;
-    createdAt: string;
-    errorMessage: string | null;
-    project: { name: string };
-  }[];
   liveEAs: {
     id: string;
     eaName: string;
@@ -64,13 +50,6 @@ interface UserDetail {
 }
 
 // ── Constants ──────────────────────────────────────────
-
-const STATUS_BADGE: Record<string, string> = {
-  DONE: "text-emerald-400",
-  FAILED: "text-red-400",
-  QUEUED: "text-yellow-400",
-  RUNNING: "text-blue-400",
-};
 
 const EA_STATUS_DOT: Record<string, string> = {
   ONLINE: "#10B981",
@@ -437,82 +416,6 @@ function NotesSection({ user }: { user: UserDetail }) {
   );
 }
 
-function ProjectsSection({ projects }: { projects: UserDetail["projects"] }) {
-  return (
-    <section>
-      <SectionHeader>Projects ({projects.length})</SectionHeader>
-      {projects.length === 0 ? (
-        <div className="text-[#71717A] text-sm">No projects</div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Name</th>
-                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Versions</th>
-                <th className="text-right px-3 py-2 text-[#A1A1AA] font-medium">Exports</th>
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr key={p.id} className="border-b border-[rgba(255,255,255,0.06)]">
-                  <td className="px-3 py-2 text-white">{p.name}</td>
-                  <td className="px-3 py-2 text-right text-[#FAFAFA]">{p._count.versions}</td>
-                  <td className="px-3 py-2 text-right text-[#FAFAFA]">{p._count.exports}</td>
-                  <td className="px-3 py-2 text-[#A1A1AA]">
-                    {new Date(p.updatedAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ExportsSection({ exports }: { exports: UserDetail["exports"] }) {
-  return (
-    <section>
-      <SectionHeader>Recent Exports ({exports.length})</SectionHeader>
-      {exports.length === 0 ? (
-        <div className="text-[#71717A] text-sm">No exports</div>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)]">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-[#111114]/60 border-b border-[rgba(255,255,255,0.06)]">
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Time</th>
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Project</th>
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Type</th>
-                <th className="text-left px-3 py-2 text-[#A1A1AA] font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exports.map((exp) => (
-                <tr key={exp.id} className="border-b border-[rgba(255,255,255,0.06)]">
-                  <td className="px-3 py-2 text-[#A1A1AA]">
-                    {new Date(exp.createdAt).toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2 text-white">{exp.project.name}</td>
-                  <td className="px-3 py-2 text-[#818CF8] font-mono text-xs">{exp.exportType}</td>
-                  <td className="px-3 py-2">
-                    <span className={STATUS_BADGE[exp.status] || "text-[#A1A1AA]"}>
-                      {exp.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function LiveStrategiesSection({ liveEAs }: { liveEAs: UserDetail["liveEAs"] }) {
   return (
     <section>
@@ -634,8 +537,6 @@ const MODAL_SECTIONS = [
   { id: "subscription", label: "Subscription" },
   { id: "actions", label: "Actions" },
   { id: "notes", label: "Notes" },
-  { id: "projects", label: "Projects" },
-  { id: "exports", label: "Exports" },
   { id: "live", label: "Live EAs" },
   { id: "activity", label: "Activity" },
 ] as const;
@@ -747,18 +648,6 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 className="border-t border-[rgba(255,255,255,0.04)] pt-6"
               >
                 <NotesSection user={user} />
-              </div>
-              <div
-                id="modal-section-projects"
-                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
-              >
-                <ProjectsSection projects={user.projects} />
-              </div>
-              <div
-                id="modal-section-exports"
-                className="border-t border-[rgba(255,255,255,0.04)] pt-6"
-              >
-                <ExportsSection exports={user.exports} />
               </div>
               <div
                 id="modal-section-live"

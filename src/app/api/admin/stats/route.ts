@@ -12,22 +12,17 @@ export async function GET() {
     if (!adminCheck.authorized) return adminCheck.response;
 
     const now = Date.now();
-    const startOfDay = new Date(now);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const startOfWeek = new Date(startOfDay);
-    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay());
     const thirtyDaysAgo = new Date(now - 30 * 86_400_000);
     const oneDayAgo = new Date(now - 86_400_000);
 
     const [
       tierCounts,
       paidSubscriptions,
-      exportStatsWeek,
-      exportsToday,
       signupsRaw,
       webhookCount,
       cancelledCount,
       totalSubCount,
+      liveStrategyCount,
     ] = await Promise.all([
       // 1. Users grouped by tier
       prisma.subscription.groupBy({
@@ -43,17 +38,7 @@ export async function GET() {
         },
         select: { tier: true },
       }),
-      // 3. Export stats this week
-      prisma.exportJob.groupBy({
-        by: ["status"],
-        _count: true,
-        where: { createdAt: { gte: startOfWeek } },
-      }),
-      // 4. Exports today
-      prisma.exportJob.count({
-        where: { createdAt: { gte: startOfDay } },
-      }),
-      // 5. Signups per day (last 30 days) - use raw query
+      // 3. Signups per day (last 30 days)
       prisma.$queryRaw<{ date: string; count: number }[]>`
         SELECT DATE("createdAt") as date, CAST(COUNT(*) AS INTEGER) as count
         FROM "User"
@@ -61,16 +46,20 @@ export async function GET() {
         GROUP BY DATE("createdAt")
         ORDER BY date
       `,
-      // 6. Webhook health (last 24h)
+      // 4. Webhook health (last 24h)
       prisma.webhookEvent.count({
         where: { processedAt: { gte: oneDayAgo } },
       }),
-      // 7. Cancelled subscriptions
+      // 5. Cancelled subscriptions
       prisma.subscription.count({
         where: { status: "cancelled" },
       }),
-      // 8. Total subscriptions
+      // 6. Total subscriptions
       prisma.subscription.count(),
+      // 7. Live strategies (instances with symbol, actively monitored)
+      prisma.liveEAInstance.count({
+        where: { deletedAt: null, symbol: { not: null } },
+      }),
     ]);
 
     // Calculate MRR
@@ -82,12 +71,6 @@ export async function GET() {
     const usersByTier: Record<string, number> = {};
     for (const tc of tierCounts) {
       usersByTier[tc.tier] = tc._count;
-    }
-
-    // Format export stats
-    const exportStats: Record<string, number> = {};
-    for (const es of exportStatsWeek) {
-      exportStats[es.status] = es._count;
     }
 
     // Format signups
@@ -118,8 +101,7 @@ export async function GET() {
         arr: mrr * 12,
         paidSubscribers: paidSubscriptions.length,
         usersByTier,
-        exportStats,
-        exportsToday,
+        liveStrategyCount,
         signups,
         webhookEventsLast24h: webhookCount,
         churn: totalSubCount > 0 ? cancelledCount / totalSubCount : 0,

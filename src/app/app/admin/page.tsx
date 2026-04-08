@@ -3,38 +3,21 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { apiClient, ApiError } from "@/lib/api-client";
-import { AdminTabs, type AdminTab } from "./components/admin-tabs";
-import { UsersTab } from "./components/users-tab";
-import { AuditLogTab } from "./components/audit-log-tab";
-import { RevenueTab } from "./components/revenue-tab";
-import { ExportsTab } from "./components/exports-tab";
-import { AnalyticsTab } from "./components/analytics-tab";
-import { AnnouncementsTab } from "./components/announcements-tab";
-import { LiveEAsTab } from "./components/live-eas-tab";
-import { PlanLimitsTab } from "./components/plan-limits-tab";
-import { SystemHealthTab } from "./components/system-health-tab";
-import { UserDetailModal } from "./components/user-detail-modal";
-import { StrategyDistributionPanel } from "./components/strategy-distribution-panel";
-import { AttentionQueue } from "./components/attention-queue";
-import { IncidentsTab } from "./components/incidents-tab";
+import { AdminPageHeader } from "./components/admin-page-header";
 import { HealthRadar } from "./components/health-radar";
+import { AttentionQueue } from "./components/attention-queue";
+import { StrategyDistributionPanel } from "./components/strategy-distribution-panel";
 
 interface UserData {
   id: string;
   email: string;
-  emailVerified: boolean;
-  createdAt: string;
-  lastLoginAt: string | null;
   subscription: { tier: string; status: string };
-  projectCount: number;
-  exportCount: number;
-  activityStatus?: "active" | "inactive";
-  churnRisk?: boolean;
+  createdAt: string;
 }
 
 interface AdminStats {
   mrr: number;
-  exportsToday: number;
+  liveStrategyCount: number;
 }
 
 function OtpVerification({ onVerified }: { onVerified: () => void }) {
@@ -72,8 +55,8 @@ function OtpVerification({ onVerified }: { onVerified: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 max-w-sm w-full mx-4 text-center">
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 max-w-sm w-full text-center">
         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(99,102,241,0.10)] flex items-center justify-center">
           <svg
             className="w-6 h-6 text-[#818CF8]"
@@ -154,59 +137,40 @@ function OtpVerification({ onVerified }: { onVerified: () => void }) {
   );
 }
 
-export default function AdminPage() {
+export default function AdminDashboardPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [needsOtp, setNeedsOtp] = useState(false);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
-  const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [extraStats, setExtraStats] = useState<AdminStats | null>(null);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setDenied(false);
     setNeedsOtp(false);
     try {
-      const res = await apiClient.get<{ data: UserData[]; adminEmail: string }>("/api/admin/users");
+      const res = await apiClient.get<{ data: UserData[]; adminEmail: string }>(
+        "/api/admin/users?limit=50"
+      );
       setUsers(res.data);
       setAdminEmail(res.adminEmail);
-      return true;
+      const stats = await apiClient.get<AdminStats>("/api/admin/stats").catch(() => null);
+      if (stats) setExtraStats(stats);
     } catch (err) {
       if (err instanceof ApiError && err.message.toLowerCase().includes("otp")) {
         setNeedsOtp(true);
       } else {
         setDenied(true);
       }
-      return false;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchExtraStats = useCallback(async () => {
-    try {
-      const res = await apiClient.get<AdminStats>("/api/admin/stats");
-      setExtraStats(res);
-    } catch {
-      // non-critical
-    }
-  }, []);
-
   useEffect(() => {
-    let cancelled = false;
-    async function init() {
-      const ok = await fetchUsers();
-      if (ok && !cancelled) {
-        fetchExtraStats();
-      }
-    }
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchUsers, fetchExtraStats]);
+    fetchData();
+  }, [fetchData]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -222,81 +186,29 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090B]">
-        <div className="sticky top-0 z-20 bg-[#09090B] border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
-          <div className="h-7 w-48 bg-[#111114] rounded animate-pulse" />
+      <div className="space-y-6">
+        <div className="h-8 w-64 bg-[#111114] rounded animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4"
+            >
+              <div className="h-3 w-16 bg-[#18181B] rounded animate-pulse" />
+              <div className="h-7 w-12 bg-[#18181B] rounded animate-pulse mt-3" />
+            </div>
+          ))}
         </div>
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="h-8 w-64 bg-[#111114] rounded animate-pulse mb-2" />
-          <div className="h-4 w-80 bg-[#111114] rounded animate-pulse mb-8" />
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
-              >
-                <div className="h-3 w-16 bg-[#18181B] rounded animate-pulse" />
-                <div className="h-7 w-12 bg-[#18181B] rounded animate-pulse mt-3" />
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
-              >
-                <div className="h-3 w-16 bg-[#18181B] rounded animate-pulse" />
-                <div className="h-7 w-20 bg-[#18181B] rounded animate-pulse mt-3" />
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2 mb-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-9 w-24 bg-[#111114] rounded-full animate-pulse" />
-            ))}
-          </div>
-          <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-12 bg-[#111114] rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </main>
       </div>
     );
   }
 
-  if (needsOtp) {
-    return (
-      <OtpVerification
-        onVerified={() => {
-          fetchUsers().then((ok) => {
-            if (ok) fetchExtraStats();
-          });
-        }}
-      />
-    );
-  }
+  if (needsOtp) return <OtpVerification onVerified={fetchData} />;
 
   if (denied) {
     return (
-      <div className="min-h-screen bg-[#09090B] flex items-center justify-center">
-        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 max-w-sm w-full mx-4 text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-[rgba(239,68,68,0.10)] flex items-center justify-center">
-            <svg
-              className="w-6 h-6 text-[#EF4444]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-              />
-            </svg>
-          </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-8 max-w-sm w-full text-center">
           <h1 className="text-xl font-bold text-[#FAFAFA] mb-2">Access Denied</h1>
           <p className="text-sm text-[#A1A1AA] mb-6">
             You do not have permission to view this page.
@@ -312,145 +224,54 @@ export default function AdminPage() {
     );
   }
 
+  const statCards = [
+    { label: "Total Users", value: String(stats.total), color: "#FAFAFA" },
+    { label: "New This Week", value: String(stats.newThisWeek), color: "#10B981" },
+    { label: "Control", value: String(stats.control), color: "#6366F1" },
+    { label: "Authority", value: String(stats.authority), color: "#818CF8" },
+    { label: "Institutional", value: String(stats.institutional), color: "#F59E0B" },
+    {
+      label: "MRR",
+      value: extraStats ? `€${extraStats.mrr.toLocaleString()}` : "—",
+      color: "#10B981",
+    },
+    {
+      label: "Strategies",
+      value: extraStats ? String(extraStats.liveStrategyCount) : "—",
+      color: "#FAFAFA",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#09090B]">
-      <nav className="bg-[#111114] border-b border-[rgba(255,255,255,0.06)] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-14 items-center">
-            <div className="flex items-center gap-3">
-              <h1 className="text-base font-semibold text-[#FAFAFA]">Algo Studio</h1>
-              <span className="text-[10px] text-[#71717A] font-semibold tracking-widest uppercase hidden sm:inline">
-                Admin
-              </span>
+    <>
+      <AdminPageHeader
+        title="Dashboard"
+        subtitle={adminEmail ? `Signed in as ${adminEmail}` : undefined}
+      />
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
+        {statCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4"
+          >
+            <div className="text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+              {card.label}
             </div>
-            <Link
-              href="/app"
-              className="text-sm text-[#71717A] hover:text-[#A1A1AA] transition-colors"
-            >
-              Back to Dashboard
-            </Link>
+            <div className="text-xl font-bold mt-1 tabular-nums" style={{ color: card.color }}>
+              {card.value}
+            </div>
           </div>
-        </div>
-      </nav>
+        ))}
+      </div>
 
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Page header */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-[#FAFAFA]">Operations Overview</h2>
-          <p className="text-sm text-[#71717A] mt-1">
-            {adminEmail ? `Signed in as ${adminEmail}` : "Admin panel"}
-            {" \u00B7 "}
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-        </div>
-
-        {/* Stats — combined users + revenue */}
-        <div className="mb-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            {(
-              [
-                {
-                  label: "Total Users",
-                  value: stats.total,
-                  display: String(stats.total),
-                  color: "#FAFAFA",
-                },
-                {
-                  label: "New This Week",
-                  value: stats.newThisWeek,
-                  display: String(stats.newThisWeek),
-                  color: "#10B981",
-                },
-                {
-                  label: "Control",
-                  value: stats.control,
-                  display: String(stats.control),
-                  color: "#6366F1",
-                },
-                {
-                  label: "Authority",
-                  value: stats.authority,
-                  display: String(stats.authority),
-                  color: "#818CF8",
-                },
-                {
-                  label: "Institutional",
-                  value: stats.institutional,
-                  display: String(stats.institutional),
-                  color: "#F59E0B",
-                },
-                {
-                  label: "MRR",
-                  value: 0,
-                  display: extraStats ? `\u20AC${extraStats.mrr.toLocaleString()}` : "\u2014",
-                  color: "#10B981",
-                },
-                {
-                  label: "Exports Today",
-                  value: 0,
-                  display: extraStats ? String(extraStats.exportsToday) : "\u2014",
-                  color: "#FAFAFA",
-                },
-              ] as const
-            ).map((card) => (
-              <div
-                key={card.label}
-                className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] p-4"
-              >
-                <div className="text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                  {card.label}
-                </div>
-                <div className="text-xl font-bold mt-1 tabular-nums" style={{ color: card.color }}>
-                  {card.display}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab navigation */}
-        <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {/* Tab content */}
-        {activeTab === "dashboard" && (
-          <div className="space-y-6">
-            <HealthRadar />
-            <AttentionQueue />
-            <StrategyDistributionPanel />
-          </div>
-        )}
-        {activeTab === "users" && (
-          <UsersTab
-            users={users}
-            adminEmail={adminEmail}
-            onRefresh={fetchUsers}
-            onUserClick={setDetailUserId}
-          />
-        )}
-        {activeTab === "audit" && <AuditLogTab onUserClick={setDetailUserId} />}
-        {activeTab === "revenue" && <RevenueTab sharedUsers={users} />}
-        {activeTab === "exports" && <ExportsTab />}
-        {activeTab === "analytics" && <AnalyticsTab sharedUsers={users} />}
-        {activeTab === "announcements" && <AnnouncementsTab />}
-        {activeTab === "live-eas" && <LiveEAsTab />}
-        {activeTab === "plan-limits" && <PlanLimitsTab />}
-        {activeTab === "system-health" && <SystemHealthTab />}
-        {activeTab === "incidents" && <IncidentsTab />}
-      </main>
-
-      {/* User detail modal */}
-      {detailUserId && (
-        <UserDetailModal
-          userId={detailUserId}
-          onClose={() => setDetailUserId(null)}
-          onRefresh={fetchUsers}
-        />
-      )}
-    </div>
+      {/* Health + Attention + Strategy */}
+      <div className="space-y-6">
+        <HealthRadar />
+        <AttentionQueue />
+        <StrategyDistributionPanel />
+      </div>
+    </>
   );
 }
