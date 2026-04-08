@@ -222,11 +222,11 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self' blob:",
               // unsafe-inline required by Next.js for hydration scripts; unsafe-eval for dev HMR only
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://js.stripe.com https://plausible.io https://challenges.cloudflare.com`,
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://js.stripe.com https://plausible.io https://challenges.cloudflare.com https://eu-assets.i.posthog.com`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://plausible.io https://challenges.cloudflare.com",
+              "connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.ingest.sentry.io https://plausible.io https://challenges.cloudflare.com https://eu.i.posthog.com https://eu-assets.i.posthog.com",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://challenges.cloudflare.com",
               "worker-src 'self' blob:",
               "object-src 'none'",
