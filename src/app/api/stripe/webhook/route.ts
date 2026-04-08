@@ -581,12 +581,14 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       .paymentSuccess(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment recorded"));
 
-    // Referral commission (fire-and-forget, errors logged not thrown)
-    import("@/lib/referral/commission")
-      .then(({ bookCommission }) => bookCommission(invoice, userId))
-      .catch((err) =>
-        log.error({ err, invoiceId: invoice.id }, "referral:commission-booking-failed")
-      );
+    // Referral commission (awaited — errors are caught, not thrown, so this
+    // won't block subscription activation. Idempotent via ledger unique index.)
+    try {
+      const { bookCommission } = await import("@/lib/referral/commission");
+      await bookCommission(invoice, userId);
+    } catch (err) {
+      log.error({ err, invoiceId: invoice.id }, "referral:commission-booking-failed");
+    }
   }
 }
 
@@ -705,10 +707,13 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"
   );
 
-  // Referral commission reversal (fire-and-forget)
-  import("@/lib/referral/commission")
-    .then(({ bookReversal }) => bookReversal(charge))
-    .catch((err) => log.error({ err, chargeId: charge.id }, "referral:reversal-booking-failed"));
+  // Referral commission reversal (awaited, errors caught)
+  try {
+    const { bookReversal } = await import("@/lib/referral/commission");
+    await bookReversal(charge);
+  } catch (err) {
+    log.error({ err, chargeId: charge.id }, "referral:reversal-booking-failed");
+  }
 }
 
 async function handleSubscriptionPaused(subscription: Stripe.Subscription) {

@@ -157,15 +157,34 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       });
     }
   } else if (action === "cancel") {
-    // Unlink ledger entries and delete payout
+    // Guard: only PENDING or APPROVED payouts can be cancelled
+    const existing = await prisma.referralPayout.findUnique({
+      where: { id: payoutId },
+      select: { status: true, amountCents: true, partnerId: true },
+    });
+    if (!existing || existing.status === "PAID" || existing.status === "CANCELLED") {
+      return NextResponse.json(
+        { error: `Cannot cancel a ${existing?.status ?? "unknown"} payout` },
+        { status: 400 }
+      );
+    }
+
+    // Append-only: create a reversing PAYOUT_CANCELLED entry instead of deleting
     await prisma.$transaction(async (tx) => {
+      // Unlink ledger entries so they re-enter the unpaid pool
       await tx.referralLedger.updateMany({
-        where: { payoutId },
+        where: { payoutId, type: { not: "PAYOUT_SENT" } },
         data: { payoutId: null },
       });
-      // Delete the PAYOUT_SENT entry
-      await tx.referralLedger.deleteMany({
-        where: { payoutId, type: "PAYOUT_SENT" },
+      // Add reversing entry (restores balance, preserves audit trail)
+      await tx.referralLedger.create({
+        data: {
+          partnerId: existing.partnerId,
+          type: "ADMIN_ADJUSTMENT",
+          payoutId,
+          amountCents: existing.amountCents, // positive: restores the deducted amount
+          description: `Payout ${payoutId} cancelled`,
+        },
       });
       await tx.referralPayout.update({
         where: { id: payoutId },

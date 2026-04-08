@@ -26,9 +26,10 @@ export function getCommissionBaseCents(invoice: Stripe.Invoice): number {
   if (amountPaid <= 0) return 0;
 
   // Total tax from line items (Stripe may not have top-level .tax on all API versions)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const topLevelTax =
     typeof (invoice as any).tax === "number" ? ((invoice as any).tax as number) : null;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   if (topLevelTax != null) {
     return Math.max(0, amountPaid - topLevelTax);
@@ -84,35 +85,40 @@ export async function bookCommission(invoice: Stripe.Invoice, userId: string): P
   const commissionCents = Math.floor((commissionBaseCents * partner.commissionBps) / 10000);
   if (commissionCents <= 0) return;
 
-  // 3. Confirm attribution on first paid invoice
-  if (attribution.status === "PENDING") {
-    await prisma.referralAttribution.update({
-      where: { id: attribution.id },
-      data: { status: "CONFIRMED", confirmedAt: new Date() },
-    });
-  }
-
-  // 4. Book commission (idempotent via unique constraint)
+  // 3. Atomically confirm attribution + book commission
+  // Wrapped in a transaction so a crash cannot leave attribution CONFIRMED
+  // without a matching ledger entry.
   try {
-    await prisma.referralLedger.create({
-      data: {
-        partnerId: partner.id,
-        type: "COMMISSION_EARNED",
-        referredUserId: userId,
-        stripeInvoiceId: invoiceId,
-        amountCents: commissionCents,
-        currency: REFERRAL_CURRENCY,
-        commissionBps: partner.commissionBps,
-        invoiceSubtotalCents: commissionBaseCents,
-        invoiceTaxCents: getInvoiceTaxCents(invoice),
-        description: `Commission on invoice ${invoiceId}`,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      // Confirm attribution on first paid invoice
+      if (attribution.status === "PENDING") {
+        await tx.referralAttribution.update({
+          where: { id: attribution.id },
+          data: { status: "CONFIRMED", confirmedAt: new Date() },
+        });
+      }
 
-    // Update cached aggregate (not source of truth)
-    await prisma.referralPartner.update({
-      where: { id: partner.id },
-      data: { totalEarnedCents: { increment: commissionCents } },
+      // Book commission (idempotent via unique constraint)
+      await tx.referralLedger.create({
+        data: {
+          partnerId: partner.id,
+          type: "COMMISSION_EARNED",
+          referredUserId: userId,
+          stripeInvoiceId: invoiceId,
+          amountCents: commissionCents,
+          currency: REFERRAL_CURRENCY,
+          commissionBps: partner.commissionBps,
+          invoiceSubtotalCents: commissionBaseCents,
+          invoiceTaxCents: getInvoiceTaxCents(invoice),
+          description: `Commission on invoice ${invoiceId}`,
+        },
+      });
+
+      // Update cached aggregate (not source of truth)
+      await tx.referralPartner.update({
+        where: { id: partner.id },
+        data: { totalEarnedCents: { increment: commissionCents } },
+      });
     });
 
     log.info(
@@ -181,32 +187,43 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
   const thisReversalCents = Math.max(0, targetReversalCents - alreadyReversedCents);
   if (thisReversalCents <= 0) return;
 
-  await prisma.referralLedger.create({
-    data: {
-      partnerId: original.partnerId,
-      type: "COMMISSION_REVERSED",
-      referredUserId: original.referredUserId,
-      stripeInvoiceId: invoiceId,
-      stripeChargeId: charge.id,
-      amountCents: -thisReversalCents,
-      currency: original.currency,
-      description: `Reversal: ${refundedCents}c refunded of ${originalChargeCents}c charge`,
-    },
-  });
+  try {
+    await prisma.referralLedger.create({
+      data: {
+        partnerId: original.partnerId,
+        type: "COMMISSION_REVERSED",
+        referredUserId: original.referredUserId,
+        stripeInvoiceId: invoiceId,
+        stripeChargeId: charge.id,
+        amountCents: -thisReversalCents,
+        currency: original.currency,
+        description: `Reversal: ${refundedCents}c refunded of ${originalChargeCents}c charge`,
+      },
+    });
 
-  // Update cached aggregate
-  await prisma.referralPartner.update({
-    where: { id: original.partnerId },
-    data: { totalEarnedCents: { decrement: thisReversalCents } },
-  });
+    // Update cached aggregate
+    await prisma.referralPartner.update({
+      where: { id: original.partnerId },
+      data: { totalEarnedCents: { decrement: thisReversalCents } },
+    });
 
-  log.info(
-    {
-      partnerId: original.partnerId,
-      invoiceId,
-      chargeId: charge.id,
-      reversalCents: thisReversalCents,
-    },
-    "referral:commission-reversed"
-  );
+    log.info(
+      {
+        partnerId: original.partnerId,
+        invoiceId,
+        chargeId: charge.id,
+        reversalCents: thisReversalCents,
+      },
+      "referral:commission-reversed"
+    );
+  } catch (err) {
+    // P2002 = unique constraint on [stripeInvoiceId, type] — reversal already recorded
+    // This can happen when two partial refund webhooks race. The cumulative math
+    // ensures correctness; the second attempt is safely skippable.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      log.info({ invoiceId, chargeId: charge.id }, "referral:reversal-already-booked");
+      return;
+    }
+    throw err;
+  }
 }

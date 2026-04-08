@@ -40,31 +40,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   if (existing && newPartnerId) {
-    // Override existing attribution
+    // Override: update existing row (@@unique(referredUserId) means one row per user)
     await prisma.referralAttribution.update({
       where: { id: existing.id },
       data: {
         partnerId: newPartnerId,
-        status: "OVERRIDDEN",
+        referralCode: newPartnerCode,
+        status: existing.status === "CONFIRMED" ? "CONFIRMED" : "PENDING",
         overriddenBy: session?.user?.id ?? null,
         overriddenAt: new Date(),
         previousPartnerId: existing.partnerId,
       },
     });
-    // Create new attribution
-    await prisma.referralAttribution
-      .create({
-        data: {
-          referredUserId,
-          partnerId: newPartnerId,
-          referralCode: newPartnerCode,
-          status: existing.status === "CONFIRMED" ? "CONFIRMED" : "PENDING",
-          confirmedAt: existing.confirmedAt,
-        },
-      })
-      .catch(() => {
-        // Unique constraint — update instead
-      });
   } else if (existing && !newPartnerId) {
     // Remove attribution
     await prisma.referralAttribution.update({

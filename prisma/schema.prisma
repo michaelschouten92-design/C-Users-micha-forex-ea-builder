@@ -1510,7 +1510,10 @@ model ReferralLedger {
   partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   payout  ReferralPayout? @relation(fields: [payoutId], references: [id])
 
-  @@unique([stripeInvoiceId, type], name: "ledger_invoice_type_unique")
+  // COMMISSION_EARNED: one per invoice (stripeChargeId is null → dedup works via migration partial index)
+  // COMMISSION_REVERSED: multiple allowed (one per refund event, distinguished by stripeChargeId)
+  // Partial unique index created in migration: WHERE type = 'COMMISSION_EARNED'
+  @@index([stripeInvoiceId, type])
   @@index([partnerId, createdAt])
   @@index([referredUserId])
   @@index([payoutId])
