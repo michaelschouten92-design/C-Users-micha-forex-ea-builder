@@ -1455,6 +1455,19 @@ model ReferralPartner {
   @@index([status])
 }
 
+model ReferralInvite {
+  id              String   @id @default(cuid())
+  token           String   @unique
+  commissionBps   Int      @default(2000)
+  createdBy       String   // Admin user ID
+  claimedByUserId String?  // User who claimed this invite
+  claimedAt       DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([token])
+}
+
 model ReferralAttribution {
   id                String    @id @default(cuid())
   referredUserId    String    @unique // One attribution per customer

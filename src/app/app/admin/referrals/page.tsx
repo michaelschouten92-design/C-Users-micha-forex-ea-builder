@@ -208,162 +208,234 @@ export default function AdminReferralsPage() {
       </div>
 
       {subTab === "partners" && (
-        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.06)]">
-                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Partner
-                  </th>
-                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Status
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Rate
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Clicks
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Referrals
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Earned
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Unpaid
-                  </th>
-                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {partners.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)]"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="text-[#FAFAFA] font-medium">{p.email}</div>
-                      <div className="text-[10px] text-[#52525B] font-mono">{p.referralCode}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status] ?? "text-[#71717A]"}`}
-                      >
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {editingId === p.id ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            value={editPct}
-                            onChange={(e) => setEditPct(e.target.value)}
-                            className="w-16 px-2 py-1 text-right text-sm bg-[#09090B] border border-[rgba(99,102,241,0.3)] rounded text-white"
-                            min={0}
-                            max={100}
-                            autoFocus
-                          />
-                          <span className="text-[#71717A] text-xs">%</span>
-                          <button
-                            onClick={() => handleSaveCommission(p.id)}
-                            className="text-[#10B981] text-xs ml-1"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="text-[#71717A] text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingId(p.id);
-                            setEditPct(String(p.commissionBps / 100));
-                          }}
-                          className="text-[#FAFAFA] hover:text-[#818CF8] transition-colors tabular-nums"
+        <div className="space-y-4">
+          {/* Actions: Invite + Activate */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={async () => {
+                const pct = prompt("Commission percentage for invite link:", "20");
+                if (pct === null) return;
+                const num = parseFloat(pct);
+                if (isNaN(num) || num < 0 || num > 100) {
+                  showError("Must be 0–100");
+                  return;
+                }
+                try {
+                  const res = await fetch("/api/admin/referrals/invite", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+                    body: JSON.stringify({ action: "invite", commissionPct: num }),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    navigator.clipboard.writeText(data.inviteUrl);
+                    showSuccess(
+                      `Invite link copied! (${num}%, expires in ${data.expiresInDays} days)`
+                    );
+                  } else {
+                    showError(data.error ?? "Failed");
+                  }
+                } catch {
+                  showError("Failed to create invite");
+                }
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#5558E6] transition-all"
+            >
+              Create Invite Link
+            </button>
+            <button
+              onClick={async () => {
+                const email = prompt("User email to activate as partner:");
+                if (!email) return;
+                const pct = prompt("Commission percentage:", "20");
+                if (pct === null) return;
+                const num = parseFloat(pct);
+                if (isNaN(num) || num < 0 || num > 100) {
+                  showError("Must be 0–100");
+                  return;
+                }
+                try {
+                  const res = await fetch("/api/admin/referrals/invite", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+                    body: JSON.stringify({ action: "activate", email, commissionPct: num }),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    showSuccess(`${email} activated as partner at ${num}%`);
+                    fetchPartners();
+                  } else {
+                    showError(data.error ?? "Failed");
+                  }
+                } catch {
+                  showError("Failed to activate partner");
+                }
+              }}
+              className="px-4 py-2 text-sm font-medium text-[#818CF8] border border-[rgba(99,102,241,0.3)] rounded-lg hover:bg-[rgba(99,102,241,0.1)] transition-all"
+            >
+              Activate User as Partner
+            </button>
+          </div>
+
+          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[rgba(255,255,255,0.06)]">
+                    <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Partner
+                    </th>
+                    <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Status
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Rate
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Clicks
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Referrals
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Earned
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Unpaid
+                    </th>
+                    <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partners.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)]"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="text-[#FAFAFA] font-medium">{p.email}</div>
+                        <div className="text-[10px] text-[#52525B] font-mono">{p.referralCode}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[p.status] ?? "text-[#71717A]"}`}
                         >
-                          {(p.commissionBps / 100).toFixed(0)}%
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-[#A1A1AA] tabular-nums">{p.clicks}</td>
-                    <td className="px-4 py-3 text-right text-[#A1A1AA] tabular-nums">
-                      {p.attributions}
-                    </td>
-                    <td className="px-4 py-3 text-right text-[#10B981] tabular-nums">
-                      {formatCents(p.totalEarnedCents - p.totalReversedCents)}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums font-medium text-[#FAFAFA]">
-                      {formatCents(p.unpaidBalanceCents)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {p.status === "PENDING" && (
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {editingId === p.id ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              value={editPct}
+                              onChange={(e) => setEditPct(e.target.value)}
+                              className="w-16 px-2 py-1 text-right text-sm bg-[#09090B] border border-[rgba(99,102,241,0.3)] rounded text-white"
+                              min={0}
+                              max={100}
+                              autoFocus
+                            />
+                            <span className="text-[#71717A] text-xs">%</span>
+                            <button
+                              onClick={() => handleSaveCommission(p.id)}
+                              className="text-[#10B981] text-xs ml-1"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="text-[#71717A] text-xs"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => handleStatusChange(p.id, "ACTIVE")}
-                            className="text-[10px] font-medium px-2 py-1 rounded bg-[#10B981]/15 text-[#10B981] hover:bg-[#10B981]/25 transition-colors"
+                            onClick={() => {
+                              setEditingId(p.id);
+                              setEditPct(String(p.commissionBps / 100));
+                            }}
+                            className="text-[#FAFAFA] hover:text-[#818CF8] transition-colors tabular-nums"
                           >
-                            Approve
+                            {(p.commissionBps / 100).toFixed(0)}%
                           </button>
                         )}
-                        {p.status === "ACTIVE" && p.unpaidBalanceCents > 0 && (
-                          <button
-                            onClick={() =>
-                              setConfirmAction({
-                                title: "Create Payout",
-                                message: `Create payout of ${formatCents(p.unpaidBalanceCents)} for ${p.email}?`,
-                                onConfirm: () => handleCreatePayout(p.id),
-                              })
-                            }
-                            className="text-[10px] font-medium px-2 py-1 rounded bg-[#818CF8]/15 text-[#818CF8] hover:bg-[#818CF8]/25 transition-colors"
-                          >
-                            Payout
-                          </button>
-                        )}
-                        {p.status === "ACTIVE" && (
-                          <button
-                            onClick={() =>
-                              setConfirmAction({
-                                title: "Suspend Partner",
-                                message: `Suspend ${p.email}? They won't earn commissions while suspended.`,
-                                onConfirm: () => handleStatusChange(p.id, "SUSPENDED"),
-                                variant: "danger",
-                              })
-                            }
-                            className="text-[10px] font-medium px-2 py-1 rounded text-[#71717A] hover:text-[#EF4444] transition-colors"
-                          >
-                            Suspend
-                          </button>
-                        )}
-                        {p.status === "SUSPENDED" && (
-                          <button
-                            onClick={() => handleStatusChange(p.id, "ACTIVE")}
-                            className="text-[10px] font-medium px-2 py-1 rounded text-[#818CF8] hover:text-white transition-colors"
-                          >
-                            Reactivate
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {partners.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-[#71717A] text-sm">
-                      No partners yet
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#A1A1AA] tabular-nums">
+                        {p.clicks}
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#A1A1AA] tabular-nums">
+                        {p.attributions}
+                      </td>
+                      <td className="px-4 py-3 text-right text-[#10B981] tabular-nums">
+                        {formatCents(p.totalEarnedCents - p.totalReversedCents)}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums font-medium text-[#FAFAFA]">
+                        {formatCents(p.unpaidBalanceCents)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {p.status === "PENDING" && (
+                            <button
+                              onClick={() => handleStatusChange(p.id, "ACTIVE")}
+                              className="text-[10px] font-medium px-2 py-1 rounded bg-[#10B981]/15 text-[#10B981] hover:bg-[#10B981]/25 transition-colors"
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {p.status === "ACTIVE" && p.unpaidBalanceCents > 0 && (
+                            <button
+                              onClick={() =>
+                                setConfirmAction({
+                                  title: "Create Payout",
+                                  message: `Create payout of ${formatCents(p.unpaidBalanceCents)} for ${p.email}?`,
+                                  onConfirm: () => handleCreatePayout(p.id),
+                                })
+                              }
+                              className="text-[10px] font-medium px-2 py-1 rounded bg-[#818CF8]/15 text-[#818CF8] hover:bg-[#818CF8]/25 transition-colors"
+                            >
+                              Payout
+                            </button>
+                          )}
+                          {p.status === "ACTIVE" && (
+                            <button
+                              onClick={() =>
+                                setConfirmAction({
+                                  title: "Suspend Partner",
+                                  message: `Suspend ${p.email}? They won't earn commissions while suspended.`,
+                                  onConfirm: () => handleStatusChange(p.id, "SUSPENDED"),
+                                  variant: "danger",
+                                })
+                              }
+                              className="text-[10px] font-medium px-2 py-1 rounded text-[#71717A] hover:text-[#EF4444] transition-colors"
+                            >
+                              Suspend
+                            </button>
+                          )}
+                          {p.status === "SUSPENDED" && (
+                            <button
+                              onClick={() => handleStatusChange(p.id, "ACTIVE")}
+                              className="text-[10px] font-medium px-2 py-1 rounded text-[#818CF8] hover:text-white transition-colors"
+                            >
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {partners.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-[#71717A] text-sm">
+                        No partners yet
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
 
@@ -44,6 +45,38 @@ export function ReferralsClient({ referralCode }: { referralCode: string | null 
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inviteClaimed, setInviteClaimed] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Claim invite token if present in URL
+  useEffect(() => {
+    const inviteToken = searchParams.get("invite");
+    if (!inviteToken) return;
+    let active = true;
+    async function claim() {
+      try {
+        const res = await fetch("/api/referral/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+          body: JSON.stringify({ token: inviteToken }),
+        });
+        const data = await res.json();
+        if (res.ok && active) {
+          showSuccess(`You're now a referral partner at ${data.commissionPct}% commission!`);
+          setInviteClaimed(true);
+        } else if (active) {
+          showError(data.error ?? "Failed to claim invite");
+        }
+      } catch {
+        // silently fail
+      }
+    }
+    claim();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -75,7 +108,7 @@ export function ReferralsClient({ referralCode }: { referralCode: string | null 
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, inviteClaimed]);
 
   async function handleApply() {
     setApplying(true);
