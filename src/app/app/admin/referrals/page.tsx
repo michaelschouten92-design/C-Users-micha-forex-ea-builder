@@ -38,16 +38,28 @@ interface PayoutData {
   createdAt: string;
 }
 
+interface InviteData {
+  id: string;
+  inviteUrl: string;
+  commissionPct: number;
+  status: string;
+  claimedByEmail: string | null;
+  claimedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
 function formatCents(cents: number): string {
   return `€${(cents / 100).toFixed(2)}`;
 }
 
-type SubTab = "partners" | "payouts";
+type SubTab = "partners" | "payouts" | "invites";
 
 export default function AdminReferralsPage() {
   const [subTab, setSubTab] = useState<SubTab>("partners");
   const [partners, setPartners] = useState<PartnerData[]>([]);
   const [payouts, setPayouts] = useState<PayoutData[]>([]);
+  const [invites, setInvites] = useState<InviteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPct, setEditPct] = useState("");
@@ -76,10 +88,19 @@ export default function AdminReferralsPage() {
     }
   }, []);
 
+  const fetchInvites = useCallback(async () => {
+    try {
+      const res = await apiClient.get<{ data: InviteData[] }>("/api/admin/referrals/invites");
+      setInvites(res.data);
+    } catch {
+      // non-critical
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
     async function load() {
-      await Promise.all([fetchPartners(), fetchPayouts()]);
+      await Promise.all([fetchPartners(), fetchPayouts(), fetchInvites()]);
       if (active) setLoading(false);
     }
     load();
@@ -166,11 +187,14 @@ export default function AdminReferralsPage() {
     APPROVED: "bg-[#818CF8]/15 text-[#818CF8]",
     PAID: "bg-[#10B981]/15 text-[#10B981]",
     CANCELLED: "bg-[#71717A]/15 text-[#71717A]",
+    CLAIMED: "bg-[#10B981]/15 text-[#10B981]",
+    EXPIRED: "bg-[#71717A]/15 text-[#71717A]",
   };
 
   const tabs: { id: SubTab; label: string }[] = [
     { id: "partners", label: "Partners" },
     { id: "payouts", label: "Payouts" },
+    { id: "invites", label: "Invites" },
   ];
 
   if (loading) {
@@ -538,6 +562,112 @@ export default function AdminReferralsPage() {
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-[#71717A] text-sm">
                       No payouts yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {subTab === "invites" && (
+        <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Link
+                  </th>
+                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Rate
+                  </th>
+                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Claimed By
+                  </th>
+                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Expires
+                  </th>
+                  <th className="text-left px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Created
+                  </th>
+                  <th className="text-right px-4 py-3 text-[10px] font-semibold tracking-wider uppercase text-[#71717A]">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((inv) => (
+                  <tr
+                    key={inv.id}
+                    className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)]"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-[#A1A1AA] font-mono truncate max-w-[200px] block">
+                        {inv.inviteUrl}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-[#FAFAFA] tabular-nums">
+                      {inv.commissionPct}%
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[inv.status] ?? "text-[#71717A]"}`}
+                      >
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[#A1A1AA] text-xs">
+                      {inv.claimedByEmail ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-[#71717A] text-xs">
+                      {new Date(inv.expiresAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-[#71717A] text-xs">
+                      {new Date(inv.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {inv.status === "ACTIVE" && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(inv.inviteUrl);
+                              showSuccess("Link copied!");
+                            }}
+                            className="text-[10px] font-medium px-2 py-1 rounded bg-[#818CF8]/15 text-[#818CF8] hover:bg-[#818CF8]/25 transition-colors"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await fetch(`/api/admin/referrals/invites?id=${inv.id}`, {
+                                  method: "DELETE",
+                                  headers: getCsrfHeaders(),
+                                });
+                                showSuccess("Invite deleted");
+                                fetchInvites();
+                              } catch {
+                                showError("Failed to delete");
+                              }
+                            }}
+                            className="text-[10px] font-medium px-2 py-1 rounded text-[#71717A] hover:text-[#EF4444] transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {invites.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-[#71717A] text-sm">
+                      No invites yet
                     </td>
                   </tr>
                 )}
