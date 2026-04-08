@@ -7,6 +7,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import { ReferralClickTracker } from "@/components/referral/click-tracker";
+import { PostHogProvider } from "@/components/posthog-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -89,7 +90,9 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <Providers>{children}</Providers>
+        <PostHogProvider>
+          <Providers>{children}</Providers>
+        </PostHogProvider>
         <Suspense fallback={null}>
           <ReferralClickTracker />
         </Suspense>
