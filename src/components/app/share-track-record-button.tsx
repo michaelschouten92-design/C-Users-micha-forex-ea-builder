@@ -90,7 +90,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
             handleGenerateLink();
           }
         }}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/30 hover:bg-[#4F46E5]/30 transition-all duration-200"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#6366F1]/20 text-[#A78BFA] border border-[#6366F1]/30 hover:bg-[#6366F1]/30 transition-all duration-200"
         title="Share track record"
         aria-label="Share track record"
       >
@@ -111,7 +111,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
           <h3 className="text-sm font-semibold text-white mb-2">Share Track Record</h3>
           <p className="text-xs text-[#7C8DB0] mb-3">
             Generate a verified proof bundle link that anyone can view and independently verify.
@@ -119,7 +119,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
           </p>
 
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-[#94A3B8]">
+            <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
@@ -144,11 +144,11 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
                   type="text"
                   readOnly
                   value={shareUrl}
-                  className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-xs text-[#CBD5E1] font-mono truncate"
+                  className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-xs text-[#FAFAFA] font-mono truncate"
                 />
                 <button
                   onClick={handleCopy}
-                  className="px-3 py-2 bg-[#4F46E5] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors flex-shrink-0"
+                  className="px-3 py-2 bg-[#6366F1] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors flex-shrink-0"
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
@@ -163,7 +163,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
                     type="text"
                     readOnly
                     value={`<iframe src="${shareUrl?.replace("/verify/", "/embed/")}" width="320" height="200" frameborder="0" style="border-radius:12px;"></iframe>`}
-                    className="w-full px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[10px] text-[#CBD5E1] font-mono truncate"
+                    className="w-full px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[10px] text-[#FAFAFA] font-mono truncate"
                   />
                   <button
                     onClick={() => {
@@ -174,7 +174,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
                       showSuccess("Embed code copied");
                       setTimeout(() => setEmbedCopied(false), 2000);
                     }}
-                    className="absolute right-1 top-1 px-2 py-1 bg-[#4F46E5] text-white text-[10px] font-medium rounded hover:bg-[#6366F1] transition-colors"
+                    className="absolute right-1 top-1 px-2 py-1 bg-[#6366F1] text-white text-[10px] font-medium rounded hover:bg-[#6366F1] transition-colors"
                   >
                     {embedCopied ? "Copied" : "Copy"}
                   </button>
@@ -192,7 +192,7 @@ export function ShareTrackRecordButton({ instanceId }: ShareTrackRecordButtonPro
           ) : (
             <button
               onClick={handleGenerateLink}
-              className="w-full px-3 py-2 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
+              className="w-full px-3 py-2 bg-[#6366F1] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
             >
               Generate Share Link
             </button>

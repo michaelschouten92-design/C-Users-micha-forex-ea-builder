@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio - No-Code MT5 Expert Advisor Builder";
+export const alt = "Algo Studio - No-Code MT5 Expert Advisor Builder";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -63,7 +63,7 @@ export default function OGImage() {
             letterSpacing: "-2px",
           }}
         >
-          AlgoStudio
+          Algo Studio
         </div>
         <div
           style={{

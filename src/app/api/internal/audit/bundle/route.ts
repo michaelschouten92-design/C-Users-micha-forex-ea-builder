@@ -9,6 +9,9 @@ import {
 } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { authenticateInternal, computeReplay, stableStringify, logAuditAccess } from "../_shared";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "/api/internal/audit/bundle" });
 
 export async function GET(request: NextRequest) {
   if (!authenticateInternal(request)) {
@@ -48,7 +51,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Best-effort access logging
-    logAuditAccess(result.strategyId, recordId, "bundle").catch(() => {});
+    logAuditAccess(result.strategyId, recordId, "bundle").catch((err) => {
+      log.error({ err, recordId }, "Failed to log audit access for bundle");
+    });
 
     const bundle = {
       bundleVersion: "1",

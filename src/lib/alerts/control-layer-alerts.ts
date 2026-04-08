@@ -16,7 +16,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { fireWebhookWithResult } from "@/lib/webhook";
 import { enqueueNotification } from "@/lib/outbox";
 import { decrypt, isEncrypted } from "@/lib/crypto";
 
@@ -38,6 +37,10 @@ const ALERT_SUMMARIES: Record<ControlLayerAlertType, string> = {
   VERSION_OUTDATED: "Running an outdated strategy version.",
   HEALTH_DEGRADED: "Strategy edge is at risk. Performance deviating from baseline.",
   HEALTH_CRITICAL: "Strategy edge is critical. Sustained performance decline detected.",
+  EDGE_DECAY_WARNING:
+    "Edge decay detected. Performance trending below baseline — projected to break threshold.",
+  PORTFOLIO_DRAWDOWN_BREACH:
+    "Portfolio drawdown limit exceeded. All strategies auto-halted to prevent further losses.",
 };
 
 // ── Public API ───────────────────────────────────────────
@@ -111,6 +114,8 @@ const OUTBOUND_ALERT_TYPES: ReadonlySet<ControlLayerAlertType> = new Set([
   "MONITOR_OFFLINE",
   "HEALTH_DEGRADED",
   "HEALTH_CRITICAL",
+  "EDGE_DECAY_WARNING",
+  "PORTFOLIO_DRAWDOWN_BREACH",
 ]);
 
 // ── Multi-channel delivery ───────────────────────────────
@@ -134,11 +139,8 @@ async function deliverAlertAllChannels(
     defaultPrisma.user.findUnique({
       where: { id: userId },
       select: {
-        email: true,
-        webhookUrl: true,
         telegramBotToken: true,
         telegramChatId: true,
-        slackWebhookUrl: true,
       },
     }),
     defaultPrisma.liveEAInstance.findUnique({
@@ -156,67 +158,11 @@ async function deliverAlertAllChannels(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
   const investigateUrl = `${appUrl}/app/strategy/${instanceId}`;
 
-  // ── Webhook (direct delivery with status tracking) ──
-  if (user.webhookUrl) {
-    const webhookPayload = {
-      event: "control_layer_alert",
-      alertId,
-      alertType,
-      summary,
-      severity,
-      reasons: reasons ?? [],
-      deploymentId: instanceId,
-      deploymentName: eaName,
-      createdAt: new Date().toISOString(),
-    };
-
-    const result = await fireWebhookWithResult(user.webhookUrl, webhookPayload);
-    const now = new Date();
-    await defaultPrisma.controlLayerAlert
-      .update({
-        where: { id: alertId },
-        data: {
-          webhookStatus: result.ok ? "DELIVERED" : "FAILED",
-          webhookAt: now,
-          ...(result.ok ? {} : { webhookError: result.error.slice(0, 200) }),
-        },
-      })
-      .catch(() => {});
-  } else {
-    await defaultPrisma.controlLayerAlert
-      .update({
-        where: { id: alertId },
-        data: { webhookStatus: "SKIPPED", webhookAt: new Date() },
-      })
-      .catch(() => {});
-  }
-
   // Skip outbound notifications for low-priority alert types
   if (!OUTBOUND_ALERT_TYPES.has(alertType)) return;
 
   const reasonText =
     reasons && reasons.length > 0 ? reasons.join(", ") : "See strategy detail for more info.";
-
-  // ── Email (via outbox) ──
-  if (user.email) {
-    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    await enqueueNotification({
-      userId,
-      channel: "EMAIL",
-      destination: user.email,
-      subject: `[${severity}] ${eaName}${symbol ? ` (${symbol})` : ""} — ${summary}`,
-      alertSourceId: alertId,
-      payload: {
-        html:
-          `<h2 style="margin:0 0 12px">${esc(eaName)}${symbol ? ` <span style="color:#7C8DB0">(${esc(symbol)})</span>` : ""}</h2>` +
-          `<p style="margin:0 0 8px"><strong>Severity:</strong> ${severity}</p>` +
-          `<p style="margin:0 0 8px">${esc(summary)}</p>` +
-          `<p style="margin:0 0 16px;color:#64748B">${esc(reasonText)}</p>` +
-          `<a href="${esc(investigateUrl)}" style="display:inline-block;padding:10px 20px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px">Investigate Strategy</a>`,
-      },
-    });
-  }
 
   // ── Telegram (via outbox) ──
   if (user.telegramBotToken && user.telegramChatId) {
@@ -237,23 +183,6 @@ async function deliverAlertAllChannels(
         payload: { botToken, message: tgMessage },
       });
     }
-  }
-
-  // ── Slack (via outbox) ──
-  if (user.slackWebhookUrl) {
-    const slackMessage =
-      `*[${severity}] ${eaName}*${symbol ? ` (${symbol})` : ""}\n` +
-      `${summary}\n` +
-      `${reasonText}\n` +
-      `<${investigateUrl}|Investigate Strategy>`;
-
-    await enqueueNotification({
-      userId,
-      channel: "SLACK",
-      destination: user.slackWebhookUrl,
-      alertSourceId: alertId,
-      payload: { message: slackMessage },
-    });
   }
 }
 

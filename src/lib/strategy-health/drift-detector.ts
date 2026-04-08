@@ -105,9 +105,11 @@ export function computeTradeReturns(
     const pnl = trade.profit + trade.swap + trade.commission;
     if (balance > 0) {
       // Use log returns: additive and symmetric — better for statistical tests.
-      // Clamp argument to Number.EPSILON to prevent -Infinity on catastrophic losses.
+      // Clamp argument to Number.EPSILON to prevent -Infinity on catastrophic losses,
+      // then floor the return at -500 to prevent CUSUM saturation from a single
+      // catastrophic trade (keeps subsequent smaller losses detectable).
       const logArg = Math.max(Number.EPSILON, 1 + pnl / balance);
-      returns.push(Math.log(logArg) * 100);
+      returns.push(Math.max(-500, Math.log(logArg) * 100));
     }
     balance += pnl;
   }

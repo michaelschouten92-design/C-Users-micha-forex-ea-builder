@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = { title: "Settings | Algo Studio" };
 import { redirect } from "next/navigation";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { SubscriptionPanel } from "../components/subscription-panel";
 import { SettingsContent } from "./settings-content";
+import { resolveTier } from "@/lib/plan-limits";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -13,34 +17,24 @@ export default async function SettingsPage() {
     redirect("/login?expired=true");
   }
 
-  const startOfMonth = new Date();
-  startOfMonth.setUTCDate(1);
-  startOfMonth.setUTCHours(0, 0, 0, 0);
-
-  const [subscription, projectCount, exportCount, user, monitoredAccountCount] = await Promise.all([
+  const [subscription, user, monitoredAccountCount] = await Promise.all([
     prisma.subscription.findUnique({
       where: { userId: session.user.id },
     }),
-    prisma.project.count({
-      where: { userId: session.user.id, deletedAt: null },
-    }),
-    prisma.exportJob.count({
-      where: {
-        userId: session.user.id,
-        createdAt: { gte: startOfMonth },
-        deletedAt: null,
-      },
-    }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { emailVerified: true },
+      select: { emailVerified: true, maxDrawdownPct: true },
     }),
     prisma.terminalConnection.count({
-      where: { userId: session.user.id, deletedAt: null },
+      where: {
+        userId: session.user.id,
+        deletedAt: null,
+        instances: { some: { deletedAt: null } },
+      },
     }),
   ]);
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
 
   return (
     <div className="min-h-screen">
@@ -53,11 +47,10 @@ export default async function SettingsPage() {
         <SubscriptionPanel
           tier={tier}
           subscriptionStatus={subscription?.status ?? undefined}
-          projectCount={projectCount}
-          exportCount={exportCount}
           monitoredAccountCount={monitoredAccountCount}
           hasStripeSubscription={!!subscription?.stripeSubId}
           currentPeriodEnd={subscription?.currentPeriodEnd?.toISOString() ?? null}
+          emailVerified={!!user?.emailVerified}
           scheduledDowngradeTier={
             subscription?.scheduledDowngradeTier && subscription.scheduledDowngradeTier !== "FREE"
               ? (subscription.scheduledDowngradeTier as string)
@@ -65,7 +58,12 @@ export default async function SettingsPage() {
           }
         />
 
-        <SettingsContent email={session.user.email || ""} emailVerified={!!user?.emailVerified} />
+        <SettingsContent
+          email={session.user.email || ""}
+          emailVerified={!!user?.emailVerified}
+          maxDrawdownPct={user?.maxDrawdownPct ?? null}
+          tier={tier}
+        />
       </main>
     </div>
   );

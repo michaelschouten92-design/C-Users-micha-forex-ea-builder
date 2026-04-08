@@ -16,7 +16,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="ml-2 text-[#7C8DB0] hover:text-[#22D3EE] transition-colors p-1"
+      className="ml-2 text-[#71717A] hover:text-[#22D3EE] transition-colors p-1"
       title="Copy email"
       aria-label="Copy email to clipboard"
     >
@@ -46,17 +46,24 @@ function CopyButton({ text }: { text: string }) {
 type SettingsContentProps = {
   email: string;
   emailVerified: boolean;
+  maxDrawdownPct: number | null;
+  tier: string;
 };
 
-export function SettingsContent({ email, emailVerified }: SettingsContentProps) {
+export function SettingsContent({
+  email,
+  emailVerified,
+  maxDrawdownPct,
+  tier,
+}: SettingsContentProps) {
   return (
     <div className="space-y-6">
       {/* Email */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <h2 className="text-lg font-semibold text-white mb-4">Email</h2>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 flex-wrap">
           <div className="flex items-center min-w-0">
-            <p className="text-[#94A3B8] text-sm break-all">{email}</p>
+            <p className="text-[#A1A1AA] text-sm break-all">{email}</p>
             <CopyButton text={email} />
           </div>
           <span
@@ -75,22 +82,31 @@ export function SettingsContent({ email, emailVerified }: SettingsContentProps) 
       <HandleSetting />
 
       {/* Push Notifications */}
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
         <h2 className="text-lg font-semibold text-white mb-2">Push Notifications</h2>
-        <p className="text-sm text-[#94A3B8] mb-4">
+        <p className="text-sm text-[#A1A1AA] mb-4">
           Receive browser push notifications for alerts (drawdown, offline, new trades, errors).
-          Works even when AlgoStudio is not open.
+          Works even when Algo Studio is not open.
         </p>
         <PushNotificationToggle />
       </div>
 
-      {/* Webhook */}
-      <WebhookSection />
+      {/* Telegram */}
+      <TelegramSection />
 
-      {/* Change Password */}
+      {/* Referral Program */}
+      <ReferralSection isPaid={tier !== "FREE"} />
+
+      {/* Security */}
+      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
+        Security
+      </h2>
       <ChangePasswordSection />
 
       {/* Data & Privacy */}
+      <h2 className="text-sm font-semibold text-[#71717A] uppercase tracking-wider mt-4">
+        Data & Privacy
+      </h2>
       <DataExportSection />
 
       {/* Delete Account */}
@@ -165,13 +181,13 @@ function ChangePasswordSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-4">Change Password</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="currentPassword"
-            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+            className="block text-sm font-medium text-[#FAFAFA] mb-1"
           >
             Current Password
           </label>
@@ -181,11 +197,11 @@ function ChangePasswordSection() {
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
           />
         </div>
         <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-[#CBD5E1] mb-1">
+          <label htmlFor="newPassword" className="block text-sm font-medium text-[#FAFAFA] mb-1">
             New Password
           </label>
           <input
@@ -194,7 +210,7 @@ function ChangePasswordSection() {
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
             placeholder="Minimum 8 characters"
           />
           {newPassword.length > 0 && (
@@ -220,7 +236,7 @@ function ChangePasswordSection() {
         <div>
           <label
             htmlFor="confirmNewPassword"
-            className="block text-sm font-medium text-[#CBD5E1] mb-1"
+            className="block text-sm font-medium text-[#FAFAFA] mb-1"
           >
             Confirm New Password
           </label>
@@ -230,22 +246,22 @@ function ChangePasswordSection() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200"
+            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-[#94A3B8] cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-[#A1A1AA] cursor-pointer">
           <input
             type="checkbox"
             checked={showPasswords}
             onChange={(e) => setShowPasswords(e.target.checked)}
-            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#22D3EE]"
+            className="rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1]"
           />
           Show passwords
         </label>
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {loading ? "Saving..." : "Change Password"}
         </button>
@@ -289,16 +305,16 @@ function DataExportSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <h2 className="text-lg font-semibold text-white mb-2">Data & Privacy</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Download all your projects and account data as a JSON file. Useful for backup or data
         migration.
       </p>
       <button
         onClick={handleExport}
         disabled={exporting}
-        className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        className="w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
       >
         {exporting ? (
           <>
@@ -372,10 +388,10 @@ function DeleteAccountSection() {
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(239,68,68,0.2)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-[#EF4444] mb-2">Delete Account</h2>
 
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Permanently delete your account and all associated data. This action cannot be undone.
       </p>
 
@@ -402,7 +418,7 @@ function DeleteAccountSection() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
-                Journal entries and track record data
+                Track record and monitoring data
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1 h-1 rounded-full bg-[#EF4444] flex-shrink-0" />
@@ -415,7 +431,7 @@ function DeleteAccountSection() {
           <div>
             <label
               htmlFor="deleteAccountPassword"
-              className="block text-sm font-medium text-[#CBD5E1] mb-1"
+              className="block text-sm font-medium text-[#FAFAFA] mb-1"
             >
               Enter your current password
             </label>
@@ -460,7 +476,7 @@ function DeleteAccountSection() {
                 setConfirmText("");
                 setDeletePassword("");
               }}
-              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#94A3B8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
+              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#A1A1AA] border border-[rgba(79,70,229,0.3)] rounded-lg hover:text-white transition-all duration-200"
             >
               Cancel
             </button>
@@ -471,31 +487,22 @@ function DeleteAccountSection() {
   );
 }
 
-const SAMPLE_PAYLOAD = `{
-  "event": "control_layer_alert",
-  "alertId": "clx9abc123def",
-  "alertType": "DEPLOYMENT_INVALIDATED",
-  "summary": "Deployment has been invalidated. Trading authority revoked.",
-  "reasons": ["MONITORING_DRAWDOWN_BREACH"],
-  "deploymentId": "clx7xyz456ghi",
-  "deploymentName": "Trend-Following EURUSD",
-  "createdAt": "2026-03-08T14:30:00.000Z"
-}`;
-
-function WebhookSection() {
-  const [url, setUrl] = useState("");
+function TelegramSection() {
+  const [connected, setConnected] = useState(false);
+  const [chatId, setChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [showPayload, setShowPayload] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
   const [testMessage, setTestMessage] = useState("");
 
-  const fetchUrl = useCallback(async () => {
+  const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/account/webhook");
+      const res = await fetch("/api/telegram/link");
       if (res.ok) {
         const data = await res.json();
-        setUrl(data.webhookUrl ?? "");
+        setConnected(data.connected);
+        setChatId(data.chatId);
       }
     } catch {
       // Silently fail
@@ -505,47 +512,92 @@ function WebhookSection() {
   }, []);
 
   useEffect(() => {
-    fetchUrl();
-  }, [fetchUrl]);
+    fetchStatus();
+  }, [fetchStatus]);
 
-  async function handleSave() {
+  // Poll for link completion while linking is in progress
+  useEffect(() => {
+    if (!linking) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/telegram/link");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setConnected(true);
+            setChatId(data.chatId);
+            setLinking(false);
+            showSuccess("Telegram connected!");
+          }
+        }
+      } catch {
+        // Keep polling
+      }
+    }, 2000);
+    // Stop polling after 10 minutes
+    const timeout = setTimeout(() => setLinking(false), 10 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [linking]);
+
+  async function handleConnect() {
     setLoading(true);
     try {
-      const res = await fetch("/api/account/webhook", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ webhookUrl: url || null }),
+      const res = await fetch("/api/telegram/link", {
+        method: "POST",
+        headers: getCsrfHeaders(),
       });
       const data = await res.json();
-      if (res.ok) {
-        showSuccess(url ? "Webhook URL saved" : "Webhook disabled");
+      if (res.ok && data.deepLink) {
+        window.open(data.deepLink, "_blank");
+        setLinking(true);
       } else {
-        showError(data.error ?? "Failed to save webhook URL");
+        showError(data.error ?? "Failed to generate link");
       }
     } catch {
-      showError("Failed to save webhook URL");
+      showError("Failed to connect Telegram");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/telegram/link", {
+        method: "DELETE",
+        headers: getCsrfHeaders(),
+      });
+      if (res.ok) {
+        setConnected(false);
+        setChatId(null);
+        showSuccess("Telegram disconnected");
+      }
+    } catch {
+      showError("Failed to disconnect");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleTest() {
-    if (!url) return;
     setTestStatus("testing");
     setTestMessage("");
     try {
-      const res = await fetch("/api/webhook/test", {
+      const res = await fetch("/api/telegram/test", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ webhookUrl: url }),
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ chatId }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setTestStatus("success");
-        setTestMessage(data.message ?? "Webhook endpoint is reachable.");
+        setTestMessage(data.message ?? "Test message sent.");
       } else {
         setTestStatus("error");
-        setTestMessage(data.error ?? "Test failed. Check your URL.");
+        setTestMessage(data.error ?? "Failed to send test message.");
       }
     } catch {
       setTestStatus("error");
@@ -556,77 +608,419 @@ function WebhookSection() {
   if (!loaded) return null;
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-      <h2 className="text-lg font-semibold text-white mb-2">Webhook Alerts</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
-        AlgoStudio sends an HTTP POST to your endpoint when a new control-layer alert is created —
-        deployment invalidated, restricted, review required, offline, baseline missing, or version
-        outdated.
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+      <div className="flex items-center gap-3 mb-2">
+        <svg className="w-5 h-5 text-[#29A9EB]" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.012-1.252-.242-1.865-.44-.751-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+        </svg>
+        <h2 className="text-lg font-semibold text-white">Telegram Alerts</h2>
+        {connected && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] font-medium">
+            Connected
+          </span>
+        )}
+      </div>
+      <p className="text-sm text-[#A1A1AA] mb-4">
+        Receive real-time alerts in Telegram when your strategy needs attention.
       </p>
 
-      {/* URL input + Save */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-3">
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://your-server.com/webhook"
-          className="flex-1 px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent transition-all duration-200 text-sm"
-        />
-        <button
-          onClick={handleSave}
-          disabled={loading}
-          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          {loading ? "Saving..." : "Save"}
-        </button>
-      </div>
-
-      {/* Test button + result */}
-      {url && (
-        <div className="mb-4">
-          <button
-            onClick={handleTest}
-            disabled={testStatus === "testing"}
-            className="text-xs text-[#818CF8] hover:text-white transition-colors disabled:opacity-50"
-          >
-            {testStatus === "testing" ? "Testing..." : "Send test payload"}
-          </button>
-          {testStatus === "success" && (
-            <p className="text-[11px] text-[#10B981] mt-1">{testMessage}</p>
-          )}
-          {testStatus === "error" && (
-            <p className="text-[11px] text-[#EF4444] mt-1">{testMessage}</p>
+      {connected ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-lg bg-[rgba(16,185,129,0.06)] border border-[rgba(16,185,129,0.15)] px-4 py-3">
+            <svg
+              className="w-5 h-5 text-[#10B981] flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white">Telegram is connected</p>
+              {chatId && <p className="text-xs text-[#64748B]">Chat ID: {chatId}</p>}
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleTest}
+              disabled={testStatus === "testing"}
+              className="px-5 py-2 text-sm font-medium text-[#818CF8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 transition-all duration-200"
+            >
+              {testStatus === "testing" ? "Sending..." : "Send Test Message"}
+            </button>
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="px-5 py-2 text-sm font-medium text-[#71717A] border border-[rgba(255,255,255,0.06)] rounded-lg hover:text-[#EF4444] hover:border-[rgba(239,68,68,0.3)] disabled:opacity-50 transition-all duration-200"
+            >
+              Disconnect
+            </button>
+          </div>
+          {testStatus === "success" && <p className="text-[11px] text-[#10B981]">{testMessage}</p>}
+          {testStatus === "error" && <p className="text-[11px] text-[#EF4444]">{testMessage}</p>}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {linking ? (
+            <div className="flex items-center gap-3 rounded-lg bg-[rgba(99,102,241,0.06)] border border-[rgba(99,102,241,0.15)] px-4 py-3">
+              <svg
+                className="w-4 h-4 text-[#818CF8] animate-spin flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              <div>
+                <p className="text-sm text-white">
+                  Waiting for you to press <strong>Start</strong> in Telegram...
+                </p>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  Didn&apos;t open?{" "}
+                  <button
+                    onClick={handleConnect}
+                    className="text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-[#64748B]">
+                Click the button below to open Telegram and connect your account in one step.
+              </p>
+              <button
+                onClick={handleConnect}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#29A9EB] rounded-lg hover:bg-[#1D9BD9] disabled:opacity-50 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.012-1.252-.242-1.865-.44-.751-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                {loading ? "Opening..." : "Connect Telegram"}
+              </button>
+            </>
           )}
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Sample payload toggle */}
-      <button
-        onClick={() => setShowPayload((p) => !p)}
-        className="text-xs text-[#7C8DB0] hover:text-white transition-colors mb-2"
-      >
-        {showPayload ? "Hide" : "Show"} sample payload
-      </button>
-      {showPayload && (
-        <pre className="text-[11px] text-[#CBD5E1] bg-[#0A0118] border border-[rgba(79,70,229,0.1)] rounded-lg p-3 overflow-x-auto mb-4 leading-relaxed">
-          {SAMPLE_PAYLOAD}
-        </pre>
+// ── Drawdown Limit Section ──────────────────────────────────
+
+function DrawdownLimitSection({ initialValue }: { initialValue: number | null }) {
+  const [value, setValue] = useState(initialValue?.toString() ?? "");
+  const [saving, setSaving] = useState(false);
+  const [enabled, setEnabled] = useState(initialValue !== null);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const pct = enabled ? parseFloat(value) : null;
+      if (enabled && (isNaN(pct!) || pct! <= 0 || pct! > 100)) {
+        showError("Enter a valid percentage between 0.1 and 100");
+        setSaving(false);
+        return;
+      }
+
+      const res = await fetch("/api/account/drawdown-limit", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({ maxDrawdownPct: pct }),
+      });
+
+      if (res.ok) {
+        showSuccess(pct ? `Drawdown limit set to ${pct}%` : "Drawdown limit disabled");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || "Failed to save");
+      }
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="text-base font-semibold text-white">Portfolio Drawdown Limit</h3>
+          <p className="text-sm text-[#A1A1AA] mt-1">
+            Auto-halt all strategies when your account drawdown exceeds this percentage. Protects
+            against compounding losses across multiple EAs.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => setEnabled(!enabled)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? "bg-[#6366F1]" : "bg-[#27272A]"}`}
+          role="switch"
+          aria-checked={enabled}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`}
+          />
+        </button>
+        <span className="text-sm text-[#A1A1AA]">{enabled ? "Enabled" : "Disabled"}</span>
+      </div>
+
+      {enabled && (
+        <div className="flex items-end gap-3">
+          <div className="flex-1 max-w-[200px]">
+            <label htmlFor="drawdown-limit" className="block text-xs text-[#71717A] mb-1">
+              Max drawdown (%)
+            </label>
+            <input
+              id="drawdown-limit"
+              type="number"
+              min="0.1"
+              max="100"
+              step="0.1"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="e.g. 5"
+              className="w-full rounded-lg bg-[#0D0D12] border border-[rgba(255,255,255,0.1)] text-white px-3 py-2 text-sm focus:outline-none focus:border-[#6366F1]"
+            />
+          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#818CF8] disabled:opacity-50 transition-colors"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
       )}
 
-      {/* Delivery semantics */}
-      <div className="space-y-1.5 text-[11px] text-[#7C8DB0]">
-        <p>Webhooks are sent once per new alert. Duplicate alerts are not resent.</p>
-        <p>Delivery is best-effort with a 5-second timeout. There are no retries.</p>
-        <p>One webhook URL per account. Delivery status is shown on each alert in the bell menu.</p>
-        {url && (
-          <p>
-            Payloads are signed via the{" "}
-            <code className="text-[#818CF8]">X-AlgoStudio-Signature</code> header (HMAC-SHA256) when
-            server signing is enabled.
-          </p>
+      {!enabled && initialValue !== null && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="text-xs text-[#71717A] hover:text-[#A1A1AA] transition-colors"
+        >
+          {saving ? "Saving..." : "Save (disable limit)"}
+        </button>
+      )}
+
+      <p className="text-xs text-[#52525B] mt-3">
+        When triggered, all your strategies will be paused and you&apos;ll receive an alert. You can
+        resume trading manually from the Command Center.
+      </p>
+    </div>
+  );
+}
+
+// ── Referral Program Section ──────────────────────────────────
+
+function ReferralSection({ isPaid }: { isPaid: boolean }) {
+  const [status, setStatus] = useState<string | null>(null); // null = not a partner
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [stats, setStats] = useState<{
+    clicks: number;
+    signups: number;
+    confirmedCustomers: number;
+    netEarnedCents: number;
+    unpaidBalanceCents: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const res = await fetch("/api/referral/partner");
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setReferralCode(data.referralCode);
+            setStatus(data.partner?.status ?? null);
+          }
+          if (data.partner?.status === "ACTIVE") {
+            const statsRes = await fetch("/api/referral/stats");
+            if (statsRes.ok && active) {
+              const s = await statsRes.json();
+              setStats({
+                clicks: s.clicks?.total ?? 0,
+                signups: s.signups ?? 0,
+                confirmedCustomers: s.confirmedCustomers ?? 0,
+                netEarnedCents: s.netEarnedCents ?? 0,
+                unpaidBalanceCents: s.unpaidBalanceCents ?? 0,
+              });
+            }
+          }
+        }
+      } catch {
+        // silently fail
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleApply() {
+    setApplying(true);
+    try {
+      const res = await fetch("/api/referral/partner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showSuccess(data.message ?? "Application submitted!");
+        setStatus("PENDING");
+      } else {
+        showError(data.error ?? "Failed to apply");
+      }
+    } catch {
+      showError("Something went wrong");
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  function handleCopy() {
+    if (!referralCode) return;
+    navigator.clipboard.writeText(`https://algo-studio.com/?ref=${referralCode}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+      <div className="flex items-center gap-3 mb-2">
+        <svg
+          className="w-5 h-5 text-[#818CF8]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
+          />
+        </svg>
+        <h2 className="text-lg font-semibold text-white">Referral Program</h2>
+        {status === "ACTIVE" && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] font-medium">
+            Active
+          </span>
+        )}
+        {status === "PENDING" && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] font-medium">
+            Pending
+          </span>
         )}
       </div>
+
+      {!isPaid ? (
+        <>
+          <p className="text-sm text-[#A1A1AA] mb-3">
+            Earn 20% recurring commission on every paying customer you refer.
+          </p>
+          <p className="text-xs text-[#52525B]">
+            Upgrade to a paid plan to join the referral program.
+          </p>
+        </>
+      ) : status === "ACTIVE" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-[#A1A1AA]">
+            Share your link and earn 20% recurring commission.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={`https://algo-studio.com/?ref=${referralCode}`}
+              className="flex-1 px-3 py-2 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-sm text-white font-mono"
+            />
+            <button
+              onClick={handleCopy}
+              className="px-3 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#5558E6] transition-all"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          {stats && (
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <div className="text-center">
+                <div className="text-lg font-bold text-white tabular-nums">
+                  {stats.confirmedCustomers}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Customers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-[#10B981] tabular-nums">
+                  €{(stats.netEarnedCents / 100).toFixed(2)}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Earned</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-white tabular-nums">
+                  €{(stats.unpaidBalanceCents / 100).toFixed(2)}
+                </div>
+                <div className="text-[9px] text-[#52525B] uppercase">Pending</div>
+              </div>
+            </div>
+          )}
+          <a
+            href="/app/referrals"
+            className="inline-block text-xs text-[#818CF8] hover:text-white transition-colors mt-1"
+          >
+            View full dashboard →
+          </a>
+        </div>
+      ) : status === "PENDING" ? (
+        <p className="text-sm text-[#A1A1AA]">
+          Your application is being reviewed. You&apos;ll be notified once approved.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm text-[#A1A1AA] mb-3">
+            Earn 20% recurring commission on every paying customer you refer to Algo Studio. Monthly
+            payouts.
+          </p>
+          <button
+            onClick={handleApply}
+            disabled={applying}
+            className="px-5 py-2 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#5558E6] disabled:opacity-50 transition-all"
+          >
+            {applying ? "Submitting..." : "Apply to Join"}
+          </button>
+        </>
+      )}
     </div>
   );
 }

@@ -181,7 +181,7 @@ function DegradedMetricRow({ metric }: { metric: MetricDegradation }) {
           </div>
         )}
       </div>
-      <div className="h-1 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full"
           style={{ width: `${scorePct}%`, backgroundColor: barColor }}
@@ -304,7 +304,7 @@ export function InvestigationPanel({
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] p-4 sm:p-5"
+      className="rounded-xl bg-[#111114] p-4 sm:p-5"
       style={{
         border: `1px solid ${borderColor}`,
         borderLeft: `3px solid ${borderColor}`,

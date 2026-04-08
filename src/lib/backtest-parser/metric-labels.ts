@@ -37,11 +37,19 @@ const LABEL_MAP: Record<string, MetricKey> = {};
 const TRANSLATIONS: Record<MetricKey, string[]> = {
   totalNetProfit: [
     "total net profit",
+    "net profit",
     "nettogewinn gesamt",
+    "nettogewinn",
     "beneficio neto total",
+    "beneficio neto",
     "итого чистая прибыль",
+    "чистая прибыль",
     "profit net total",
+    "profit net",
     "lucro líquido total",
+    "lucro líquido",
+    "总净利润",
+    "純利益合計",
   ],
   grossProfit: [
     "gross profit",
@@ -50,6 +58,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "валовая прибыль",
     "profit brut",
     "lucro bruto",
+    "profitto lordo", // IT
+    "zysk brutto", // PL
+    "总利润", // ZH
+    "総利益", // JA
   ],
   grossLoss: [
     "gross loss",
@@ -58,6 +70,10 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "валовой убыток",
     "perte brute",
     "perda bruta",
+    "perdita lorda", // IT
+    "strata brutto", // PL
+    "总亏损", // ZH
+    "総損失", // JA
   ],
   profitFactor: [
     "profit factor",
@@ -66,6 +82,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "прибыльность",
     "facteur de profit",
     "fator de lucro",
+    "盈利因子",
+    "プロフィットファクター",
   ],
   expectedPayoff: [
     "expected payoff",
@@ -74,20 +92,30 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "математическое ожидание",
     "gain espéré",
     "retorno esperado",
+    "rendimento atteso", // IT
+    "oczekiwana wypłata", // PL
+    "期望收益", // ZH
+    "期待利益", // JA
   ],
   maxDrawdown: [
     // Equity drawdown labels listed first for fuzzy match priority.
-    // Parser scans label-value rows sequentially; a later equity row will
-    // overwrite an earlier balance row because we use the same key.
     "equity drawdown maximal",
+    "maximal equity drawdown",
     "maximal drawdown",
     "maximaler drawdown",
+    "maximaler eigenkapital drawdown",
     "drawdown máximo",
+    "drawdown máximo de equidad",
     "максимальная просадка",
+    "макс. просадка",
     "drawdown maximal",
+    "drawdown maximal des capitaux",
     "drawdown máximo do saldo",
+    "最大回撤",
+    "最大ドローダウン",
     // Balance drawdown — still matched so we capture SOMETHING if equity row is absent.
     "balance drawdown maximal",
+    "maximal balance drawdown",
   ],
   sharpeRatio: [
     "sharpe ratio",
@@ -96,6 +124,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "коэффициент шарпа",
     "ratio de sharpe",
     "índice de sharpe",
+    "夏普比率",
+    "シャープレシオ",
   ],
   recoveryFactor: [
     "recovery factor",
@@ -104,14 +134,22 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "фактор восстановления",
     "facteur de récupération",
     "fator de recuperação",
+    "fattore di recupero", // IT
+    "współczynnik odzyskiwania", // PL
+    "恢复因子", // ZH
+    "リカバリーファクター", // JA
   ],
   totalTrades: [
     "total trades",
+    "total deals",
+    "deals total",
     "trades gesamt",
     "total de transacciones",
     "всего сделок",
     "total des transactions",
     "total de negociações",
+    "总交易",
+    "総取引数",
   ],
   shortPositionsWon: [
     "short positions (won %)",
@@ -200,6 +238,8 @@ const TRANSLATIONS: Record<MetricKey, string[]> = {
     "начальный депозит",
     "dépôt initial",
     "depósito inicial",
+    "初始存款",
+    "初期預金",
   ],
   symbol: ["symbol", "symbol", "símbolo", "символ", "symbole", "símbolo"],
   period: ["period", "zeitraum", "período", "период", "période", "período"],
@@ -223,12 +263,16 @@ export function lookupMetricKey(label: string): MetricKey | null {
   // Exact match first
   if (LABEL_MAP[normalized]) return LABEL_MAP[normalized];
 
-  // Fuzzy: check if any known label is a substring of the input
+  // Fuzzy: longest matching label wins to avoid short-key false positives
+  // (e.g., "balance drawdown maximal" should match maxDrawdown, not balance)
+  let bestMatch: MetricKey | null = null;
+  let bestLen = 0;
   for (const [knownLabel, key] of Object.entries(LABEL_MAP)) {
-    if (normalized.includes(knownLabel)) {
-      return key;
+    if (normalized.includes(knownLabel) && knownLabel.length > bestLen) {
+      bestMatch = key;
+      bestLen = knownLabel.length;
     }
   }
 
-  return null;
+  return bestMatch;
 }

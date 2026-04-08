@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 
 export interface TrackRecordData {
@@ -58,7 +59,10 @@ export interface TrackRecordData {
  * Load account-level track record data by share token.
  * Returns null if the token is invalid, unpublished, or the base instance is missing.
  */
-export async function loadTrackRecord(token: string): Promise<TrackRecordData | null> {
+export const loadTrackRecord = cache(async function loadTrackRecord(
+  token: string
+): Promise<TrackRecordData | null> {
+  // ── Q1: Token validation ──
   const share = await prisma.accountTrackRecordShare.findUnique({
     where: { token },
     select: { baseInstanceId: true, isPublic: true },
@@ -66,101 +70,113 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
 
   if (!share || !share.isPublic) return null;
 
-  const base = await prisma.liveEAInstance.findUnique({
-    where: { id: share.baseInstanceId },
-    select: {
-      id: true,
-      eaName: true,
-      broker: true,
-      accountNumber: true,
-      balance: true,
-      equity: true,
-      status: true,
-      lastHeartbeat: true,
-      trades: {
-        where: { closeTime: { not: null } },
-        orderBy: { closeTime: "desc" },
-        select: {
-          profit: true,
-          closeTime: true,
-          openTime: true,
-          symbol: true,
-          type: true,
-          lots: true,
-          openPrice: true,
-          closePrice: true,
+  const baseInstanceId = share.baseInstanceId;
+
+  // ── Q2 + Q3 + Q4 + Q5 + Q6: All in parallel ──
+  // Only Q1 is sequential (need baseInstanceId). Everything else runs concurrently.
+  const tradeSelect = {
+    profit: true,
+    closeTime: true,
+    openTime: true,
+    symbol: true,
+    type: true,
+    lots: true,
+    openPrice: true,
+    closePrice: true,
+  } as const;
+
+  const [base, children, heartbeats, ledgerEventsRaw, trackStates] = await Promise.all([
+    // Q2: Base instance (no trades — we load them separately for all instances)
+    prisma.liveEAInstance.findUnique({
+      where: { id: baseInstanceId },
+      select: {
+        id: true,
+        eaName: true,
+        broker: true,
+        accountNumber: true,
+        balance: true,
+        equity: true,
+        status: true,
+        lastHeartbeat: true,
+      },
+    }),
+    // Q3: Child instances with health/deployment metadata (no trades)
+    prisma.liveEAInstance.findMany({
+      where: { parentInstanceId: baseInstanceId, deletedAt: null },
+      select: {
+        id: true,
+        symbol: true,
+        eaName: true,
+        totalTrades: true,
+        totalProfit: true,
+        lifecycleState: true,
+        strategyStatus: true,
+        healthSnapshots: {
+          orderBy: { createdAt: "desc" as const },
+          take: 1,
+          select: { driftDetected: true, driftSeverity: true, status: true },
+        },
+        terminalDeployments: {
+          where: { ignoredAt: null },
+          take: 1,
+          select: { magicNumber: true },
         },
       },
-    },
-  });
-
-  if (!base) return null;
-
-  const children = await prisma.liveEAInstance.findMany({
-    where: { parentInstanceId: base.id, deletedAt: null },
-    select: {
-      id: true,
-      symbol: true,
-      eaName: true,
-      totalTrades: true,
-      totalProfit: true,
-      lifecycleState: true,
-      strategyStatus: true,
-      trades: {
-        where: { closeTime: { not: null } },
-        orderBy: { closeTime: "desc" },
-        select: {
-          profit: true,
-          closeTime: true,
-          openTime: true,
-          symbol: true,
-          type: true,
-          lots: true,
-          openPrice: true,
-          closePrice: true,
-        },
-      },
-      healthSnapshots: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { driftDetected: true, driftSeverity: true, status: true },
-      },
-      terminalDeployments: {
-        where: { ignoredAt: null },
-        take: 1,
-        select: { magicNumber: true },
-      },
-    },
-  });
-
-  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
-
-  const [heartbeats, ledgerEventsRaw] = await Promise.all([
+    }),
+    // Q4: Heartbeats (only need base instance ID from Q1)
     prisma.eAHeartbeat
       .findMany({
-        where: { instanceId: base.id },
+        where: { instanceId: baseInstanceId },
         orderBy: { createdAt: "desc" },
-        take: 1000,
+        take: 2,
         select: { equity: true, balance: true, createdAt: true },
       })
       .then((rows) => rows.reverse()),
+    // Q5: Ledger events (use baseInstanceId; children added post-hoc if needed)
     prisma.trackRecordEvent.findMany({
-      where: { instanceId: { in: allInstanceIds } },
+      where: { instanceId: baseInstanceId },
       orderBy: { timestamp: "desc" },
       take: 50,
       select: { eventType: true, timestamp: true, seqNo: true, payload: true },
     }),
+    // Q6: Track record state (base instance)
+    prisma.trackRecordState.findMany({
+      where: { instanceId: baseInstanceId },
+      select: {
+        totalTrades: true,
+        totalProfit: true,
+        winCount: true,
+        lossCount: true,
+        maxDrawdownPct: true,
+      },
+    }),
   ]);
 
-  // Single source of truth: TrackRecordState (chain-backed) for all public metrics.
-  // Profit factor is NOT available from TrackRecordState (no grossProfit/grossLoss).
-  // Rather than mixing sources, we show null when chain-backed state exists.
-  const trackStates = await prisma.trackRecordState.findMany({
-    where: { instanceId: { in: allInstanceIds } },
-    select: { totalTrades: true, totalProfit: true, winCount: true, lossCount: true, maxDrawdownPct: true },
+  if (!base) return null;
+
+  // Q7: All trades in one batch query (base + children, single IN query)
+  const allInstanceIds = [base.id, ...children.map((c) => c.id)];
+  const allTradesRaw = await prisma.eATrade.findMany({
+    where: {
+      instanceId: { in: allInstanceIds },
+      closeTime: { not: null },
+    },
+    orderBy: { closeTime: "desc" },
+    take: 500,
+    select: { ...tradeSelect, instanceId: true },
   });
 
-  const allTrades = [...(base.trades ?? []), ...children.flatMap((c) => c.trades)];
+  // Map trades back to base/children for strategy attribution
+  const allTrades = allTradesRaw.map((t) => ({
+    profit: t.profit,
+    closeTime: t.closeTime,
+    openTime: t.openTime,
+    symbol: t.symbol,
+    type: t.type,
+    lots: t.lots,
+    openPrice: t.openPrice,
+    closePrice: t.closePrice,
+  }));
 
   let totalTrades: number;
   let totalProfit: number;
@@ -181,23 +197,74 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     const wins = allTrades.filter((t) => t.profit > 0).length;
     winRate = allTrades.length > 0 ? (wins / allTrades.length) * 100 : 0;
     const grossProfit = allTrades.filter((t) => t.profit > 0).reduce((s, t) => s + t.profit, 0);
-    const grossLoss = Math.abs(allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0));
+    const grossLoss = Math.abs(
+      allTrades.filter((t) => t.profit < 0).reduce((s, t) => s + t.profit, 0)
+    );
     profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
   }
 
   const profitFactorDisplay =
-    profitFactor === null ? "—" : profitFactor === Infinity ? "∞" : profitFactor > 0 ? profitFactor.toFixed(2) : "—";
+    profitFactor === null
+      ? "—"
+      : profitFactor === Infinity
+        ? "∞"
+        : profitFactor > 0
+          ? profitFactor.toFixed(2)
+          : "—";
 
-  // Max drawdown from equity curve (peak-to-trough, both % and absolute)
-  let maxDrawdownPct = 0;
+  // Use TrackRecordState for max drawdown if available, otherwise compute from trades
+  const chainMaxDD =
+    trackStates.length > 0 ? Math.max(...trackStates.map((ts) => ts.maxDrawdownPct ?? 0)) : 0;
+
+  // Build equity curve from closed trades (running cumulative P&L after each trade)
+  // This is more efficient than loading 1000 heartbeats and gives a trade-level view
+  const tradesSortedAsc = [...allTrades]
+    .filter((t): t is typeof t & { closeTime: Date } => t.closeTime != null)
+    .sort((a, b) => {
+      const ta = a.closeTime.getTime();
+      const tb = b.closeTime.getTime();
+      return ta - tb;
+    });
+
+  const startingBalance =
+    base.balance != null ? base.balance - tradesSortedAsc.reduce((s, t) => s + t.profit, 0) : 0;
+  let runningEquity = startingBalance;
+  const tradeEquityCurve: Array<{ equity: number; balance: number; createdAt: string }> = [];
+
+  // Add starting point
+  if (tradesSortedAsc.length > 0) {
+    const firstTradeTime =
+      tradesSortedAsc[0].closeTime instanceof Date
+        ? tradesSortedAsc[0].closeTime.toISOString()
+        : String(tradesSortedAsc[0].closeTime);
+    tradeEquityCurve.push({
+      equity: startingBalance,
+      balance: startingBalance,
+      createdAt: firstTradeTime,
+    });
+  }
+
+  // Build running equity after each trade
+  let maxDrawdownPct = chainMaxDD;
   let maxDrawdownAbs = 0;
-  if (heartbeats.length > 0) {
-    let peak = heartbeats[0].equity;
-    for (const hb of heartbeats) {
-      if (hb.equity > peak) peak = hb.equity;
+  let peak = startingBalance;
+
+  for (const t of tradesSortedAsc) {
+    runningEquity += t.profit;
+    const closeTimeStr =
+      t.closeTime instanceof Date ? t.closeTime.toISOString() : String(t.closeTime);
+    tradeEquityCurve.push({
+      equity: runningEquity,
+      balance: runningEquity,
+      createdAt: closeTimeStr,
+    });
+
+    // Track drawdown from trades (only if no chain state)
+    if (chainMaxDD === 0) {
+      if (runningEquity > peak) peak = runningEquity;
       if (peak > 0) {
-        const ddPct = ((peak - hb.equity) / peak) * 100;
-        const ddAbs = peak - hb.equity;
+        const ddPct = ((peak - runningEquity) / peak) * 100;
+        const ddAbs = peak - runningEquity;
         if (ddPct > maxDrawdownPct) {
           maxDrawdownPct = ddPct;
           maxDrawdownAbs = ddAbs;
@@ -206,32 +273,40 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     }
   }
 
-  // Duration from first heartbeat
+  // Duration from first trade (or heartbeat if available)
   let durationDays: number | null = null;
-  if (heartbeats.length > 0) {
-    const firstHb = new Date(heartbeats[0].createdAt);
-    durationDays = Math.floor((Date.now() - firstHb.getTime()) / (1000 * 60 * 60 * 24));
+  const firstTimestamp =
+    tradesSortedAsc.length > 0
+      ? tradesSortedAsc[0].closeTime instanceof Date
+        ? tradesSortedAsc[0].closeTime
+        : new Date(tradesSortedAsc[0].closeTime as string)
+      : heartbeats.length > 0
+        ? heartbeats[0].createdAt
+        : null;
+  if (firstTimestamp) {
+    durationDays = Math.floor(
+      (Date.now() - new Date(firstTimestamp).getTime()) / (1000 * 60 * 60 * 24)
+    );
   }
 
-  // Monthly returns derived from equity curve
+  // Monthly returns derived from trade-based equity curve
   const monthlyReturns: Array<{ month: string; returnPct: number }> = [];
-  if (heartbeats.length > 0) {
+  if (tradeEquityCurve.length > 1) {
     const byMonth = new Map<string, { first: number; last: number }>();
-    for (const hb of heartbeats) {
-      const d = new Date(hb.createdAt);
+    for (const pt of tradeEquityCurve) {
+      const d = new Date(pt.createdAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const existing = byMonth.get(key);
       if (!existing) {
-        byMonth.set(key, { first: hb.equity, last: hb.equity });
+        byMonth.set(key, { first: pt.equity, last: pt.equity });
       } else {
-        existing.last = hb.equity;
+        existing.last = pt.equity;
       }
     }
-    // Compute return for each month using previous month's last equity as base
     let prevEquity: number | null = null;
     for (const [month, { first, last }] of byMonth) {
-      const base = prevEquity ?? first;
-      const returnPct = base > 0 ? ((last - base) / base) * 100 : 0;
+      const baseEq = prevEquity ?? first;
+      const returnPct = baseEq > 0 ? ((last - baseEq) / baseEq) * 100 : 0;
       monthlyReturns.push({ month, returnPct });
       prevEquity = last;
     }
@@ -297,15 +372,15 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
       durationDays,
     },
     coverage: {
-      firstHeartbeatAt: heartbeats.length > 0 ? heartbeats[0].createdAt.toISOString() : null,
+      firstHeartbeatAt: firstTimestamp ? new Date(firstTimestamp).toISOString() : null,
       lastHeartbeatAt:
-        heartbeats.length > 0 ? heartbeats[heartbeats.length - 1].createdAt.toISOString() : null,
+        heartbeats.length > 0
+          ? heartbeats[heartbeats.length - 1].createdAt.toISOString()
+          : tradeEquityCurve.length > 0
+            ? tradeEquityCurve[tradeEquityCurve.length - 1].createdAt
+            : null,
     },
-    equityCurve: heartbeats.map((hb) => ({
-      equity: hb.equity,
-      balance: hb.balance,
-      createdAt: hb.createdAt.toISOString(),
-    })),
+    equityCurve: tradeEquityCurve,
     monthlyReturns,
     closedTrades,
     ledgerEvents: ledgerEventsRaw.map((e) => ({
@@ -316,4 +391,4 @@ export async function loadTrackRecord(token: string): Promise<TrackRecordData | 
     })),
     strategies,
   };
-}
+});

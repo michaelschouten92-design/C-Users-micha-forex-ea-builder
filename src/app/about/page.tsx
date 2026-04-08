@@ -2,247 +2,256 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
+import { GlassCard } from "@/components/marketing/glass-card";
 
 export const metadata: Metadata = {
-  title: "About — AlgoStudio | Strategy Monitoring & Governance Platform",
+  title: "About Algo Studio — Why We Built an EA Monitoring Platform",
   description:
-    "AlgoStudio is a monitoring and governance platform for live algorithmic strategies. Continuous verification, structural deviation detection, and public proof of strategy integrity.",
+    "Monitoring and governance for MT5 Expert Advisors. Drift detection, backtest comparison, and verified track records. Built by traders.",
   alternates: { canonical: "/about" },
   openGraph: {
-    title: "About AlgoStudio — Monitoring & Governance for Live Strategies",
+    title: "About Algo Studio — MT5 Strategy Monitoring Platform",
     description:
-      "Continuous monitoring, verification, and public proof for algorithmic trading strategies.",
+      "Continuous monitoring, drift detection, and verified track records for algorithmic trading strategies.",
+  },
+};
+
+const aboutJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About Algo Studio",
+  description:
+    "Monitoring and governance platform for MetaTrader 5 Expert Advisors. Drift detection, backtest comparison, and verified track records.",
+  mainEntity: {
+    "@type": "Organization",
+    name: "Algo Studio",
+    url: "https://algo-studio.com",
+    founder: {
+      "@type": "Person",
+      name: "Michael Schouten",
+      jobTitle: "Founder & Developer",
+      sameAs: ["https://www.linkedin.com/in/michael-schouten-472473187"],
+    },
   },
 };
 
 export default function AboutPage() {
   return (
-    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B]">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#08080A]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
+      />
       <SiteNav />
 
-      <main className="pt-32 pb-8 px-4 sm:px-6 flex-1">
+      <main className="pt-32 pb-0 px-4 sm:px-6 flex-1">
         <div className="max-w-3xl mx-auto">
-          {/* ════════════════════════════════════════════════════════
-              1. HERO — Why AlgoStudio exists
-              ════════════════════════════════════════════════════════ */}
+          {/* ── HERO ── */}
           <section>
-            <h1 className="text-3xl md:text-4xl font-bold text-[#FAFAFA] leading-tight">
-              Why AlgoStudio Exists.
-            </h1>
+            <AnimateOnScroll>
+              <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#A1A1AA] mb-4">
+                About Algo Studio
+              </p>
+              <h1 className="text-[28px] md:text-[40px] font-extrabold text-[#FAFAFA] leading-tight tracking-tight">
+                Backtests prove an edge existed.
+                <br />
+                We prove it still does.
+              </h1>
+            </AnimateOnScroll>
 
-            <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
-              <p>
-                Backtests establish whether a strategy has a statistical edge under historical
-                conditions. They do not tell you whether that edge persists once capital is live.
-              </p>
-              <p>
-                Live markets introduce structural change: regime shifts, liquidity variation,
-                correlation breakdown, volatility clustering. The assumptions validated in your
-                backtest may no longer hold within weeks of deployment.
-              </p>
-              <p>
-                Most platforms offer dashboards and alerts. They show what is happening. They do not
-                measure whether a strategy still operates within the bounds that justified running
-                it in the first place.
-              </p>
-              <p className="text-[#FAFAFA] font-medium">
-                AlgoStudio exists to close that gap — continuous monitoring that measures strategy
-                integrity against its own statistical baseline.
-              </p>
-            </div>
+            <AnimateOnScroll>
+              <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
+                <p>
+                  A backtest tells you a strategy worked under historical conditions. It
+                  doesn&apos;t tell you whether that edge survives once capital is live — when
+                  spreads widen, liquidity shifts, and market regimes change.
+                </p>
+                <p>
+                  Most platforms show you what&apos;s happening. Equity curves. Open trades. P&L.
+                  But they don&apos;t measure whether your strategy still operates within the bounds
+                  that justified running it.
+                </p>
+                <p className="text-[#FAFAFA] font-medium">
+                  Algo Studio exists to close that gap: continuous monitoring that compares live
+                  performance against your own statistical baseline — and acts when the two diverge.
+                </p>
+              </div>
+            </AnimateOnScroll>
           </section>
 
-          {/* ════════════════════════════════════════════════════════
-              2. THE CORE PROBLEM
-              ════════════════════════════════════════════════════════ */}
-          <section className="mt-16 pt-16 border-t border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA]">
-              The Problem With Unmonitored Strategies.
-            </h2>
-
-            <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
-              <p>
-                A strategy can be statistically valid at deployment and gradually drift outside its
-                validated parameters without triggering any alert. Drawdown increases. Win rate
-                shifts. Trade frequency diverges from baseline.
+          {/* ── WHAT WE DO ── */}
+          <section className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.06)]">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight">
+                Monitoring, not trading
+              </h2>
+              <p className="mt-4 text-[#A1A1AA] leading-relaxed">
+                Algo Studio does not place trades, generate signals, or interact with broker
+                execution. It monitors. It measures live behavior against validated baselines. When
+                deviation is detected, it surfaces the evidence and can automatically halt trading.
               </p>
-              <p>
-                Without continuous measurement against a defined baseline, there is no structured
-                way to know whether a strategy is still behaving as validated — or whether it has
-                quietly moved into territory where its original edge no longer applies.
-              </p>
-              <p>
-                The result is capital running on assumptions that may no longer hold, with no
-                systematic process to detect the divergence.
-              </p>
-            </div>
-          </section>
-
-          {/* ════════════════════════════════════════════════════════
-              3. MONITORING VS CONTROL
-              ════════════════════════════════════════════════════════ */}
-          <section className="mt-16 pt-16 border-t border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA]">
-              Monitoring, Not Trading.
-            </h2>
-
-            <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
-              <p>
-                AlgoStudio does not place trades. It does not generate signals. It does not manage
-                positions or interact with broker execution.
-              </p>
-              <p>
-                It monitors. It measures live behavior against validated baselines. It scores
-                strategy health across multiple dimensions. It detects structural deviation when
-                parameters drift beyond expected bounds.
-              </p>
-              <p>
-                When deviation is detected, the platform records it, scores its severity, and
-                surfaces it through lifecycle governance — a structured framework that maps strategy
-                health to operational insight.
-              </p>
-            </div>
+            </AnimateOnScroll>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {[
                 {
                   label: "Monitor",
-                  desc: "Continuous measurement of live strategy behavior against validated baselines.",
+                  desc: "Continuous real-time comparison of live EA performance against backtest expectations.",
                 },
                 {
-                  label: "Verify",
-                  desc: "Statistical scoring across robustness dimensions. Deviation detection when parameters drift.",
+                  label: "Detect",
+                  desc: "CUSUM statistical monitoring catches persistent drift before it becomes visible drawdown.",
                 },
                 {
                   label: "Govern",
-                  desc: "Lifecycle framework that maps strategy health to operational insight.",
+                  desc: "Automatic halt on degradation. Every intervention logged in a tamper-evident audit trail.",
                 },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-5"
-                >
-                  <h3 className="text-sm font-semibold text-[#FAFAFA]">{item.label}</h3>
-                  <p className="mt-2 text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
-                </div>
+              ].map((item, i) => (
+                <AnimateOnScroll key={item.label} delay={(i + 1) as 1 | 2 | 3}>
+                  <GlassCard>
+                    <h3 className="text-sm font-semibold text-[#FAFAFA]">{item.label}</h3>
+                    <p className="mt-2 text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
+                  </GlassCard>
+                </AnimateOnScroll>
               ))}
             </div>
           </section>
 
-          {/* ════════════════════════════════════════════════════════
-              4. EVIDENCE OVER OPINION
-              ════════════════════════════════════════════════════════ */}
-          <section className="mt-16 pt-16 border-t border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA]">
-              Evidence Over Opinion.
-            </h2>
-
-            <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
-              <p>
+          {/* ── EVIDENCE OVER OPINION ── */}
+          <section className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.06)]">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight">
+                Evidence over opinion
+              </h2>
+              <p className="mt-4 text-[#A1A1AA] leading-relaxed">
                 Every claim about a strategy should be verifiable. Not asserted — measured. Not
                 trusted — proven against data.
               </p>
-              <p>
-                AlgoStudio records verification evidence at every stage: backtest validation scores,
-                Monte Carlo survival rates, live performance metrics, governance snapshots, and
-                lifecycle transitions. Each record is structurally bound to the data that produced
-                it.
-              </p>
-            </div>
+            </AnimateOnScroll>
 
-            <ul className="mt-8 space-y-5">
+            <div className="mt-10 grid sm:grid-cols-2 gap-5">
               {[
                 {
                   title: "Hash-chained proof logs",
-                  desc: "Every lifecycle transition is cryptographically chained. Tamper-evident by construction.",
-                },
-                {
-                  title: "Snapshot-bound verification",
-                  desc: "Governance snapshots are bound to the exact state at the time of measurement. Context is preserved, not reconstructed.",
+                  desc: "Every trade and intervention is cryptographically chained. Tamper-evident by construction.",
                 },
                 {
                   title: "Deterministic scoring",
-                  desc: "Verification results are computed from defined inputs. Same data produces the same score every time.",
+                  desc: "Health scores computed from defined inputs. Same data produces the same score every time.",
+                },
+                {
+                  title: "Snapshot-bound verification",
+                  desc: "Governance snapshots are bound to the exact state at measurement time. Context is preserved.",
                 },
                 {
                   title: "Auditable transitions",
                   desc: "Every state change is recorded, timestamped, and attributed. Nothing happens off the record.",
                 },
               ].map((item) => (
-                <li key={item.title} className="flex gap-4">
-                  <span className="text-[#6366F1] mt-0.5 flex-shrink-0">—</span>
-                  <div>
-                    <span className="text-sm font-medium text-[#FAFAFA]">{item.title}</span>
-                    <p className="mt-0.5 text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
+                <AnimateOnScroll key={item.title}>
+                  <div className="flex items-start gap-3 py-3">
+                    <svg
+                      className="w-4 h-4 text-[#10B981] mt-0.5 shrink-0"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#FAFAFA]">{item.title}</h3>
+                      <p className="mt-1 text-sm text-[#71717A] leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                </li>
+                </AnimateOnScroll>
               ))}
-            </ul>
+            </div>
           </section>
 
-          {/* ════════════════════════════════════════════════════════
-              5. PUBLIC VERIFICATION
-              ════════════════════════════════════════════════════════ */}
-          <section className="mt-16 pt-16 border-t border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-2xl md:text-3xl font-bold text-[#FAFAFA]">Public Verification.</h2>
-
-            <div className="mt-8 space-y-5 text-[#A1A1AA] text-base leading-relaxed">
-              <p>
+          {/* ── PUBLIC VERIFICATION ── */}
+          <section className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.06)]">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight">
+                Public, verifiable track records
+              </h2>
+              <p className="mt-4 text-[#A1A1AA] leading-relaxed">
                 Strategies that pass verification can generate public proof pages — independently
-                accessible records of their validation history, live performance, and governance
-                status.
+                accessible records of validation history, live metrics, and governance decisions.
+                Anyone with the link can inspect the evidence.
               </p>
-              <p>
-                Public proof pages are not marketing materials. They are structured verification
-                reports: backtest scores, Monte Carlo analysis, live metric tracking, and the
-                complete chain of governance decisions.
-              </p>
-              <p>
-                Anyone with the link can inspect the evidence. The verification ladder shows exactly
-                what has been validated and at what level — from initial submission through baseline
-                validation to full live monitoring.
-              </p>
-            </div>
+            </AnimateOnScroll>
 
-            <div className="mt-8 rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#111114] p-6">
-              <p className="text-sm text-[#71717A]">
-                Public proof is opt-in. Operators choose which strategies to make visible and can
-                revoke access at any time. The verification data remains in the system regardless of
-                public visibility.
-              </p>
-            </div>
+            <AnimateOnScroll className="mt-8">
+              <GlassCard className="text-sm text-[#71717A]">
+                Public proof is opt-in. You choose which strategies to make visible and can revoke
+                access at any time. Verification data is preserved regardless of public visibility.
+              </GlassCard>
+            </AnimateOnScroll>
           </section>
 
-          {/* ════════════════════════════════════════════════════════
-              6. CLOSING CTA
-              ════════════════════════════════════════════════════════ */}
-          <section className="mt-16 pt-16 border-t border-[rgba(255,255,255,0.06)]">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/register"
-                className="inline-block px-6 py-3 bg-[#6366F1] text-white font-medium rounded-lg hover:bg-[#818CF8] transition-colors text-center"
-              >
-                Start monitoring
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-block px-6 py-3 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:bg-[rgba(255,255,255,0.04)] transition-colors text-center"
-              >
-                View plans
-              </Link>
-            </div>
+          {/* ── FOUNDER ── */}
+          <section className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.06)]">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight">
+                Built by a trader, for traders
+              </h2>
+            </AnimateOnScroll>
 
-            <p className="mt-10 text-xs text-[#71717A]">
-              Follow updates on{" "}
-              <a
-                href="https://x.com/AlgoStudio_"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#A1A1AA] hover:underline"
-              >
-                @algostudiodev
-              </a>
-            </p>
+            <AnimateOnScroll>
+              <div className="mt-8 flex items-start gap-5">
+                <div className="w-12 h-12 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center shrink-0">
+                  <span className="text-lg font-bold text-[#FAFAFA]">MS</span>
+                </div>
+                <div>
+                  <p className="text-[#FAFAFA] font-semibold">Michael Schouten</p>
+                  <p className="text-sm text-[#71717A] mt-0.5">Founder &amp; Developer</p>
+                  <p className="mt-3 text-[#A1A1AA] text-sm leading-relaxed">
+                    Software engineer with 10+ years of development experience and 5+ years of
+                    algorithmic trading on MetaTrader 5. Built Algo Studio to solve a problem he
+                    kept running into: backtests that looked great but strategies that silently
+                    degraded once live capital was at stake.
+                  </p>
+                  <a
+                    href="https://www.linkedin.com/in/michael-schouten-472473187"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-sm text-[#6366F1] hover:text-[#818CF8] transition-colors"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                    </svg>
+                    LinkedIn
+                  </a>
+                </div>
+              </div>
+            </AnimateOnScroll>
+          </section>
+
+          {/* ── CTA ── */}
+          <section className="mt-20 pt-16 border-t border-[rgba(255,255,255,0.06)] pb-20">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[28px] font-bold text-[#FAFAFA] tracking-tight mb-6">
+                Start monitoring your strategies
+              </h2>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/register"
+                  className="inline-block px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-all text-center text-sm btn-primary-cta"
+                >
+                  Monitor your first strategy free
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="inline-block px-7 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-center text-sm"
+                >
+                  Compare plans
+                </Link>
+              </div>
+            </AnimateOnScroll>
           </section>
         </div>
       </main>

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
 import type { AuthorityBlockReason } from "@/domain/heartbeat/authority-readiness";
+import { computeEdgeScore } from "@/domain/monitoring/edge-score";
 
 const log = logger.child({ page: "/app/monitor" });
 
@@ -31,7 +32,9 @@ export interface RecentDecision {
 }
 
 export interface MonitorData {
-  eaInstances: (Awaited<ReturnType<typeof queryEaInstances>>[number] & { isAutoDiscovered: boolean })[];
+  eaInstances: (Awaited<ReturnType<typeof queryEaInstances>>[number] & {
+    isAutoDiscovered: boolean;
+  })[];
   subscription: Awaited<ReturnType<typeof querySubscription>>;
   /** Most restrictive authority across all instances. null = fail-closed PAUSE. */
   authority: AuthorityDecision | null;
@@ -39,6 +42,25 @@ export interface MonitorData {
   analytics: HeartbeatAnalyticsResult | null;
   /** Last 25 heartbeat decisions, newest first. Empty on failure. */
   recentDecisions: RecentDecision[];
+  /** Per-instance trade aggregates for edge score computation. */
+  tradeAggregates: Map<
+    string,
+    {
+      winCount: number;
+      lossCount: number;
+      grossProfit: number;
+      grossLoss: number;
+      tradeCount: number;
+    }
+  >;
+  /** Recent closed trades for the activity feed (newest first, max 15). */
+  recentTrades: {
+    instanceId: string;
+    profit: number;
+    closeTime: string | null;
+    symbol: string | null;
+    magicNumber: number | null;
+  }[];
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -204,23 +226,9 @@ function queryEaInstances(userId: string) {
       operatorHold: true,
       monitoringSuppressedUntil: true,
       lifecycleState: true,
-      trades: {
-        where: { closeTime: { not: null } },
-        orderBy: { closeTime: "desc" },
-        take: 50,
-        select: { profit: true, closeTime: true, symbol: true, magicNumber: true },
-      },
-      heartbeats: {
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        select: { equity: true, createdAt: true },
-      },
       exportJobId: true,
       strategyVersion: {
         select: {
-          strategyIdentity: {
-            select: { strategyId: true },
-          },
           backtestBaseline: {
             select: {
               winRate: true,
@@ -228,6 +236,8 @@ function queryEaInstances(userId: string) {
               totalTrades: true,
               maxDrawdownPct: true,
               sharpeRatio: true,
+              netReturnPct: true,
+              initialDeposit: true,
             },
           },
         },
@@ -366,102 +376,128 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
       isAutoDiscovered:
         ea.lifecycleState === "DRAFT" &&
         ea.terminalDeployments.some((d) => {
-          const expected = createHash("sha256")
+          // EA fingerprint formula: ctx:v3:SYMBOL:MAGIC:TIMEFRAME (timeframe="" for auto-discovered)
+          const v3 = createHash("sha256")
+            .update(`ctx:v3:${d.symbol}:${d.magicNumber}:`)
+            .digest("hex");
+          // Backward compat with older EA versions
+          const v2 = createHash("sha256")
             .update(`ctx:v2:${d.symbol}:${d.magicNumber}`)
             .digest("hex");
-          return d.materialFingerprint === expected;
+          return d.materialFingerprint === v3 || d.materialFingerprint === v2;
         }),
     }));
     const subscription = subResult.value;
 
     log.info({ step: "load_success", eaCount: eaInstances.length }, "monitor data loaded");
 
-    // ── Phase 2: Authority + Timeline (non-critical — null on failure) ──
-    let authority: AuthorityDecision | null = null;
-    const analytics: HeartbeatAnalyticsResult | null = null;
-    let recentDecisions: RecentDecision[] = [];
+    // ── Phase 1b: Trade aggregate stats for edge score (non-critical) ──
+    // Single groupBy query for all instances with baselines — efficient, no N+1.
+    const instancesWithBaseline = eaInstances.filter((ea) => ea.strategyVersion?.backtestBaseline);
+    const tradeAggregates = new Map<
+      string,
+      {
+        winCount: number;
+        lossCount: number;
+        grossProfit: number;
+        grossLoss: number;
+        tradeCount: number;
+      }
+    >();
 
-    const instanceIds = eaInstances.map((ea) => ea.id);
-
-    if (instanceIds.length > 0) {
+    if (instancesWithBaseline.length > 0) {
       try {
-        const [authorityResult, timelineResult] = await Promise.allSettled([
-          // A) Latest decision per instance (1 row per instance via distinct)
-          prisma.proofEventLog.findMany({
-            where: {
-              type: "HEARTBEAT_DECISION_MADE",
-              strategyId: { in: instanceIds },
-            },
-            orderBy: { createdAt: "desc" },
-            distinct: ["strategyId"],
-            select: { id: true, strategyId: true, createdAt: true, meta: true },
-            take: Math.min(instanceIds.length, 500),
-          }),
-          // B) Recent decisions timeline (last 25 overall)
-          prisma.proofEventLog.findMany({
-            where: {
-              type: "HEARTBEAT_DECISION_MADE",
-              strategyId: { in: instanceIds },
-            },
-            orderBy: { createdAt: "desc" },
-            select: { id: true, strategyId: true, createdAt: true, meta: true },
-            take: 25,
-          }),
-        ]);
+        const ids = instancesWithBaseline.map((ea) => ea.id);
+        const rows = await prisma.eATrade.groupBy({
+          by: ["instanceId"],
+          where: {
+            instanceId: { in: ids },
+            closeTime: { not: null },
+          },
+          _count: { id: true },
+          _sum: { profit: true },
+        });
 
-        // A) Authority from latest per-instance decisions
-        if (authorityResult.status === "fulfilled") {
-          const latestDecisions = authorityResult.value.map((ev) => {
-            const meta = ev.meta as Record<string, unknown> | null;
-            const action = sanitizeAction(meta?.action);
-            const reasonCode =
-              typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED";
-            const sanitizedReasons =
-              reasonCode === "AUTHORITY_UNINITIALIZED"
-                ? sanitizeAuthorityReasons(meta?.authorityReasons)
-                : [];
-            return {
-              action,
-              reasonCode,
-              createdAt: ev.createdAt,
-              strategyId: ev.strategyId,
-              ...(sanitizedReasons.length > 0 ? { authorityReasons: sanitizedReasons } : {}),
-            };
-          });
-          authority = pickMostRestrictive(latestDecisions);
-        }
+        // For win/loss counts we need a raw query since groupBy can't do conditional aggregation
+        const rawStats: {
+          instanceId: string;
+          winCount: bigint;
+          grossProfit: number;
+          grossLoss: number;
+        }[] = await prisma.$queryRaw`
+            SELECT "instanceId",
+              COUNT(*) FILTER (WHERE profit > 0)::bigint AS "winCount",
+              COALESCE(SUM(CASE WHEN profit > 0 THEN profit ELSE 0 END), 0) AS "grossProfit",
+              COALESCE(SUM(CASE WHEN profit < 0 THEN ABS(profit) ELSE 0 END), 0) AS "grossLoss"
+            FROM "EATrade"
+            WHERE "instanceId" = ANY(${ids}) AND "closeTime" IS NOT NULL
+            GROUP BY "instanceId"
+          `;
 
-        // B) Timeline from last 25 events
-        if (timelineResult.status === "fulfilled") {
-          recentDecisions = timelineResult.value.map((ev) => {
-            const meta = ev.meta as Record<string, unknown> | null;
-            const context = extractDecisionContext(meta);
-            return {
-              id: ev.id,
-              timestamp: ev.createdAt.toISOString(),
-              action: sanitizeAction(meta?.action) as "RUN" | "PAUSE" | "STOP",
-              reasonCode:
-                typeof meta?.reasonCode === "string" ? meta.reasonCode : "COMPUTATION_FAILED",
-              ...(context ? { context } : {}),
-            };
+        for (const row of rawStats) {
+          const groupRow = rows.find((r) => r.instanceId === row.instanceId);
+          tradeAggregates.set(row.instanceId, {
+            winCount: Number(row.winCount),
+            lossCount: (groupRow?._count?.id ?? 0) - Number(row.winCount),
+            grossProfit: Number(row.grossProfit),
+            grossLoss: Number(row.grossLoss),
+            tradeCount: groupRow?._count?.id ?? 0,
           });
         }
       } catch (err) {
-        const diag = classifyDbError(err);
-        log.error(
-          {
-            step: "authority_query_error",
-            errorName: diag.errorName,
-            message: diag.message,
-            classification: diag.classification,
-          },
-          "authority/timeline processing failed (non-critical)"
+        log.warn(
+          { step: "trade_aggregates_error" },
+          "trade aggregates query failed (non-critical)"
         );
-        // authority remains null, recentDecisions remains [] — page shows PAUSE fallback
+        // tradeAggregates remains empty — edge score won't be computed
       }
     }
 
-    return { eaInstances, subscription, authority, analytics, recentDecisions };
+    // ── Phase 1c: Recent trades for activity feed (non-critical) ──
+    let recentTrades: {
+      instanceId: string;
+      profit: number;
+      closeTime: string | null;
+      symbol: string | null;
+      magicNumber: number | null;
+    }[] = [];
+
+    const allIds = eaInstances.map((ea) => ea.id);
+    if (allIds.length > 0) {
+      try {
+        const trades = await prisma.eATrade.findMany({
+          where: { instanceId: { in: allIds }, closeTime: { not: null } },
+          orderBy: { closeTime: "desc" },
+          take: 15,
+          select: {
+            instanceId: true,
+            profit: true,
+            closeTime: true,
+            symbol: true,
+            magicNumber: true,
+          },
+        });
+        recentTrades = trades.map((t) => ({
+          instanceId: t.instanceId,
+          profit: t.profit,
+          closeTime: t.closeTime?.toISOString() ?? null,
+          symbol: t.symbol,
+          magicNumber: t.magicNumber,
+        }));
+      } catch {
+        // Non-critical — feed starts empty, fills from SSE
+      }
+    }
+
+    return {
+      eaInstances,
+      subscription,
+      authority: null,
+      analytics: null,
+      recentDecisions: [],
+      tradeAggregates,
+      recentTrades,
+    };
   } catch (err) {
     // Outer catch for unexpected errors (non-query failures like import errors)
     const diag = classifyDbError(err);

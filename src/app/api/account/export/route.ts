@@ -39,70 +39,89 @@ export async function GET() {
     const auditLogCutoff = new Date();
     auditLogCutoff.setMonth(auditLogCutoff.getMonth() - 12);
 
-    const [user, subscription, projects, exports, templates, auditLogs] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          email: true,
-          emailVerified: true,
-          emailVerifiedAt: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.subscription.findUnique({
-        where: { userId },
-        select: {
-          tier: true,
-          status: true,
-          currentPeriodStart: true,
-          currentPeriodEnd: true,
-        },
-      }),
-      prisma.project.findMany({
-        where: { userId },
-        include: {
-          versions: {
-            orderBy: { versionNo: "desc" },
-            take: 20, // Limit versions per project to prevent OOM
-            select: {
-              versionNo: true,
-              buildJson: true,
-              createdAt: true,
+    const [user, subscription, projects, exports, templates, auditLogs, liveInstances] =
+      await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            emailVerified: true,
+            emailVerifiedAt: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        }),
+        prisma.subscription.findUnique({
+          where: { userId },
+          select: {
+            tier: true,
+            status: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+          },
+        }),
+        prisma.project.findMany({
+          where: { userId },
+          include: {
+            versions: {
+              orderBy: { versionNo: "desc" },
+              take: 20, // Limit versions per project to prevent OOM
+              select: {
+                versionNo: true,
+                buildJson: true,
+                createdAt: true,
+              },
             },
           },
-        },
-      }),
-      prisma.exportJob.findMany({
-        where: { userId },
-        take: 1000, // Cap exports in GDPR data
-        select: {
-          exportType: true,
-          status: true,
-          outputName: true,
-          createdAt: true,
-        },
-      }),
-      prisma.userTemplate.findMany({
-        where: { userId },
-        select: {
-          name: true,
-          buildJson: true,
-          createdAt: true,
-        },
-      }),
-      prisma.auditLog.findMany({
-        where: { userId, createdAt: { gte: auditLogCutoff } },
-        take: 5000,
-        select: {
-          eventType: true,
-          resourceType: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+        }),
+        prisma.exportJob.findMany({
+          where: { userId },
+          take: 1000, // Cap exports in GDPR data
+          select: {
+            exportType: true,
+            status: true,
+            outputName: true,
+            createdAt: true,
+          },
+        }),
+        prisma.userTemplate.findMany({
+          where: { userId },
+          select: {
+            name: true,
+            buildJson: true,
+            createdAt: true,
+          },
+        }),
+        prisma.auditLog.findMany({
+          where: { userId, createdAt: { gte: auditLogCutoff } },
+          take: 5000,
+          select: {
+            eventType: true,
+            resourceType: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.liveEAInstance.findMany({
+          where: { userId, deletedAt: null },
+          take: 500,
+          select: {
+            id: true,
+            eaName: true,
+            symbol: true,
+            broker: true,
+            accountNumber: true,
+            mode: true,
+            status: true,
+            totalTrades: true,
+            totalProfit: true,
+            balance: true,
+            lifecycleState: true,
+            createdAt: true,
+          },
+        }),
+      ]);
 
     const exportData = {
       exportedAt: new Date().toISOString(),
@@ -120,6 +139,7 @@ export async function GET() {
       exports,
       templates,
       auditLogs,
+      monitoredAccounts: liveInstances,
     };
 
     logger.info({ userId }, "GDPR data export completed");

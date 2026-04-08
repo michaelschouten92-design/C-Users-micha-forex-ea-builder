@@ -7,12 +7,12 @@ import { StrategiesView } from "./strategies-view";
 const baseUrl = process.env.SITE_URL ?? "https://algo-studio.com";
 
 export const metadata: Metadata = {
-  title: "Verified Strategies | AlgoStudio",
+  title: "Verified Trading Strategies — Cryptographic Proof | Algo Studio",
   description:
-    "Browse curated, independently verified algorithmic trading strategies with cryptographic proof of performance.",
+    "Browse independently verified algorithmic trading strategies with hash-chain proof of performance. Every metric from real live trading, not simulated results.",
   alternates: { canonical: `${baseUrl}/strategies` },
   openGraph: {
-    title: "Verified Strategies | AlgoStudio",
+    title: "Verified Strategies | Algo Studio",
     description:
       "Browse curated, independently verified algorithmic trading strategies with cryptographic proof of performance.",
     url: `${baseUrl}/strategies`,
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function StrategiesPage() {
   return (
-    <div className="min-h-screen bg-[#09090B] text-[#FAFAFA]">
+    <div className="min-h-screen bg-[#08080A] text-[#FAFAFA]">
       <SiteNav />
       <div className="pt-16">
         <StrategiesView />

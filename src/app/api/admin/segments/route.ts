@@ -31,10 +31,13 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      data: segments.map((s) => ({
-        ...s,
-        filters: JSON.parse(s.filters),
-      })),
+      data: segments.map((s) => {
+        try {
+          return { ...s, filters: JSON.parse(s.filters) };
+        } catch {
+          return { ...s, filters: {} };
+        }
+      }),
     });
   } catch (error) {
     logger.error({ error }, "Failed to list segments");
@@ -89,10 +92,13 @@ export async function POST(request: Request) {
       logger.error({ err }, "Audit log failed: segment operation");
     });
 
-    return NextResponse.json({
-      ...segment,
-      filters: JSON.parse(segment.filters),
-    });
+    let parsedFilters = {};
+    try {
+      parsedFilters = JSON.parse(segment.filters);
+    } catch {
+      /* corrupt JSON — return empty */
+    }
+    return NextResponse.json({ ...segment, filters: parsedFilters });
   } catch (error) {
     logger.error({ error }, "Failed to create segment");
     return NextResponse.json(apiError(ErrorCode.INTERNAL_ERROR, "Internal server error"), {

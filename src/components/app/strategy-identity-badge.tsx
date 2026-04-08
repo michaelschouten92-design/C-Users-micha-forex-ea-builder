@@ -25,7 +25,7 @@ export function StrategyIdentityBadge({
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 hover:border-[#4F46E5]/40 transition-all group"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 hover:border-[#6366F1]/40 transition-all group"
       title={fingerprint ? `Fingerprint: ${fingerprint.substring(0, 16)}...` : "Click to copy"}
     >
       <svg
@@ -45,7 +45,7 @@ export function StrategyIdentityBadge({
         {strategyId}
       </span>
       {versionNo !== undefined && (
-        <span className="text-[10px] font-medium text-[#7C8DB0] bg-[#1A0626] px-1.5 py-0.5 rounded">
+        <span className="text-[10px] font-medium text-[#7C8DB0] bg-[#111114] px-1.5 py-0.5 rounded">
           v{versionNo}
         </span>
       )}

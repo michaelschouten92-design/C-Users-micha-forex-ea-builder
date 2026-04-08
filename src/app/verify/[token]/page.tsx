@@ -8,7 +8,7 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   return {
-    title: `Verify Track Record — AlgoStudio`,
+    title: `Verify Track Record — Algo Studio`,
     description: `Independent verification of a trading track record. Token: ${token.slice(0, 8)}...`,
     robots: "noindex",
   };

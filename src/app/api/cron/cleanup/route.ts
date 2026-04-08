@@ -40,6 +40,8 @@ async function handleCleanup(request: NextRequest) {
     const BATCH_SIZE = 1000;
     const cronStartTime = Date.now();
     const CRON_TIMEOUT_MS = 55_000; // 55 seconds — Vercel free tier has 60s limit
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
@@ -96,7 +98,9 @@ async function handleCleanup(request: NextRequest) {
     // Batch 2: EA-related operations (can run in parallel)
     const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
     const [deletedHeartbeats, deletedEAErrors, staleInstances] = await Promise.all([
-      batchDelete(prisma.eAHeartbeat, { createdAt: { lt: thirtyDaysAgo } }),
+      batchDelete(prisma.eAHeartbeat, {
+        createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      }),
       batchDelete(prisma.eAError, { createdAt: { lt: thirtyDaysAgo } }),
       prisma.liveEAInstance.updateMany({
         where: {
@@ -107,6 +111,92 @@ async function handleCleanup(request: NextRequest) {
         data: { status: "OFFLINE" },
       }),
     ]);
+
+    // Batch 3: Retention policies for previously unbounded tables
+    let deletedMonitoringRuns = 0;
+    let deletedHealthSnapshots = 0;
+    let deletedOutbox = 0;
+    let deletedAlerts = 0;
+    let deletedProofEvents = 0;
+    let deletedSoftInstances = 0;
+    let deletedSoftExports = 0;
+    let deletedSoftTerminals = 0;
+    let staleDiscoveredSoftDeleted = 0;
+    let staleDeploymentsDeleted = 0;
+
+    if (!isTimedOut()) {
+      [
+        deletedMonitoringRuns,
+        deletedHealthSnapshots,
+        deletedOutbox,
+        deletedAlerts,
+        deletedProofEvents,
+        deletedSoftInstances,
+        deletedSoftExports,
+        deletedSoftTerminals,
+      ] = await Promise.all([
+        // MonitoringRun: delete > 90 days
+        batchDelete(prisma.monitoringRun, {
+          completedAt: { lt: ninetyDaysAgo },
+        }),
+        // HealthSnapshot: delete > 90 days
+        batchDelete(prisma.healthSnapshot, {
+          createdAt: { lt: ninetyDaysAgo },
+        }),
+        // NotificationOutbox: delete SENT/DEAD > 30 days
+        batchDelete(prisma.notificationOutbox, {
+          status: { in: ["SENT", "DEAD"] },
+          createdAt: { lt: thirtyDaysAgo },
+        }),
+        // ControlLayerAlert: delete acknowledged > 90 days
+        batchDelete(prisma.controlLayerAlert, {
+          acknowledgedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // ProofEventLog: delete > 365 days
+        batchDelete(prisma.proofEventLog, {
+          createdAt: { lt: oneYearAgo },
+        }),
+        // Soft-deleted LiveEAInstance: hard delete > 90 days
+        batchDelete(prisma.liveEAInstance, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // Soft-deleted ExportJob: hard delete > 90 days
+        batchDelete(prisma.exportJob, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+        // Soft-deleted TerminalConnection: hard delete > 90 days
+        batchDelete(prisma.terminalConnection, {
+          deletedAt: { not: null, lt: ninetyDaysAgo },
+        }),
+      ]);
+    }
+
+    // Batch 4: Soft-delete stale auto-discovered child instances.
+    // These are strategies discovered from trade history that are no longer being reported
+    // by the EA (OFFLINE > 3 days). Without cleanup they linger forever in the dashboard.
+    if (!isTimedOut()) {
+      const staleDiscovered = await prisma.liveEAInstance.updateMany({
+        where: {
+          parentInstanceId: { not: null },
+          deletedAt: null,
+          status: "OFFLINE",
+          lastHeartbeat: { lt: threeDaysAgo },
+        },
+        data: { deletedAt: new Date() },
+      });
+      staleDiscoveredSoftDeleted = staleDiscovered.count;
+      if (staleDiscoveredSoftDeleted > 0) {
+        log.info(
+          { count: staleDiscoveredSoftDeleted },
+          "Soft-deleted stale auto-discovered child instances"
+        );
+      }
+
+      // Clean up TerminalDeployment records not seen in 30 days
+      staleDeploymentsDeleted = await batchDelete(prisma.terminalDeployment, {
+        lastSeenAt: { lt: thirtyDaysAgo },
+      });
+    }
 
     // See prisma/schema.prisma for deprecated model annotations.
 
@@ -211,33 +301,36 @@ async function handleCleanup(request: NextRequest) {
       });
     }
 
-    // Auto-downgrade past_due subscriptions after 14-day grace period
+    // Auto-downgrade past_due and unpaid subscriptions after 14-day grace period.
+    // unpaid = Stripe gave up collecting (invoice uncollectible) — user won't pay.
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
     let downgraded = 0;
 
     if (!isTimedOut()) {
       // Atomic UPDATE...RETURNING to get affected rows for structured transition logging.
       // Prevents concurrent cron runs from double-downgrading (same atomicity as updateMany).
-      const downgradeRows = await prisma.$queryRaw<Array<{ userId: string; tier: string }>>`
+      const downgradeRows = await prisma.$queryRaw<
+        Array<{ userId: string; tier: string; status: string }>
+      >`
         UPDATE "Subscription"
         SET tier = 'FREE', status = 'cancelled', "stripeSubId" = NULL
-        WHERE status = 'past_due'
+        WHERE status IN ('past_due', 'unpaid')
           AND "currentPeriodEnd" < ${fourteenDaysAgo}
           AND tier != 'FREE'
           AND ("manualPeriodEnd" IS NULL OR "manualPeriodEnd" < ${fourteenDaysAgo})
-        RETURNING "userId", tier
+        RETURNING "userId", tier, status
       `;
       downgraded = downgradeRows.length;
       for (const row of downgradeRows) {
         logSubscriptionTransition(
           row.userId,
-          { status: "past_due", tier: row.tier as "PRO" | "ELITE" },
+          { status: row.status as "past_due" | "unpaid", tier: row.tier as "PRO" | "ELITE" },
           { status: "cancelled", tier: "FREE" },
-          "auto_downgrade_past_due_14d"
+          row.status === "unpaid" ? "auto_downgrade_unpaid" : "auto_downgrade_past_due_14d"
         );
       }
       if (downgraded > 0) {
-        log.info({ count: downgraded }, "Auto-downgraded past_due subscriptions");
+        log.info({ count: downgraded }, "Auto-downgraded past_due/unpaid subscriptions");
       }
     }
 
@@ -253,6 +346,16 @@ async function handleCleanup(request: NextRequest) {
         deletedAdminOtps,
         deletedHeartbeats,
         deletedEAErrors,
+        deletedMonitoringRuns,
+        deletedHealthSnapshots,
+        deletedOutbox,
+        deletedAlerts,
+        deletedProofEvents,
+        deletedSoftInstances,
+        deletedSoftExports,
+        deletedSoftTerminals,
+        staleDiscoveredSoftDeleted,
+        staleDeploymentsDeleted,
         staleEAsOfflined: staleInstances.count,
         downgraded,
         warningsSent,
@@ -273,6 +376,16 @@ async function handleCleanup(request: NextRequest) {
         auditLogs: deletedAuditLogs,
         eaHeartbeats: deletedHeartbeats,
         eaErrors: deletedEAErrors,
+        monitoringRuns: deletedMonitoringRuns,
+        healthSnapshots: deletedHealthSnapshots,
+        outboxEntries: deletedOutbox,
+        controlLayerAlerts: deletedAlerts,
+        proofEvents: deletedProofEvents,
+        softDeletedInstances: deletedSoftInstances,
+        softDeletedExports: deletedSoftExports,
+        softDeletedTerminals: deletedSoftTerminals,
+        staleDiscoveredChildren: staleDiscoveredSoftDeleted,
+        staleDeployments: staleDeploymentsDeleted,
       },
       staleEAsOfflined: staleInstances.count,
       downgraded,

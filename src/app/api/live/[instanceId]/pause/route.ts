@@ -18,6 +18,11 @@ export async function PUT(
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
   }
+  if (session.user.suspended) {
+    return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+      status: 403,
+    });
+  }
 
   const { instanceId } = await params;
 

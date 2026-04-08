@@ -38,65 +38,56 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
   if (configs.length === 0) return;
 
   const now = new Date();
-  const triggeredIds: string[] = [];
+  const cooldownCutoff = new Date(now.getTime() - RATE_LIMIT_MS);
 
-  for (const config of configs) {
-    // Rate limit: skip if triggered within the last 15 minutes
-    if (config.lastTriggered) {
-      const elapsed = now.getTime() - config.lastTriggered.getTime();
-      if (elapsed < RATE_LIMIT_MS) {
-        continue;
-      }
-    }
+  // Atomic claim: only configs where cooldown has passed get their lastTriggered
+  // updated. This prevents concurrent heartbeats from both passing the rate limit.
+  const eligibleIds = configs.map((c) => c.id);
+  const { count: claimedCount } = await prisma.eAAlertConfig.updateMany({
+    where: {
+      id: { in: eligibleIds },
+      OR: [{ lastTriggered: null }, { lastTriggered: { lt: cooldownCutoff } }],
+    },
+    data: { lastTriggered: now },
+  });
 
-    triggeredIds.push(config.id);
+  if (claimedCount === 0) return;
 
+  // Re-read which configs were claimed (those with lastTriggered === now)
+  // Use the original configs list and filter by cooldown eligibility
+  const claimedConfigs = configs.filter((c) => {
+    if (!c.lastTriggered) return true; // was null → claimed
+    return c.lastTriggered.getTime() < cooldownCutoff.getTime(); // was expired → claimed
+  });
+
+  for (const config of claimedConfigs) {
     const channel = config.channel;
-    if (channel === "EMAIL") {
-      const esc = (s: string) =>
-        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      await enqueueNotification({
-        userId,
-        channel: "EMAIL",
-        destination: config.user.email,
-        subject: `AlgoStudio Alert: ${alertType} — ${eaName}`,
-        payload: {
-          html: `<h2>EA Alert: ${esc(alertType)}</h2><p><strong>EA:</strong> ${esc(eaName)}</p><p>${esc(message)}</p>`,
-        },
-      });
-    } else if (channel === "WEBHOOK" && config.webhookUrl) {
-      await enqueueNotification({
-        userId,
-        channel: "WEBHOOK",
-        destination: config.webhookUrl,
-        payload: {
-          event: "alert",
-          alertType,
-          eaName,
-          instanceId,
-          message,
-          triggeredAt: now.toISOString(),
-        },
-      });
-    } else if (channel === "BROWSER_PUSH") {
+    if (channel === "BROWSER_PUSH") {
       await enqueueNotification({
         userId,
         channel: "BROWSER_PUSH",
         destination: userId,
         payload: {
-          title: `AlgoStudio: ${alertType}`,
+          title: `Algo Studio: ${alertType}`,
           body: `${eaName} — ${message}`,
           url: "/app/monitor",
           tag: `${alertType}-${instanceId}`,
         },
       });
     } else if (channel === "TELEGRAM") {
-      const rawToken = config.user.telegramBotToken;
       const chatId = config.user.telegramChatId;
-      if (rawToken && chatId) {
-        const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
+      if (chatId) {
+        // Use central Algo Studio bot token; fall back to user's own bot (legacy)
+        const centralToken = process.env.ALGO_TELEGRAM_BOT_TOKEN;
+        const rawUserToken = config.user.telegramBotToken;
+        const userToken = rawUserToken
+          ? isEncrypted(rawUserToken)
+            ? decrypt(rawUserToken)
+            : rawUserToken
+          : null;
+        const botToken = centralToken || userToken;
         if (botToken) {
-          const telegramMessage = `<b>AlgoStudio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
+          const telegramMessage = `<b>Algo Studio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
           await enqueueNotification({
             userId,
             channel: "TELEGRAM",
@@ -105,17 +96,22 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
           });
         }
       }
+    } else if (channel === "EMAIL") {
+      const email = config.user.email;
+      if (email) {
+        await enqueueNotification({
+          userId,
+          channel: "EMAIL",
+          destination: email,
+          subject: `Algo Studio Alert: ${eaName} — ${alertType}`,
+          payload: {
+            html: `<p><strong>${alertType}</strong></p><p>EA: ${eaName}</p><p>${message}</p><p><a href="https://algo-studio.com/app/live">View in dashboard</a></p>`,
+          },
+        });
+      }
     }
 
     log.info({ alertType, channel: config.channel, instanceId }, "Alert triggered");
-  }
-
-  // Batch update lastTriggered for all triggered configs (avoids N+1 UPDATE)
-  if (triggeredIds.length > 0) {
-    await prisma.eAAlertConfig.updateMany({
-      where: { id: { in: triggeredIds } },
-      data: { lastTriggered: now },
-    });
   }
 }
 

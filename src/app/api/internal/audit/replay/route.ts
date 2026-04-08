@@ -8,6 +8,9 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 import { authenticateInternal, computeReplay, logAuditAccess } from "../_shared";
+import { logger } from "@/lib/logger";
+
+const log = logger.child({ route: "/api/internal/audit/replay" });
 
 export async function GET(request: NextRequest) {
   if (!authenticateInternal(request)) {
@@ -35,7 +38,9 @@ export async function GET(request: NextRequest) {
     const result = await computeReplay(recordId);
 
     // Best-effort access logging
-    logAuditAccess(result.strategyId, recordId, "replay").catch(() => {});
+    logAuditAccess(result.strategyId, recordId, "replay").catch((err) => {
+      log.error({ err, recordId }, "Failed to log audit access for replay");
+    });
 
     const { strategyId: _sid, ...response } = result;
     return NextResponse.json(response);

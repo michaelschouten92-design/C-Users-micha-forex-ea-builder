@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
 
     // 2. Transition to OFFLINE — re-check BOTH status AND lastHeartbeat
     //    to prevent race with a heartbeat that arrived between query and update.
+    //    Keep openTrades at last known value: zeroing causes misleading chart
+    //    discontinuities. The next heartbeat restores the real count on reconnect.
     const transitioned = await prisma.$queryRaw<Array<{ id: string }>>`
       UPDATE "LiveEAInstance"
       SET status = 'OFFLINE'

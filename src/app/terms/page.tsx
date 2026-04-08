@@ -4,9 +4,9 @@ import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - AlgoStudio",
+  title: "Terms of Service - Algo Studio",
   description:
-    "Read AlgoStudio's terms of service. Understand our policies on subscriptions, accounts, intellectual property, and trading risk disclaimers.",
+    "Read Algo Studio's terms of service. Understand our policies on subscriptions, accounts, intellectual property, and trading risk disclaimers.",
   alternates: { canonical: "/terms" },
 };
 
@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">1. Acceptance of Terms</h2>
             <p>
-              By using AlgoStudio, you agree to these terms of service. If you do not agree, please
+              By using Algo Studio, you agree to these terms of service. If you do not agree, please
               do not use the platform.
             </p>
           </section>
@@ -32,7 +32,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">2. Description of Service</h2>
             <p>
-              AlgoStudio is a strategy monitoring and governance platform for algorithmic traders.
+              Algo Studio is a strategy monitoring and governance platform for algorithmic traders.
               The platform offers:
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
@@ -73,7 +73,7 @@ export default function TermsOfServicePage() {
             <ul className="list-disc pl-6 space-y-2">
               <li>You retain full ownership of the strategies you monitor</li>
               <li>Verification data and reports generated for your strategies are yours</li>
-              <li>The AlgoStudio platform, logo, and interface are our property</li>
+              <li>The Algo Studio platform, logo, and interface are our property</li>
               <li>You may not reverse-engineer or copy the platform</li>
             </ul>
           </section>
@@ -86,7 +86,7 @@ export default function TermsOfServicePage() {
               IMPORTANT: Trading in the financial markets involves significant risks.
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
-              <li>AlgoStudio is a monitoring and governance tool, not financial advice</li>
+              <li>Algo Studio is a monitoring and governance tool, not financial advice</li>
               <li>We do not guarantee that monitored strategies will be profitable</li>
               <li>You are fully responsible for your trading decisions and live accounts</li>
               <li>Always test strategies on a demo account first</li>
@@ -120,7 +120,7 @@ export default function TermsOfServicePage() {
               9. Limitation of Liability
             </h2>
             <p>
-              AlgoStudio is provided &quot;as is&quot;. To the fullest extent permitted by law, we
+              Algo Studio is provided &quot;as is&quot;. To the fullest extent permitted by law, we
               are not liable for indirect damages, consequential damages, or lost profits resulting
               from the use of the platform.
             </p>

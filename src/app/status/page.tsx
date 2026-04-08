@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
-  title: "System Status — AlgoStudio",
+  title: "System Status — Algo Studio",
   description:
-    "Check the current status of AlgoStudio services including the web application, code generation engine, live EA dashboard, and API endpoints.",
+    "Check the current status of Algo Studio services including the web application, live EA dashboard, and API endpoints.",
   alternates: { canonical: "/status" },
   openGraph: {
-    title: "AlgoStudio System Status",
-    description: "Real-time status of all AlgoStudio services and infrastructure.",
+    title: "Algo Studio System Status",
+    description: "Real-time status of all Algo Studio services and infrastructure.",
   },
 };
+
+export const revalidate = 60; // revalidate every 60 seconds
 
 type ServiceStatus = "operational" | "degraded" | "outage";
 
@@ -21,38 +24,61 @@ interface Service {
   status: ServiceStatus;
 }
 
-const SERVICES: Service[] = [
-  {
-    name: "Web Application",
-    description: "Dashboard, builder, and all user-facing pages",
-    status: "operational",
-  },
-  {
-    name: "Code Generation Engine",
-    description: "MQL5 code generation and export",
-    status: "operational",
-  },
-  {
-    name: "Live EA Dashboard",
-    description: "Real-time EA monitoring, heartbeats, and trade logging",
-    status: "operational",
-  },
-  {
-    name: "Webhook Processing",
-    description: "EA telemetry webhooks and data ingestion",
-    status: "operational",
-  },
-  {
-    name: "Database",
-    description: "User data, projects, and strategy storage",
-    status: "operational",
-  },
-  {
-    name: "API Endpoints",
-    description: "All REST API endpoints for the platform",
-    status: "operational",
-  },
-];
+async function checkServices(): Promise<Service[]> {
+  // Database check
+  let dbStatus: ServiceStatus = "operational";
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    dbStatus = "outage";
+  }
+
+  // Heartbeat freshness: check if any instance received a heartbeat in last 5 min
+  let telemetryStatus: ServiceStatus = "operational";
+  try {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentHeartbeats = await prisma.liveEAInstance.count({
+      where: {
+        status: "ONLINE",
+        lastHeartbeat: { gte: fiveMinAgo },
+        deletedAt: null,
+      },
+    });
+    // If there are active instances but none have recent heartbeats, telemetry may be degraded
+    const totalActive = await prisma.liveEAInstance.count({
+      where: { deletedAt: null, status: { in: ["ONLINE", "ERROR"] } },
+    });
+    if (totalActive > 0 && recentHeartbeats === 0) {
+      telemetryStatus = "degraded";
+    }
+  } catch {
+    // If we can't check, don't mark as outage — DB check already covers that
+    telemetryStatus = dbStatus === "outage" ? "outage" : "operational";
+  }
+
+  return [
+    {
+      name: "Web Application",
+      description: "Dashboard, builder, and all user-facing pages",
+      status: "operational", // If this page renders, web app is up
+    },
+    {
+      name: "Database",
+      description: "User data, projects, and strategy storage",
+      status: dbStatus,
+    },
+    {
+      name: "EA Telemetry",
+      description: "Real-time EA monitoring, heartbeats, and trade logging",
+      status: telemetryStatus,
+    },
+    {
+      name: "API Endpoints",
+      description: "All REST API endpoints for the platform",
+      status: dbStatus === "outage" ? "degraded" : "operational",
+    },
+  ];
+}
 
 function getStatusConfig(status: ServiceStatus): {
   label: string;
@@ -106,9 +132,10 @@ function getOverallStatus(services: Service[]): { label: string; color: string; 
   };
 }
 
-export default function StatusPage() {
-  const overall = getOverallStatus(SERVICES);
-  const lastUpdated = new Date().toISOString();
+export default async function StatusPage() {
+  const services = await checkServices();
+  const overall = getOverallStatus(services);
+  const checkedAt = new Date().toISOString();
 
   return (
     <div id="main-content" className="min-h-screen flex flex-col">
@@ -119,7 +146,7 @@ export default function StatusPage() {
           {/* Hero */}
           <div className="text-center mb-12">
             <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">System Status</h1>
-            <p className="text-[#94A3B8]">Current operational status of AlgoStudio services.</p>
+            <p className="text-[#94A3B8]">Current operational status of Algo Studio services.</p>
           </div>
 
           {/* Overall Status */}
@@ -129,12 +156,12 @@ export default function StatusPage() {
 
           {/* Service List */}
           <div className="space-y-3 mb-12">
-            {SERVICES.map((service) => {
+            {services.map((service) => {
               const config = getStatusConfig(service.status);
               return (
                 <div
                   key={service.name}
-                  className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-4 flex items-center justify-between"
+                  className="glass-card rounded-lg p-4 flex items-center justify-between"
                 >
                   <div>
                     <h3 className="text-sm font-medium text-white">{service.name}</h3>
@@ -149,14 +176,8 @@ export default function StatusPage() {
             })}
           </div>
 
-          {/* Uptime */}
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-lg p-6 mb-8 text-center">
-            <p className="text-sm text-[#94A3B8] mb-1">Uptime over the last 90 days</p>
-            <p className="text-3xl font-bold text-white">99.9%</p>
-          </div>
-
           {/* Status Updates */}
-          <div className="bg-[#1A0626]/50 border border-[rgba(79,70,229,0.15)] rounded-xl p-6 mb-8">
+          <div className="glass-card rounded-xl p-6 mb-8">
             <h2 className="text-lg font-semibold text-white mb-2">Stay Informed</h2>
             <p className="text-sm text-[#94A3B8]">
               For real-time status updates and incident notifications, follow us on{" "}
@@ -172,10 +193,10 @@ export default function StatusPage() {
             </p>
           </div>
 
-          {/* Last Updated */}
+          {/* Last Checked */}
           <p className="text-xs text-[#7C8DB0] text-center">
-            Last updated:{" "}
-            {new Date(lastUpdated).toLocaleString("en-US", {
+            Last checked:{" "}
+            {new Date(checkedAt).toLocaleString("en-US", {
               dateStyle: "long",
               timeStyle: "short",
             })}

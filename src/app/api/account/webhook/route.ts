@@ -88,15 +88,15 @@ const webhookUpdateSchema = z.object({
     .refine(
       (val) => {
         if (val === null || val === undefined) return true;
-        // Only allow http:// and https:// schemes
+        // Only allow https:// — HTTP webhooks are vulnerable to MITM
         try {
           const parsed = new URL(val);
-          return parsed.protocol === "http:" || parsed.protocol === "https:";
+          return parsed.protocol === "https:";
         } catch {
           return false;
         }
       },
-      { message: "Webhook URL must use http:// or https://" }
+      { message: "Webhook URL must use https:// for security" }
     )
     .refine(
       (val) => {

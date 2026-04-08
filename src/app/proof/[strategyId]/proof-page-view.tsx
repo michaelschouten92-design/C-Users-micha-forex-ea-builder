@@ -538,7 +538,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <span className="font-medium text-[#A1A1AA]">AlgoStudio</span>
+            <span className="font-medium text-[#A1A1AA]">Algo Studio</span>
             <span className="text-[#71717A]">&middot;</span>
             <span>Verified strategy proof</span>
           </div>
@@ -562,7 +562,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
               {strategy.name}
             </h1>
-            {/* Verified by AlgoStudio badge */}
+            {/* Verified by Algo Studio badge */}
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.40)] text-[#818CF8] text-xs font-semibold">
               <svg
                 className="w-3.5 h-3.5"
@@ -573,7 +573,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d={LADDER_ICONS.VERIFIED} />
               </svg>
-              Verified by AlgoStudio
+              Verified by Algo Studio
             </span>
             {/* Ladder badge */}
             <span
@@ -1315,7 +1315,7 @@ export function ProofPageView({ strategyId }: { strategyId: string }) {
           <p className="text-xs text-[#71717A] mt-4">
             Powered by{" "}
             <Link href="/" className="text-[#6366F1] hover:text-[#818CF8] transition-colors">
-              AlgoStudio
+              Algo Studio
             </Link>{" "}
             &mdash; monitoring & governance for algorithmic trading
           </p>

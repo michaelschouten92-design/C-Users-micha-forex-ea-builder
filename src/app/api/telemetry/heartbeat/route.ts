@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { canMonitorAdditionalTradingAccount } from "@/lib/plan-limits";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { enqueueNotification } from "@/lib/outbox";
-import { logger } from "@/lib/logger";
+import { logger, getRequestId } from "@/lib/logger";
 import { apiError, ErrorCode } from "@/lib/error-codes";
 
 const log = logger.child({ module: "heartbeat" });
@@ -20,7 +20,6 @@ import { decideHeartbeatAction } from "@/domain/heartbeat/decide-heartbeat-actio
 import { detectMaterialChange, suspendBaselineTrust } from "@/lib/deployment/material-change";
 import { createHash } from "crypto";
 import { z } from "zod";
-
 
 /** Strict hex hash: 64 chars (SHA-256 output). */
 const HEX_HASH_RE = /^[0-9a-fA-F]{64}$/;
@@ -73,8 +72,11 @@ const heartbeatSchema = z.object({
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
+  const reqLog = log.child({ requestId: getRequestId(request) });
   const auth = await authenticateTelemetry(request);
   if (!auth.success) return auth.response;
+
+  reqLog.debug({ instanceId: auth.instanceId, userId: auth.userId }, "Heartbeat received");
 
   try {
     const body = await request.json();
@@ -166,7 +168,9 @@ export async function POST(request: NextRequest) {
       // Accepts if: no prior session (NULL) OR newer session (startedAt >) OR
       // same session + higher seqNo. Rejects stale heartbeats from old sessions.
       // Legacy EA (missing fields): unconditional Prisma update (backward compat).
-      ...(data.heartbeatSessionId != null && data.heartbeatSessionStartedAt != null && data.heartbeatSeqNo != null
+      ...(data.heartbeatSessionId != null &&
+      data.heartbeatSessionStartedAt != null &&
+      data.heartbeatSeqNo != null
         ? [
             prisma.$queryRaw`
               UPDATE "LiveEAInstance"
@@ -352,6 +356,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Portfolio drawdown protection: if user has maxDrawdownPct set, check
+    // account-level drawdown and auto-halt all strategies if exceeded.
+    // Only runs for base instances (not child contexts) to avoid duplicate checks.
+    if (!isManifestContext && data.balance > 0 && data.equity > 0) {
+      checkPortfolioDrawdownLimit(
+        auth.userId,
+        data.balance,
+        data.equity,
+        effectiveInstanceId
+      ).catch((err) => {
+        log.error({ err, userId: auth.userId }, "Portfolio drawdown check failed");
+      });
+    }
+
     // Governance decision — reuse the same pure function as internal heartbeat.
     // The telemetry endpoint authenticates by API key (instance is confirmed to exist),
     // so authorityReady is always true here.
@@ -505,7 +523,18 @@ async function resolveManifestContextInstance(
     return fallback;
   }
 
-  // Step 3: No match — create new instance
+  // Step 3: No match — create new instance (with limit guard)
+  const childCount = await prisma.liveEAInstance.count({
+    where: { parentInstanceId: baseInstanceId, deletedAt: null },
+  });
+  if (childCount >= 50) {
+    log.warn(
+      { baseInstanceId, childCount },
+      "Child instance limit reached (50) — rejecting new context"
+    );
+    return baseInstanceId; // Fall back to base instance
+  }
+
   const ctx = await prisma.liveEAInstance.create({
     data: {
       userId,
@@ -609,7 +638,18 @@ async function resolveAutoDiscoveredContextInstance(
     return fallback;
   }
 
-  // Step 3: No match — create new instance
+  // Step 3: No match — create new instance (with limit guard)
+  const childCount = await prisma.liveEAInstance.count({
+    where: { parentInstanceId: baseInstanceId, deletedAt: null },
+  });
+  if (childCount >= 50) {
+    log.warn(
+      { baseInstanceId, childCount },
+      "Child instance limit reached (50) — rejecting auto-discovered context"
+    );
+    return baseInstanceId;
+  }
+
   const ctx = await prisma.liveEAInstance.create({
     data: {
       userId,
@@ -927,17 +967,19 @@ async function processDeploymentDiscovery(
     changeResult.newBaselineStatus === "RELINK_REQUIRED" &&
     existing?.instanceId
   ) {
-    suspendBaselineTrust({
-      instanceId: existing.instanceId,
-      terminalConnectionId: terminalId,
-      terminalDeploymentId: upsertedDeployment.id,
-      deploymentKey,
-      previousFingerprint: existing.materialFingerprint,
-      newFingerprint: reportedFingerprint,
-      previousBaselineStatus: existing.baselineStatus,
-    }).catch((err) => {
+    try {
+      await suspendBaselineTrust({
+        instanceId: existing.instanceId,
+        terminalConnectionId: terminalId,
+        terminalDeploymentId: upsertedDeployment.id,
+        deploymentKey,
+        previousFingerprint: existing.materialFingerprint,
+        newFingerprint: reportedFingerprint,
+        previousBaselineStatus: existing.baselineStatus,
+      });
+    } catch (err) {
       log.error({ err, instanceId, deploymentKey }, "Baseline trust suspension failed");
-    });
+    }
   }
 }
 
@@ -1040,7 +1082,11 @@ async function processDiscoveredDeployments(
   } else {
     await prisma.terminalConnection.update({
       where: { id: terminalId },
-      data: { status: "ONLINE", lastHeartbeat: now, unattributedTradeCount },
+      data: {
+        status: "ONLINE",
+        lastHeartbeat: now,
+        ...(unattributedTradeCount !== undefined && { unattributedTradeCount }),
+      },
     });
   }
 
@@ -1089,4 +1135,88 @@ async function processDiscoveredDeployments(
     },
     "Processed account-wide deployment discovery"
   );
+}
+
+// ── Portfolio Drawdown Protection ────────────────────────────
+
+/**
+ * Check if account-level drawdown exceeds the user's configured limit.
+ * Requires SUSTAINED_BREACH_COUNT consecutive heartbeats in breach before halting,
+ * to avoid false positives from momentary spread widening or news spikes.
+ *
+ * When sustained breach confirmed: emit control-layer alert + halt all user's active strategies.
+ * Only called for base instances (not child contexts) to avoid duplicate triggers.
+ */
+const SUSTAINED_BREACH_COUNT = 3;
+
+async function checkPortfolioDrawdownLimit(
+  userId: string,
+  balance: number,
+  equity: number,
+  instanceId: string
+): Promise<void> {
+  if (balance <= 0) return;
+
+  const drawdownPct = ((balance - equity) / balance) * 100;
+  if (drawdownPct <= 0) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { maxDrawdownPct: true },
+  });
+
+  if (!user?.maxDrawdownPct || drawdownPct < user.maxDrawdownPct) return;
+
+  // Verify sustained breach: check last N heartbeats for this instance.
+  // All must show drawdown above the limit to confirm it's not a momentary spike.
+  const recentHeartbeats = await prisma.eAHeartbeat.findMany({
+    where: { instanceId },
+    orderBy: { createdAt: "desc" },
+    take: SUSTAINED_BREACH_COUNT,
+    select: { balance: true, equity: true },
+  });
+
+  if (recentHeartbeats.length < SUSTAINED_BREACH_COUNT) return; // not enough data yet
+
+  const allInBreach = recentHeartbeats.every((hb) => {
+    if (hb.balance <= 0) return false;
+    const dd = ((hb.balance - hb.equity) / hb.balance) * 100;
+    return dd >= user.maxDrawdownPct!;
+  });
+
+  if (!allInBreach) return;
+
+  log.warn(
+    {
+      userId,
+      drawdownPct: drawdownPct.toFixed(2),
+      limit: user.maxDrawdownPct,
+      instanceId,
+      sustainedCount: SUSTAINED_BREACH_COUNT,
+    },
+    "Portfolio drawdown limit exceeded (sustained) — halting all strategies"
+  );
+
+  // Emit control-layer alert (dedup key prevents spam)
+  await emitControlLayerAlert(prisma, {
+    userId,
+    instanceId,
+    alertType: "PORTFOLIO_DRAWDOWN_BREACH",
+    reasons: [
+      `Account drawdown ${drawdownPct.toFixed(1)}% exceeded your ${user.maxDrawdownPct}% limit for ${SUSTAINED_BREACH_COUNT} consecutive heartbeats`,
+    ],
+  });
+
+  // Halt all active (non-deleted) instances for this user
+  await prisma.liveEAInstance.updateMany({
+    where: {
+      userId,
+      deletedAt: null,
+      tradingState: "TRADING",
+    },
+    data: {
+      tradingState: "PAUSED",
+      operatorHold: "HALTED",
+    },
+  });
 }

@@ -61,7 +61,7 @@ export type GovernanceState =
  *   PAUSE:    Deployment should be paused. Aligned with heartbeat PAUSE.
  *   STOP:     Deployment should be stopped. Aligned with heartbeat STOP.
  *
- * Important: AlgoStudio does NOT directly place or halt trades.
+ * Important: Algo Studio does NOT directly place or halt trades.
  * These are control-layer recommendations/authority signals that the
  * connected EA respects via the heartbeat protocol.
  */

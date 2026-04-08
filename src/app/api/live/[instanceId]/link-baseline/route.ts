@@ -6,7 +6,12 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
 import { linkExternalBaseline } from "@/lib/strategy-identity/external-baseline";
 import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
-import { apiRateLimiter, checkRateLimit, createRateLimitHeaders, formatRateLimitError } from "@/lib/rate-limit";
+import {
+  apiRateLimiter,
+  checkRateLimit,
+  createRateLimitHeaders,
+  formatRateLimitError,
+} from "@/lib/rate-limit";
 
 const log = logger.child({ route: "link-baseline" });
 
@@ -38,10 +43,10 @@ export async function POST(
     // Rate limit baseline operations
     const rl = await checkRateLimit(apiRateLimiter, `baseline-link:${session.user.id}`);
     if (!rl.success) {
-      return NextResponse.json(
-        apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rl)),
-        { status: 429, headers: createRateLimitHeaders(rl) }
-      );
+      return NextResponse.json(apiError(ErrorCode.RATE_LIMITED, formatRateLimitError(rl)), {
+        status: 429,
+        headers: createRateLimitHeaders(rl),
+      });
     }
 
     const { instanceId } = await params;
@@ -70,6 +75,7 @@ export async function POST(
         id: true,
         userId: true,
         eaName: true,
+        symbol: true,
         exportJobId: true,
         strategyVersionId: true,
         deletedAt: true,
@@ -227,6 +233,19 @@ export async function POST(
       "External instance linked to canonical baseline chain"
     );
 
+    // Symbol mismatch warning (soft — don't block, some EAs trade multiple pairs)
+    // Strip broker suffixes before comparing (same regex as backtest parser)
+    const normalizeSymbol = (s: string) =>
+      s
+        .replace(/[._](r|m|i|raw|ecn|pro|std|micro|mini|c|e|sb|z)\b/i, "")
+        .replace(/([A-Z]{6})([a-z]{1,3})$/, "$1")
+        .trim()
+        .toUpperCase();
+    const symbolMismatch =
+      instance.symbol &&
+      backtestRun.symbol &&
+      normalizeSymbol(instance.symbol) !== normalizeSymbol(backtestRun.symbol);
+
     return NextResponse.json(
       {
         linked: true,
@@ -240,6 +259,9 @@ export async function POST(
           maxDrawdownPct: backtestRun.maxDrawdownPct,
           sharpeRatio: backtestRun.sharpeRatio,
         },
+        ...(symbolMismatch && {
+          warning: `Backtest symbol (${backtestRun.symbol}) differs from live instance symbol (${instance.symbol}). Health scoring may be inaccurate.`,
+        }),
       },
       { status: 200 }
     );

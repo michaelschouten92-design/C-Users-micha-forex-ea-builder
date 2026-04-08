@@ -12,15 +12,15 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "getting-started-with-algostudio",
-    title: "Getting Started with AlgoStudio: Build Your First EA in 5 Minutes",
+    title: "Getting Started with Algo Studio: Build Your First EA in 5 Minutes",
     description:
-      "Step-by-step tutorial to build your first MetaTrader 5 Expert Advisor in AlgoStudio. From signup to exported MQL5 file — no coding required.",
+      "Step-by-step tutorial to build your first MetaTrader 5 Expert Advisor in Algo Studio. From signup to exported MQL5 file — no coding required.",
     date: "2025-03-15",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "8 min read",
     tags: ["tutorial", "beginner"],
     content: `
-      <p>Building automated trading strategies has traditionally required deep programming knowledge — months of learning MQL5, debugging syntax errors, and wrestling with MetaEditor. AlgoStudio changes that by giving you a visual builder for MetaTrader 5 Expert Advisors. In this tutorial, you'll build a complete, working EA from scratch in under 5 minutes.</p>
+      <p>Building automated trading strategies has traditionally required deep programming knowledge — months of learning MQL5, debugging syntax errors, and wrestling with MetaEditor. Algo Studio changes that by giving you a visual builder for MetaTrader 5 Expert Advisors. In this tutorial, you'll build a complete, working EA from scratch in under 5 minutes.</p>
 
       <h2>What You'll Build</h2>
       <p>By the end of this tutorial, you'll have a fully functional Moving Average crossover EA that:</p>
@@ -65,11 +65,11 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Connect all risk management blocks to your Place Buy and Place Sell blocks.</p>
 
       <h2>Step 5: Export Your EA</h2>
-      <p>Your strategy is now complete on the canvas. Click the green <strong>Export MQL5</strong> button. AlgoStudio generates a production-ready .mq5 file with all your logic, indicator calculations, risk management, and trade execution code.</p>
+      <p>Your strategy is now complete on the canvas. Click the green <strong>Export MQL5</strong> button. Algo Studio generates a production-ready .mq5 file with all your logic, indicator calculations, risk management, and trade execution code.</p>
 
       <h3>Loading into MetaTrader 5</h3>
       <ol>
-        <li>Download the .mq5 file from AlgoStudio</li>
+        <li>Download the .mq5 file from Algo Studio</li>
         <li>Open MetaTrader 5 and navigate to <strong>File → Open Data Folder</strong></li>
         <li>Go to <strong>MQL5 → Experts</strong> and paste the .mq5 file</li>
         <li>Open MetaEditor (press F4) and compile the file (press F7)</li>
@@ -95,7 +95,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Try different pairs</strong> — GBPUSD and USDJPY also trend well</li>
         <li><strong>Explore other strategies</strong> — try the <a href="/how-it-works">RSI Mean Reversion template</a> or the <a href="/how-it-works">Breakout EA template</a></li>
       </ul>
-      <p>Each change takes seconds in AlgoStudio's <a href="/">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
+      <p>Each change takes seconds in Algo Studio's <a href="/">visual strategy builder</a> — drag a new block, connect it, and re-export. No code to debug, no syntax errors to fix.</p>
 
       <p>Want to learn more about building EAs without code? Read our in-depth guide on <a href="/">no-code MT5 EA building</a>, or explore all available <a href="/templates">EA templates</a>. And before you go live, make sure to read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most common mistakes traders make when automating strategies</a>.</p>
     `,
@@ -106,7 +106,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Discover which technical indicators work best in automated forex strategies. Compare MA, RSI, Stochastic, Bollinger Bands, and ADX with practical EA examples.",
     date: "2025-06-10",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["strategy", "indicators"],
     content: `
@@ -211,7 +211,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p><strong>Important:</strong> More than 3 indicators increases <a href="/blog/avoid-overfitting-expert-advisor">overfitting risk</a> significantly. Keep it simple — 2-3 indicators with 4-6 total parameters is the sweet spot.</p>
 
-      <p>Ready to put these indicators to work? Try our <a href="/how-it-works">RSI EA template</a> or <a href="/how-it-works">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in AlgoStudio's <a href="/">visual builder</a>.</p>
+      <p>Ready to put these indicators to work? Try our <a href="/how-it-works">RSI EA template</a> or <a href="/how-it-works">Moving Average Crossover template</a>. Both are pre-configured with proven indicator combinations and ready to customize in Algo Studio's <a href="/">visual builder</a>.</p>
     `,
   },
   {
@@ -220,7 +220,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Step-by-step guide to backtesting Expert Advisors in MT5's Strategy Tester. Learn settings, metrics, optimization, and how to avoid overfitting your results.",
     date: "2025-03-05",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["tutorial", "backtesting"],
     content: `
@@ -240,7 +240,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Open MetaTrader 5 and go to <strong>View → Strategy Tester</strong> (or press Ctrl+R). The Strategy Tester panel appears at the bottom of the screen. Here's how to configure each setting:</p>
 
       <h3>Select Your EA</h3>
-      <p>Choose your Expert Advisor from the dropdown. If you just exported from AlgoStudio, make sure you compiled it in MetaEditor first (press F7). Your EA should appear in the list immediately after compilation.</p>
+      <p>Choose your Expert Advisor from the dropdown. If you just exported from Algo Studio, make sure you compiled it in MetaEditor first (press F7). Your EA should appear in the list immediately after compilation.</p>
 
       <h3>Symbol and Timeframe</h3>
       <p>Select the currency pair and timeframe your strategy is designed for. If you built an <a href="/how-it-works">MA Crossover EA</a> for EURUSD H1, test on exactly that. Testing on the wrong timeframe will give misleading results.</p>
@@ -288,7 +288,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>Optimization: Finding Better Parameters</h2>
-      <p>MT5's optimizer lets you test thousands of parameter combinations automatically. AlgoStudio marks all optimizable fields in the generated code as <code>input</code> variables, making this seamless.</p>
+      <p>MT5's optimizer lets you test thousands of parameter combinations automatically. Algo Studio marks all optimizable fields in the generated code as <code>input</code> variables, making this seamless.</p>
 
       <h3>How to Optimize</h3>
       <ol>
@@ -341,7 +341,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Everything you need to know about Expert Advisors for MetaTrader 5: how they work, types of EAs, advantages over manual trading, and how to build one without coding.",
     date: "2025-03-20",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["beginner", "expert-advisor", "metatrader"],
     content: `
@@ -416,13 +416,13 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Hire a developer:</strong> Costs $500-$2,000+ per EA. Communication issues, revision cycles, and you can't easily modify the result.</li>
         <li><strong>Buy a pre-made EA:</strong> No customization, unknown strategy logic, and most commercial EAs are overfitted to past data.</li>
       </ul>
-      <p>Today, <a href="/">no-code EA builders</a> like <strong>AlgoStudio</strong> eliminate this barrier entirely. You build Expert Advisors visually by selecting strategy blocks and configuring settings — indicators, conditions, trade actions, and risk management. The tool generates production-ready MQL5 code that you can export, backtest, and deploy in MetaTrader 5. No programming required.</p>
+      <p>Today, <a href="/">no-code EA builders</a> like <strong>Algo Studio</strong> eliminate this barrier entirely. You build Expert Advisors visually by selecting strategy blocks and configuring settings — indicators, conditions, trade actions, and risk management. The tool generates production-ready MQL5 code that you can export, backtest, and deploy in MetaTrader 5. No programming required.</p>
 
       <h2>Getting Started with Your First EA</h2>
       <p>The best approach for beginners follows a disciplined, step-by-step process:</p>
       <ol>
         <li><strong>Choose a simple strategy:</strong> Start with an <a href="/how-it-works">MA crossover</a> or <a href="/how-it-works">RSI mean reversion</a>. Don't try to build a complex multi-indicator system on your first attempt.</li>
-        <li><strong>Build it visually:</strong> Use AlgoStudio's <a href="/">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
+        <li><strong>Build it visually:</strong> Use Algo Studio's <a href="/">visual builder</a> to create the strategy. See the logic on a canvas before generating any code.</li>
         <li><strong>Export the MQL5 file:</strong> Download and compile in MetaTrader 5's MetaEditor.</li>
         <li><strong>Backtest on 2+ years of data:</strong> Use "Every tick based on real ticks" for accurate results. Look for profit factor above 1.3 and drawdown below 25%.</li>
         <li><strong>Validate on out-of-sample data:</strong> Test on a period the optimizer never saw to confirm robustness.</li>
@@ -432,7 +432,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The key is patience. A well-tested EA with realistic expectations will outperform any impulse-based manual trading over time. Don't rush to live trading — the market will be there tomorrow.</p>
 
-      <p>Ready to build your first EA? Follow our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio</a> tutorial, or explore our <a href="/templates">free EA templates</a> for ready-to-customize starting points. Still deciding between manual and automated? Read our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> for an honest breakdown.</p>
+      <p>Ready to build your first EA? Follow our <a href="/blog/getting-started-with-algostudio">Getting Started with Algo Studio</a> tutorial, or explore our <a href="/templates">free EA templates</a> for ready-to-customize starting points. Still deciding between manual and automated? Read our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> for an honest breakdown.</p>
     `,
   },
   {
@@ -441,7 +441,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Essential risk management for Expert Advisors: the 1% rule, ATR-based stops, position sizing methods, drawdown limits, and the complete checklist pros follow.",
     date: "2025-03-25",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["risk-management", "strategy", "advanced"],
     content: `
@@ -488,7 +488,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Example: $10,000 account, 1% risk, 50-pip stop, EURUSD ($10/pip per standard lot):</p>
       <p>Lot Size = ($10,000 × 0.01) / (50 × $10) = $100 / $500 = 0.2 lots</p>
       <p>This method ensures every trade risks exactly 1% regardless of the stop loss distance. Wide stops get smaller lots; tight stops get larger lots. It's the professional approach.</p>
-      <p>AlgoStudio supports both methods — choose "Risk Percent" in the Place Buy/Sell block for automatic risk-based sizing.</p>
+      <p>Algo Studio supports both methods — choose "Risk Percent" in the Place Buy/Sell block for automatic risk-based sizing.</p>
 
       <h2>Stop Loss Placement</h2>
       <p>Every trade must have a stop loss. <strong>No exceptions.</strong> A single trade without a stop loss can destroy months of profit. Here are the main approaches, from simplest to most sophisticated:</p>
@@ -536,7 +536,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h2>Daily Trade Limits</h2>
       <p>Limiting the number of trades per day prevents your EA from overtrading in unusual market conditions — choppy price action, low liquidity sessions, or extreme volatility events. Without a limit, an EA can open dozens of losing trades in a single day.</p>
-      <p>A daily limit of <strong>3-5 trades</strong> is common for most strategies. For <a href="/how-it-works">breakout strategies</a>, 1 trade per day is typical. AlgoStudio's "Max Trades Per Day" setting makes this easy — configure it in the Strategy Settings panel.</p>
+      <p>A daily limit of <strong>3-5 trades</strong> is common for most strategies. For <a href="/how-it-works">breakout strategies</a>, 1 trade per day is typical. Algo Studio's "Max Trades Per Day" setting makes this easy — configure it in the Strategy Settings panel.</p>
 
       <h2>Maximum Open Positions</h2>
       <p>Never have too many positions open at once. If your EA opens positions on correlated pairs (like EURUSD, GBPUSD, and EURGBP), you're essentially taking one massive position in the same direction. These three pairs are roughly 70-80% correlated — a move against one is a move against all three.</p>
@@ -555,7 +555,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Session timing:</strong> Only trade during high-liquidity sessions for tightest spreads</li>
       </ul>
 
-      <p>Build these rules into your EA from the start — not as an afterthought. In AlgoStudio, you can configure all of these in the Strategy Settings and Trade Management blocks. Every <a href="/templates">EA template</a> includes pre-configured risk management that follows these principles.</p>
+      <p>Build these rules into your EA from the start — not as an afterthought. In Algo Studio, you can configure all of these in the Strategy Settings and Trade Management blocks. Every <a href="/templates">EA template</a> includes pre-configured risk management that follows these principles.</p>
 
       <p>Want to see these principles in action? Our <a href="/how-it-works">MA Crossover template</a> and <a href="/how-it-works">RSI template</a> both use ATR-based stops, risk-based sizing, and daily trade limits by default. Also read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating</a> — poor risk management is #2 on the list.</p>
     `,
@@ -566,7 +566,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Honest comparison of automated and manual forex trading: pros, cons, win rates, time investment, and the hybrid approach most professionals use.",
     date: "2025-07-01",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["beginner", "strategy", "automated-trading"],
     content: `
@@ -667,7 +667,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Want automated execution for core strategies plus manual discretion for special situations</li>
       </ul>
 
-      <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/">no-code EA builders</a> like AlgoStudio let you build EAs visually and export production-ready code in minutes.</p>
+      <p>The barrier to automated trading has dropped dramatically. You no longer need to learn MQL5 programming — <a href="/">no-code EA builders</a> like Algo Studio let you build EAs visually and export production-ready code in minutes.</p>
 
       <p>New to automated trading? Read our complete <a href="/blog/what-is-an-expert-advisor">beginner's guide to automated trading</a>, or start building immediately with one of our <a href="/templates">free EA templates</a>. For an even deeper dive into the pros and cons of each approach, see our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">detailed manual vs automated trading pros and cons</a>.</p>
     `,
@@ -678,7 +678,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Complete MT5 vs MT4 comparison for forex traders and EA developers. Strategy Tester, MQL5 vs MQL4, timeframes, order types, and why MT5 wins for new development.",
     date: "2025-07-15",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["metatrader", "beginner", "platform"],
     content: `
@@ -693,7 +693,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Trade classes:</strong> Built-in CTrade and CPositionInfo classes simplify order management</li>
         <li><strong>Error handling:</strong> More comprehensive error codes and debugging tools</li>
       </ul>
-      <p><strong>Winner: MT5.</strong> MQL5 is more modern and capable. All EAs built with AlgoStudio generate MQL5 code.</p>
+      <p><strong>Winner: MT5.</strong> MQL5 is more modern and capable. All EAs built with Algo Studio generate MQL5 code.</p>
 
       <h2>Strategy Tester</h2>
       <p>This is where MT5 truly dominates — and where the difference matters most for EA developers:</p>
@@ -766,7 +766,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>The Verdict: Use MT5 for New Development</h2>
       <p>For new EA development in 2025, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
       <p>MetaQuotes has officially discontinued new MT4 broker licenses — the future is MT5. Starting new development on MT4 is building on a platform with no future updates.</p>
-      <p>If you're building an EA with AlgoStudio, your exported code is MQL5 — optimized for MetaTrader 5's latest features and designed to take advantage of the superior Strategy Tester. Ready to start? Try our <a href="/templates">free EA templates</a> or learn the basics with our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a>.</p>
+      <p>If you're building an EA with Algo Studio, your exported code is MQL5 — optimized for MetaTrader 5's latest features and designed to take advantage of the superior Strategy Tester. Ready to start? Try our <a href="/templates">free EA templates</a> or learn the basics with our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a>.</p>
     `,
   },
   {
@@ -775,7 +775,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Build and optimize an MA crossover Expert Advisor step by step. Entry/exit rules, SMA vs EMA, ADX filters, period combinations, and realistic performance expectations.",
     date: "2025-04-10",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "12 min read",
     tags: ["strategy", "indicators", "tutorial"],
     content: `
@@ -822,7 +822,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The key principle: maintain enough separation between the fast and slow periods. If they're too close (like 10/15), you get constant crossovers in any sideways movement. If they're too far apart (like 5/200), signals come too late to be useful.</p>
 
       <h2>Building the MA Crossover EA</h2>
-      <p>Here's how to build it in AlgoStudio's <a href="/">visual builder</a>:</p>
+      <p>Here's how to build it in Algo Studio's <a href="/">visual builder</a>:</p>
       <ol>
         <li><strong>Timing:</strong> Drag a <strong>Trading Sessions</strong> block and select London (08:00-17:00 GMT). This limits trading to the most liquid hours with the tightest spreads.</li>
         <li><strong>Indicators:</strong> Add two <strong>Moving Average</strong> blocks — set one to EMA period 10 (fast) and the other to EMA period 50 (slow). Connect both to the timing block.</li>
@@ -892,7 +892,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Overfitting is the #1 reason EAs fail live. Learn to detect curve fitting, use walk-forward analysis, parameter stability testing, and the robustness checklist.",
     date: "2025-04-15",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["advanced", "backtesting", "strategy"],
     content: `
@@ -931,7 +931,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h3>1. Keep It Simple</h3>
       <p>This is the single most important rule. The best EAs use <strong>2-3 indicators with 4-6 optimizable parameters</strong>. Every additional parameter increases overfitting risk exponentially.</p>
       <p>Here's the math: with 1 parameter that has 10 possible values, you're testing 10 combinations. With 2 parameters, 100. With 5 parameters, 100,000. With 10 parameters, <strong>10 billion</strong>. The more combinations you test, the more likely you'll find one that works purely by chance.</p>
-      <p>If your strategy needs 10 indicators to be profitable, it doesn't have a real edge. It found noise that happened to correlate with historical price movements. AlgoStudio's visual building blocks naturally keep strategies lean — when you can see the entire strategy at a glance, over-engineering is obvious.</p>
+      <p>If your strategy needs 10 indicators to be profitable, it doesn't have a real edge. It found noise that happened to correlate with historical price movements. Algo Studio's visual building blocks naturally keep strategies lean — when you can see the entire strategy at a glance, over-engineering is obvious.</p>
 
       <h3>2. Walk-Forward Analysis (Gold Standard)</h3>
       <p>Walk-forward analysis is the most rigorous way to validate an EA. It simulates what would actually happen if you periodically re-optimized your strategy:</p>
@@ -1003,7 +1003,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Which forex pairs work best for Expert Advisors? Compare spreads, volatility, and trend behavior of EURUSD, GBPUSD, USDJPY, AUDUSD, and EURGBP for EAs.",
     date: "2025-08-01",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["strategy", "beginner", "forex"],
     content: `
@@ -1095,7 +1095,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>A 50-pip stop loss means very different things on EUR/GBP (entire daily range) vs GBP/JPY (20% of daily range). ATR-based stops automatically adapt to each pair's volatility, ensuring consistent risk across instruments.</p>
 
       <h2>Testing Your Pair Choice</h2>
-      <p>Before committing to a pair, build your EA in AlgoStudio and <a href="/blog/backtest-your-ea-metatrader5">backtest on at least 3 different pairs</a>. If it only works on one, you might be <a href="/blog/avoid-overfitting-expert-advisor">overfitting</a>. A robust strategy should show some profitability across correlated pairs — even if it's optimized for just one.</p>
+      <p>Before committing to a pair, build your EA in Algo Studio and <a href="/blog/backtest-your-ea-metatrader5">backtest on at least 3 different pairs</a>. If it only works on one, you might be <a href="/blog/avoid-overfitting-expert-advisor">overfitting</a>. A robust strategy should show some profitability across correlated pairs — even if it's optimized for just one.</p>
 
       <p>Ready to test different pairs? Our <a href="/templates">free EA templates</a> are pre-configured for the major pairs and ready to backtest immediately. If you're still deciding between manual and automated trading, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual comparison</a> covers the trade-offs honestly.</p>
     `,
@@ -1106,7 +1106,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Complete guide to forex trading sessions for EA developers. London, New York, Tokyo, and Sydney — timing, volume, volatility, and which sessions suit each strategy.",
     date: "2025-04-25",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["beginner", "strategy", "sessions"],
     content: `
@@ -1142,7 +1142,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>The most reliable trend continuation</li>
         <li>The best execution quality (minimal slippage)</li>
       </ul>
-      <p>If you can only trade one session, <strong>this is it</strong>. Many professional EAs trade exclusively during this window. In AlgoStudio, use the "London/NY Overlap" timing block or set custom hours (13:00-17:00 GMT) to target this period.</p>
+      <p>If you can only trade one session, <strong>this is it</strong>. Many professional EAs trade exclusively during this window. In Algo Studio, use the "London/NY Overlap" timing block or set custom hours (13:00-17:00 GMT) to target this period.</p>
 
       <h2>Session Comparison Table</h2>
       <table>
@@ -1204,8 +1204,8 @@ export const BLOG_POSTS: BlogPost[] = [
       <h3>Not Accounting for DST</h3>
       <p>Daylight Saving Time shifts session boundaries by 1 hour twice a year. US and UK DST changes happen on different dates, which can temporarily shift the overlap window. Account for this in your EA or use GMT-based timing that doesn't change.</p>
 
-      <h2>Configuring Sessions in AlgoStudio</h2>
-      <p>AlgoStudio makes session-based trading easy. Drag a <strong>Trading Sessions</strong> block from the timing category and select your preferred session. For custom hours, use the <strong>Custom Times</strong> block where you can set exact start/end times and trading days.</p>
+      <h2>Configuring Sessions in Algo Studio</h2>
+      <p>Algo Studio makes session-based trading easy. Drag a <strong>Trading Sessions</strong> block from the timing category and select your preferred session. For custom hours, use the <strong>Custom Times</strong> block where you can set exact start/end times and trading days.</p>
       <p>You can also combine multiple timing blocks — for example, trade during both the London open (08:00-12:00) AND the NY overlap (13:00-17:00) while skipping the quiet midday period.</p>
     `,
   },
@@ -1215,7 +1215,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Build a complete MetaTrader 5 Expert Advisor without writing code. Visual builder tutorial with RSI strategy, risk management, export, and backtesting walkthrough.",
     date: "2025-05-01",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["tutorial", "beginner", "no-code"],
     content: `
@@ -1252,7 +1252,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>This is the same strategy used in our <a href="/how-it-works">RSI EA template</a>. It's a proven approach that works well on EURUSD H1.</p>
 
       <h2>Step 1: Create Your Project</h2>
-      <p>Sign up for a free AlgoStudio account (no credit card required) and click <strong>"New Project"</strong> on your dashboard. Name it something descriptive like "RSI Mean Reversion London" — this helps you stay organized as you build more EAs.</p>
+      <p>Sign up for a free Algo Studio account (no credit card required) and click <strong>"New Project"</strong> on your dashboard. Name it something descriptive like "RSI Mean Reversion London" — this helps you stay organized as you build more EAs.</p>
       <p>The <a href="/">visual builder</a> canvas opens automatically. You'll see a clean workspace with a block toolbar on the left, organized into categories: Timing, Indicators, Price Action, Trading, and Trade Management.</p>
 
       <h2>Step 2: Set the Timing</h2>
@@ -1300,7 +1300,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>If the visual flow makes sense, the logic is correct. This is one of the biggest advantages of visual building — you can see your entire strategy at a glance and spot issues immediately.</p>
 
       <h2>Step 6: Export and Load into MT5</h2>
-      <p>Click the green <strong>Export MQL5</strong> button. AlgoStudio generates a production-ready .mq5 file with all your logic.</p>
+      <p>Click the green <strong>Export MQL5</strong> button. Algo Studio generates a production-ready .mq5 file with all your logic.</p>
       <ol>
         <li>Download the .mq5 file</li>
         <li>Open MetaTrader 5 → File → Open Data Folder → MQL5 → Experts</li>
@@ -1332,7 +1332,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
       <p>Drag a new block, connect it, re-export — no code to debug, no syntax errors to fix. This rapid iteration cycle is what makes visual building so powerful. You can test 10 variations in the time it would take to code one.</p>
 
-      <p>For a ready-to-use starting point, check out our <a href="/how-it-works">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/how-it-works">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize. New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through the basics. And if you're wondering why we build for MT5 instead of MT4, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a>.</p>
+      <p>For a ready-to-use starting point, check out our <a href="/how-it-works">RSI EA template</a> which has this exact strategy pre-configured. Or explore the <a href="/how-it-works">MA Crossover template</a> for a trend-following approach. All templates are free and ready to customize. New to Algo Studio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through the basics. And if you're wondering why we build for MT5 instead of MT4, read our <a href="/blog/metatrader-5-vs-metatrader-4">MT5 vs MT4 comparison</a>.</p>
     `,
   },
   {
@@ -1341,7 +1341,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "In-depth RSI vs MACD comparison for Expert Advisors. Strengths, weaknesses, best market conditions, backtesting results, and how to combine them effectively.",
     date: "2025-05-05",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["indicators", "strategy", "comparison"],
     content: `
@@ -1469,7 +1469,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>RSI alone generates false buy signals during strong downtrends (price keeps getting "more oversold"). MACD filters these out by requiring the broader trend to be bullish. MACD alone generates false crossover signals in choppy markets. RSI adds timing precision by only entering when momentum has temporarily exhausted.</p>
 
       <h2>Try Both Approaches</h2>
-      <p>The best way to decide is to build and backtest both. In AlgoStudio's <a href="/">visual builder</a>, add the blocks to the canvas and compare results on the same pair and timeframe.</p>
+      <p>The best way to decide is to build and backtest both. In Algo Studio's <a href="/">visual builder</a>, add the blocks to the canvas and compare results on the same pair and timeframe.</p>
       <ul>
         <li><strong>RSI strategy:</strong> Start with our <a href="/how-it-works">RSI EA template</a> — pre-configured with EMA trend filter and London session timing</li>
         <li><strong>Trend-following:</strong> Try the <a href="/how-it-works">Moving Average Crossover template</a> — uses similar trend-following logic as MACD</li>
@@ -1483,7 +1483,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Should you trade manually or use an Expert Advisor? Honest comparison covering psychology, time, backtesting, scalability, and the hybrid approach professionals use.",
     date: "2025-05-10",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["beginner", "automated-trading"],
     content: `
@@ -1592,7 +1592,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Avoid the 5 most expensive EA development mistakes: over-optimization, skipping risk management, too many indicators, rushing to live, and ignoring market changes.",
     date: "2025-05-15",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["strategy", "beginner", "backtesting"],
     content: `
@@ -1625,7 +1625,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Daily trade limit</strong> — 3-5 trades prevents overtrading in choppy conditions</li>
         <li><strong>Maximum drawdown threshold</strong> — stop trading if drawdown exceeds 20%</li>
       </ul>
-      <p>Read our complete <a href="/blog/risk-management-for-forex-ea">risk management guide</a> for the full professional checklist. In AlgoStudio, every <a href="/templates">template</a> includes pre-configured risk management blocks.</p>
+      <p>Read our complete <a href="/blog/risk-management-for-forex-ea">risk management guide</a> for the full professional checklist. In Algo Studio, every <a href="/templates">template</a> includes pre-configured risk management blocks.</p>
 
       <h2>Mistake 3: Using Too Many Indicators</h2>
       <p>The logic seems sound: more indicators = more confirmation = better signals. In practice, the opposite is true. Adding a 5th or 6th indicator almost always makes your EA worse, not better.</p>
@@ -1691,7 +1691,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </tbody>
       </table>
 
-      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with AlgoStudio tutorial</a> and use the <a href="/">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
+      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with Algo Studio tutorial</a> and use the <a href="/">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
     `,
   },
   {
@@ -1700,7 +1700,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Turn a trading idea into a working Expert Advisor in 7 phases: strategy definition, visual building, backtesting, optimization, validation, demo, and live deployment.",
     date: "2025-05-20",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "12 min read",
     tags: ["tutorial", "strategy", "workflow"],
     content: `
@@ -1740,7 +1740,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>If any of these answers are vague ("I'll decide based on how the chart looks"), it can't be automated. The beauty of this exercise: it forces clarity. Many traders realize their "strategy" is actually a collection of gut feelings — and that's exactly why automation produces better results.</p>
 
       <h2>Phase 2: Build It Visually</h2>
-      <p>With your rules clearly defined, open <a href="/">AlgoStudio's no-code MT5 EA builder</a> and translate each rule into visual blocks:</p>
+      <p>With your rules clearly defined, open <a href="/">Algo Studio's no-code MT5 EA builder</a> and translate each rule into visual blocks:</p>
 
       <ol>
         <li><strong>Start with timing:</strong> Drag a Trading Sessions block (e.g., London) or Custom Times block to define when the EA is active</li>
@@ -1753,7 +1753,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The <a href="/">visual builder</a> gives you something traditional coding can't: you can see your entire strategy logic at a glance. If the canvas looks like spaghetti, your strategy is too complex. If you can't explain the flow in 30 seconds, simplify. Read more about <a href="/blog/best-indicators-for-forex-ea">choosing the right indicators</a>.</p>
 
       <h2>Phase 3: First Backtest</h2>
-      <p>Export your EA from AlgoStudio (click Export MQL5) and load it into MetaTrader 5. Run an initial <a href="/blog/backtest-your-ea-metatrader5">backtest</a> with these settings:</p>
+      <p>Export your EA from Algo Studio (click Export MQL5) and load it into MetaTrader 5. Run an initial <a href="/blog/backtest-your-ea-metatrader5">backtest</a> with these settings:</p>
 
       <table>
         <thead>
@@ -1826,7 +1826,7 @@ export const BLOG_POSTS: BlogPost[] = [
         </thead>
         <tbody>
           <tr><td>1. Define</td><td>Written strategy rules</td><td>Every rule is exact and unambiguous</td></tr>
-          <tr><td>2. Build</td><td>Visual strategy in AlgoStudio</td><td>Logic flow is clear and simple</td></tr>
+          <tr><td>2. Build</td><td>Visual strategy in Algo Studio</td><td>Logic flow is clear and simple</td></tr>
           <tr><td>3. Backtest</td><td>MT5 backtest report</td><td>PF &gt; 1.3, DD &lt; 25%, 100+ trades</td></tr>
           <tr><td>4. Optimize</td><td>Refined parameters</td><td>Parameter plateaus exist</td></tr>
           <tr><td>5. Validate</td><td>Out-of-sample results</td><td>OOS PF &gt; 60% of in-sample</td></tr>
@@ -1837,7 +1837,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Ready to start? Try one of our pre-built templates as a starting point: <a href="/how-it-works">Moving Average Crossover</a> (trend-following), <a href="/how-it-works">RSI Mean Reversion</a> (counter-trend), or <a href="/how-it-works">Breakout Strategy</a> (session-based). Each gives you a proven strategy you can customize and take through all 7 phases.</p>
 
-      <p>New to AlgoStudio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
+      <p>New to Algo Studio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
     `,
   },
   {
@@ -1846,7 +1846,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Learn how the EMA crossover strategy works, how to configure it for different market conditions, and how to build a complete MT5 Expert Advisor using it.",
     date: "2025-07-20",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["strategy", "indicators"],
     content: `
@@ -1899,8 +1899,8 @@ export const BLOG_POSTS: BlogPost[] = [
       </ol>
       <p>Be careful of overfitting. If your EA only works with one specific parameter set on one pair, it is probably overfitted. A robust strategy should work reasonably well across multiple pairs and slightly different parameter values.</p>
 
-      <h2>Building It in AlgoStudio</h2>
-      <p>In AlgoStudio, you can build a complete EMA crossover EA in under 5 minutes:</p>
+      <h2>Building It in Algo Studio</h2>
+      <p>In Algo Studio, you can build a complete EMA crossover EA in under 5 minutes:</p>
       <ol>
         <li>Select the <a href="/how-it-works">EMA Crossover template</a></li>
         <li>Set your fast and slow EMA periods</li>
@@ -1920,7 +1920,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Configure your Expert Advisor to pass prop firm challenges. Learn the exact risk settings, drawdown limits, and strategy parameters for FTMO, E8 Markets, and other funded programs.",
     date: "2025-08-05",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "12 min read",
     tags: ["prop firms", "risk management"],
     content: `
@@ -1998,8 +1998,8 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Ignoring the time factor:</strong> Being too conservative means you will not reach the profit target in 30 days</li>
       </ul>
 
-      <h2>Building a Prop Firm EA in AlgoStudio</h2>
-      <p>AlgoStudio has built-in settings specifically designed for prop firm compliance:</p>
+      <h2>Building a Prop Firm EA in Algo Studio</h2>
+      <p>Algo Studio has built-in settings specifically designed for prop firm compliance:</p>
       <ol>
         <li>Choose any strategy template (EMA Crossover and Trend Pullback work best for challenges)</li>
         <li>Set risk per trade to 0.5-0.75%</li>
@@ -2010,7 +2010,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ol>
       <p>The exported MQL5 code includes all prop firm safety checks. Review the code in MetaEditor to verify the logic before deploying on your challenge account.</p>
 
-      <p>For more on risk management fundamentals, read our <a href="/blog/risk-management-trading-bots">complete risk management guide for trading bots</a>. New to AlgoStudio? Start with our <a href="/blog/getting-started-with-algostudio">5-minute getting started tutorial</a>.</p>
+      <p>For more on risk management fundamentals, read our <a href="/blog/risk-management-trading-bots">complete risk management guide for trading bots</a>. New to Algo Studio? Start with our <a href="/blog/getting-started-with-algostudio">5-minute getting started tutorial</a>.</p>
     `,
   },
   {
@@ -2019,7 +2019,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Master risk management for automated trading. Learn position sizing, stop loss strategies, drawdown control, and portfolio-level risk for MT5 Expert Advisors.",
     date: "2025-08-20",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "11 min read",
     tags: ["risk management", "strategy"],
     content: `
@@ -2097,8 +2097,8 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>The EA has been forward-tested on a demo account for at least 2-4 weeks</li>
       </ol>
 
-      <h2>Implementing Risk Management in AlgoStudio</h2>
-      <p>AlgoStudio includes all these risk management features as built-in settings — no coding required:</p>
+      <h2>Implementing Risk Management in Algo Studio</h2>
+      <p>Algo Studio includes all these risk management features as built-in settings — no coding required:</p>
       <ul>
         <li>Position sizing with fixed percentage risk</li>
         <li>ATR-based and fixed stop losses</li>
@@ -2118,7 +2118,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Build an RSI reversal Expert Advisor for MT5. Learn how to configure overbought/oversold levels, add confirmation filters, and backtest effectively.",
     date: "2025-09-10",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["strategy", "indicators"],
     content: `
@@ -2183,8 +2183,8 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Average Trade Duration:</strong> RSI reversal trades typically last 2-12 candles — if trades are lasting 50+ candles, something is wrong</li>
       </ul>
 
-      <h2>Building It in AlgoStudio</h2>
-      <p>AlgoStudio's <a href="/how-it-works">RSI Reversal template</a> includes all the settings described in this guide:</p>
+      <h2>Building It in Algo Studio</h2>
+      <p>Algo Studio's <a href="/how-it-works">RSI Reversal template</a> includes all the settings described in this guide:</p>
       <ol>
         <li>Set RSI period and overbought/oversold levels</li>
         <li>Enable the higher-timeframe trend filter</li>
@@ -2204,7 +2204,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Deep dive into the Moving Average crossover strategy: golden cross, death cross, best periods, timeframe selection, filtering false signals, and practical backtesting tips for EA development.",
     date: "2025-08-05",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "9 min read",
     tags: ["strategies", "indicators", "moving averages"],
     content: `
@@ -2286,8 +2286,8 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Check monthly performance:</strong> A good MA crossover EA should not have more than 3 consecutive losing months. If it does, the parameter combination is too aggressive or the market conditions are unsuitable.</li>
       </ol>
 
-      <h2>Building It in AlgoStudio</h2>
-      <p>Creating an MA crossover EA in AlgoStudio takes under 3 minutes:</p>
+      <h2>Building It in Algo Studio</h2>
+      <p>Creating an MA crossover EA in Algo Studio takes under 3 minutes:</p>
       <ol>
         <li>Select the <a href="/how-it-works">EMA Crossover</a> entry strategy</li>
         <li>Set your preferred fast and slow EMA periods</li>
@@ -2306,7 +2306,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Learn to identify and prevent overfitting in your Expert Advisor: warning signs, out-of-sample testing, walk-forward analysis, parameter robustness testing, and minimum trade count rules.",
     date: "2025-08-20",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "9 min read",
     tags: ["backtesting", "risk management", "optimization"],
     content: `
@@ -2388,7 +2388,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <ul>
         <li><strong>Start simple:</strong> Use 1-2 indicators with 4-6 total parameters. Add complexity only if the simple version shows a genuine edge.</li>
         <li><strong>Avoid optimization rabbit holes:</strong> If you find yourself testing hundreds of parameter combinations to find one that works, the strategy likely has no edge.</li>
-        <li><strong>Use AlgoStudio defaults first:</strong> Our <a href="/templates">EA templates</a> ship with default parameters that represent common, well-tested values. Start there and adjust carefully.</li>
+        <li><strong>Use Algo Studio defaults first:</strong> Our <a href="/templates">EA templates</a> ship with default parameters that represent common, well-tested values. Start there and adjust carefully.</li>
         <li><strong>Test on multiple currency pairs:</strong> A strategy that works on EURUSD, GBPUSD, and USDJPY is more likely to have a genuine edge than one that only works on a single pair.</li>
         <li><strong>Demo trade for 1-3 months:</strong> Even after passing all backtest validation, demo trading catches issues like execution slippage, spread variations, and news event behavior that backtests cannot simulate.</li>
       </ul>
@@ -2405,7 +2405,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Demo trading for 1+ months confirms backtest behavior</li>
       </ol>
 
-      <p>Building a properly validated EA is the difference between gambling and systematic trading. Use AlgoStudio's <a href="/">visual builder</a> to keep your strategies simple, and follow this checklist before going live. For strategy ideas, see our <a href="/blog/moving-average-crossover-strategy">MA crossover guide</a> or our <a href="/blog/risk-management-for-forex-ea">risk management guide</a>.</p>
+      <p>Building a properly validated EA is the difference between gambling and systematic trading. Use Algo Studio's <a href="/">visual builder</a> to keep your strategies simple, and follow this checklist before going live. For strategy ideas, see our <a href="/blog/moving-average-crossover-strategy">MA crossover guide</a> or our <a href="/blog/risk-management-for-forex-ea">risk management guide</a>.</p>
     `,
   },
   {
@@ -2414,7 +2414,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Avoid the 5 costliest mistakes traders make when building Expert Advisors: over-optimization, ignoring costs, skipping risk management, trading during news, and not using demo first.",
     date: "2025-09-01",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "9 min read",
     tags: ["beginner", "risk management", "automation"],
     content: `
@@ -2451,7 +2451,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li><strong>Set realistic spread in backtesting:</strong> Use your broker's average spread, not the minimum. Add 1-2 pips for slippage to be conservative.</li>
         <li><strong>Include commission:</strong> If your broker charges commission, add it in the MT5 Strategy Tester settings. Even commission-free accounts have costs hidden in the spread.</li>
         <li><strong>Calculate cost per trade ratio:</strong> If your average win is 30 pips and spread is 2 pips, costs are 6.7% of profit. That is acceptable. If your average win is 8 pips and spread is 2 pips, costs are 25%. That is dangerous.</li>
-        <li><strong>Use a max spread filter:</strong> AlgoStudio includes a built-in Max Spread filter block. Set it to your broker's normal spread plus a small buffer. This prevents your EA from trading when spreads spike during news events or low-liquidity periods.</li>
+        <li><strong>Use a max spread filter:</strong> Algo Studio includes a built-in Max Spread filter block. Set it to your broker's normal spread plus a small buffer. This prevents your EA from trading when spreads spike during news events or low-liquidity periods.</li>
       </ul>
 
       <h2>Mistake 3: No Risk Management</h2>
@@ -2483,7 +2483,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <h3>How to Avoid It</h3>
       <ul>
-        <li><strong>Add a news filter:</strong> AlgoStudio includes a News Filter block that automatically pauses trading before and after high-impact economic events. Set a buffer of 30-60 minutes before and 15-30 minutes after each event.</li>
+        <li><strong>Add a news filter:</strong> Algo Studio includes a News Filter block that automatically pauses trading before and after high-impact economic events. Set a buffer of 30-60 minutes before and 15-30 minutes after each event.</li>
         <li><strong>Use the max spread filter:</strong> Even without a news calendar, a max spread filter of 2-3 pips will prevent entries during most high-impact news events because spreads always widen.</li>
         <li><strong>Close positions before known events:</strong> For major events like NFP, consider closing all open positions 1 hour before the release. The potential gap risk is not worth the potential continuation.</li>
         <li><strong>Use Friday close filter:</strong> Weekend gaps can also damage open positions. A Friday close filter ensures you do not carry positions over the weekend when you cannot monitor or react to gap openings on Monday.</li>
@@ -2519,16 +2519,16 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Demo trading for 1-3 months confirms backtest expectations</li>
       </ol>
 
-      <p>AlgoStudio makes it easy to build EAs that follow all these best practices. Every <a href="/templates">EA template</a> includes risk management, and the visual builder makes adding filters as simple as dragging a block. Start with our <a href="/blog/getting-started-with-algostudio">getting started tutorial</a> or explore the complete <a href="/blog/from-trading-idea-to-automated-ea">idea-to-EA workflow</a>.</p>
+      <p>Algo Studio makes it easy to build EAs that follow all these best practices. Every <a href="/templates">EA template</a> includes risk management, and the visual builder makes adding filters as simple as dragging a block. Start with our <a href="/blog/getting-started-with-algostudio">getting started tutorial</a> or explore the complete <a href="/blog/from-trading-idea-to-automated-ea">idea-to-EA workflow</a>.</p>
     `,
   },
   {
     slug: "from-trading-idea-to-automated-ea",
     title: "From Trading Idea to Automated EA: A Step-by-Step Guide",
     description:
-      "The complete workflow for turning a trading idea into a live Expert Advisor: define rules, configure in AlgoStudio, export MQL5, backtest, optimize, demo trade, and go live.",
+      "The complete workflow for turning a trading idea into a live Expert Advisor: define rules, configure in Algo Studio, export MQL5, backtest, optimize, demo trade, and go live.",
     date: "2025-09-15",
-    author: "AlgoStudio Team",
+    author: "Algo Studio Team",
     readTime: "10 min read",
     tags: ["beginner", "automation", "getting started"],
     content: `
@@ -2564,7 +2564,7 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>Step 2: Choose a Template or Start from Scratch</h2>
-      <p>AlgoStudio offers two paths to building your EA:</p>
+      <p>Algo Studio offers two paths to building your EA:</p>
 
       <h3>Start with a Template</h3>
       <p>If your strategy is based on a common approach, use a pre-built template as your starting point. Templates are fully configured with sensible default parameters and risk management. Available templates include:</p>
@@ -2577,10 +2577,10 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Templates save significant time and come with proven parameter ranges. You customize them by adjusting periods, levels, and risk settings rather than building from zero.</p>
 
       <h3>Build from Scratch</h3>
-      <p>For unique strategies, start with a blank canvas. Create a new project in AlgoStudio and build your strategy by dragging blocks from the toolbar onto the canvas. This approach gives you complete control but requires more configuration.</p>
+      <p>For unique strategies, start with a blank canvas. Create a new project in Algo Studio and build your strategy by dragging blocks from the toolbar onto the canvas. This approach gives you complete control but requires more configuration.</p>
 
-      <h2>Step 3: Configure in AlgoStudio</h2>
-      <p>With your rules defined, translate them into AlgoStudio's visual builder:</p>
+      <h2>Step 3: Configure in Algo Studio</h2>
+      <p>With your rules defined, translate them into Algo Studio's visual builder:</p>
 
       <h3>Add Entry Strategy</h3>
       <p>Drag an entry strategy block onto the canvas. This is the core of your EA, defining the entry signal type and its parameters. Select your entry type (EMA Crossover, RSI Reversal, MACD Crossover, etc.) and configure the indicator periods, levels, and signal mode.</p>
@@ -2613,12 +2613,12 @@ export const BLOG_POSTS: BlogPost[] = [
       </ul>
 
       <h2>Step 4: Export MQL5 Code</h2>
-      <p>When your strategy is configured and the validation panel shows no errors, click <strong>Export MQL5</strong>. AlgoStudio generates a complete, production-ready .mq5 file containing all your entry logic, risk management, filters, and helper functions.</p>
+      <p>When your strategy is configured and the validation panel shows no errors, click <strong>Export MQL5</strong>. Algo Studio generates a complete, production-ready .mq5 file containing all your entry logic, risk management, filters, and helper functions.</p>
       <p>The generated code is clean, readable, and well-commented. You can review it, modify it manually if needed, or use it directly. All input parameters are exposed as MT5 inputs for easy optimization.</p>
 
       <h3>Loading into MetaTrader 5</h3>
       <ol>
-        <li>Download the .mq5 file from AlgoStudio</li>
+        <li>Download the .mq5 file from Algo Studio</li>
         <li>Open MT5 and go to <strong>File &gt; Open Data Folder</strong></li>
         <li>Navigate to <strong>MQL5 &gt; Experts</strong> and copy the .mq5 file there</li>
         <li>Open MetaEditor (F4) and compile the file (F7)</li>
@@ -2677,7 +2677,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <h2>The Complete Workflow Summary</h2>
       <ol>
         <li>Define strategy rules in plain language (entry, exit, filters)</li>
-        <li>Choose a template or build from scratch in AlgoStudio</li>
+        <li>Choose a template or build from scratch in Algo Studio</li>
         <li>Configure all blocks: entry, risk management, filters, settings</li>
         <li>Export clean MQL5 code</li>
         <li>Backtest on 2+ years with realistic spread</li>
@@ -2686,7 +2686,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <li>Go live with minimum size, scale up gradually</li>
       </ol>
 
-      <p>This process takes patience, but it is the difference between systematic trading and gambling. AlgoStudio handles steps 2-4, letting you focus on the strategy logic and validation that actually determine success. Start with our <a href="/blog/getting-started-with-algostudio">getting started tutorial</a> or explore <a href="/templates">all EA templates</a> for ready-to-customize starting points.</p>
+      <p>This process takes patience, but it is the difference between systematic trading and gambling. Algo Studio handles steps 2-4, letting you focus on the strategy logic and validation that actually determine success. Start with our <a href="/blog/getting-started-with-algostudio">getting started tutorial</a> or explore <a href="/templates">all EA templates</a> for ready-to-customize starting points.</p>
     `,
   },
 ];

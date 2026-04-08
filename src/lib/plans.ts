@@ -87,6 +87,9 @@ export const TIER_DISPLAY_NAMES: Record<PlanTier, string> = {
 // The single billing metric. null = unlimited.
 // ============================================
 
+/** DB integer sentinel for "unlimited" — DB integers can't store Infinity */
+export const UNLIMITED_SENTINEL = 999999;
+
 export const TIER_ACCOUNT_LIMITS: Record<PlanTier, number | null> = {
   FREE: 1,
   PRO: 3,
@@ -128,7 +131,7 @@ export const PLANS = {
       "All platform features included",
       "3 monitored trading accounts",
       "Multi-strategy portfolio view",
-      "Email, webhook & Telegram alerts",
+      "Email & webhook alerts",
       "Priority support",
     ],
     limits: {
@@ -147,7 +150,7 @@ export const PLANS = {
       "10 monitored trading accounts",
       "Embeddable proof widget",
       "1-on-1 strategy review (1/month)",
-      "Direct developer channel",
+      "Priority support",
     ],
     mostPopular: true,
     limits: {
@@ -256,8 +259,9 @@ export async function getEffectiveLimits(tier: PlanTier): Promise<PlanLimits> {
     const map = new Map<string, PlanLimits>();
     for (const c of configs) {
       map.set(c.tier, {
-        maxProjects: c.maxProjects,
-        maxExportsPerMonth: c.maxExportsPerMonth,
+        maxProjects: c.maxProjects >= UNLIMITED_SENTINEL ? Infinity : c.maxProjects,
+        maxExportsPerMonth:
+          c.maxExportsPerMonth >= UNLIMITED_SENTINEL ? Infinity : c.maxExportsPerMonth,
         canExportMQL5: c.canExportMQL5,
       });
     }

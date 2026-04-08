@@ -174,11 +174,15 @@ export function computeHealthScore(
       continue;
     }
 
-    // ─── Guard: maxDrawdownPct = 0 with trades > 0 → suspicious ─
+    // ─── Guard: maxDrawdownPct = 0 with trades > 0 → suspicious but score as perfect ─
     if (metricName === "maxDrawdownPct" && rawValue === 0 && metrics.totalTrades > 0) {
       warnings.push(
-        "Max drawdown is 0% despite having trades. This is unusual and may indicate a parsing issue. Drawdown excluded from scoring to avoid inflating the health score."
+        "Max drawdown is 0% despite having trades. This is unusual and may indicate a parsing issue."
       );
+      // Score as 100 (perfect) rather than excluding — excluding would inflate
+      // the weight of other metrics and potentially produce a higher overall score.
+      const maxScore = Math.max(...config.breakpoints.map((bp) => bp[1]));
+      breakdown.push({ metric: metricName, value: 0, score: 100, weight: config.weight, maxScore });
       continue;
     }
 
@@ -283,10 +287,16 @@ export function computeHealthScore(
   }
 
   // ─── Determine status ──────────────────────────────────────
+  const ci = computeConfidenceInterval(score, metrics.totalTrades);
+
+  // Use the CI lower bound to determine status: if the lower bound falls
+  // below a threshold, downgrade to the more conservative status.
+  // This prevents overconfident ratings when trade count is low.
+  const effectiveScore = ci.lower;
   let status: HealthScoreResult["status"];
-  if (score >= 80) {
+  if (effectiveScore >= 80) {
     status = "ROBUST";
-  } else if (score >= 60) {
+  } else if (effectiveScore >= 60) {
     status = "MODERATE";
   } else {
     status = "WEAK";
@@ -298,6 +308,6 @@ export function computeHealthScore(
     breakdown,
     warnings,
     version: HEALTH_SCORE_VERSION,
-    confidenceInterval: computeConfidenceInterval(score, metrics.totalTrades),
+    confidenceInterval: ci,
   };
 }

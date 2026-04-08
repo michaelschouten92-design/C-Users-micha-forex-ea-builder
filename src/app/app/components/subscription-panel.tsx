@@ -2,30 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLANS, TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
+import { PLANS, type PlanTier } from "@/lib/plans";
 import { getCsrfHeaders } from "@/lib/api-client";
 import { showError, showSuccess } from "@/lib/toast";
 
 type SubscriptionPanelProps = {
   tier: PlanTier;
   subscriptionStatus?: string;
-  projectCount: number;
-  exportCount: number;
   monitoredAccountCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
+  emailVerified?: boolean;
 };
 
 export function SubscriptionPanel({
   tier,
   subscriptionStatus,
-  projectCount,
-  exportCount,
   monitoredAccountCount,
   hasStripeSubscription,
   currentPeriodEnd,
   scheduledDowngradeTier,
+  emailVerified,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
@@ -35,14 +33,12 @@ export function SubscriptionPanel({
   );
   const plan = PLANS[tier];
 
-  const projectLimit = plan.limits.maxProjects;
-  const exportLimit = plan.limits.maxExportsPerMonth;
-  const accountLimit = plan.limits.maxMonitoredTradingAccounts;
+  // Determine the next lower tier for downgrade
+  const tierOrder: PlanTier[] = ["FREE", "PRO", "ELITE", "INSTITUTIONAL"];
+  const currentIndex = tierOrder.indexOf(tier);
+  const downgradeTier: PlanTier | null = currentIndex > 0 ? tierOrder[currentIndex - 1] : null;
 
-  const projectPercentage =
-    projectLimit === Infinity || projectLimit <= 0 ? 0 : (projectCount / projectLimit) * 100;
-  const exportPercentage =
-    exportLimit === Infinity || exportLimit <= 0 ? 0 : (exportCount / exportLimit) * 100;
+  const accountLimit = plan.limits.maxMonitoredTradingAccounts;
   const accountPercentage =
     accountLimit === Infinity || accountLimit <= 0
       ? 0
@@ -70,13 +66,15 @@ export function SubscriptionPanel({
     }
   }
 
-  async function handleDowngradeToPro() {
+  async function handleDowngrade() {
+    if (!downgradeTier) return;
+    const targetName = PLANS[downgradeTier].name;
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/change-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ plan: "PRO", interval: "monthly" }),
+        body: JSON.stringify({ plan: downgradeTier, interval: "monthly" }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -85,13 +83,13 @@ export function SubscriptionPanel({
       }
       const data = await res.json();
       if (data.scheduled) {
-        setPendingDowngrade("PRO");
+        setPendingDowngrade(downgradeTier);
         showSuccess(
           "Downgrade scheduled",
-          `Your plan will change to Pro on ${data.effectiveDate ? formatDate(data.effectiveDate) : "the end of your billing period"}. You have full Elite access until then.`
+          `Your plan will change to ${targetName} on ${data.effectiveDate ? formatDate(data.effectiveDate) : "the end of your billing period"}. You have full ${plan.name} access until then.`
         );
       } else {
-        showSuccess("Plan changed to Pro", "Your account has been updated.");
+        showSuccess(`Plan changed to ${targetName}`, "Your account has been updated.");
         window.location.reload();
       }
     } catch {
@@ -153,7 +151,7 @@ export function SubscriptionPanel({
 
   function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString("en-US", {
-      month: "long",
+      month: "short",
       day: "numeric",
       year: "numeric",
     });
@@ -245,6 +243,13 @@ export function SubscriptionPanel({
             </p>
           </div>
 
+          {/* Email verification warning */}
+          {emailVerified === false && tier === "FREE" && (
+            <p className="text-[11px] text-[#F59E0B] mb-2">
+              Verify your email to upgrade your plan.
+            </p>
+          )}
+
           {/* Action Buttons */}
           <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2">
             {tier !== "INSTITUTIONAL" && (
@@ -310,103 +315,7 @@ export function SubscriptionPanel({
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
-          {/* Projects Usage */}
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#A1A1AA]">Projects</span>
-              <span className="text-white">
-                {projectCount} / {projectLimit === Infinity ? "\u221E" : projectLimit}
-              </span>
-            </div>
-            {projectLimit !== Infinity && (
-              <div
-                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={projectCount}
-                aria-valuemin={0}
-                aria-valuemax={projectLimit}
-                aria-label={`Projects: ${projectCount} of ${projectLimit}`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    projectPercentage >= 100
-                      ? "bg-[#EF4444]"
-                      : projectPercentage >= 80
-                        ? "bg-[#F59E0B]"
-                        : "bg-[#6366F1]"
-                  }`}
-                  style={{ width: `${Math.min(projectPercentage, 100)}%` }}
-                />
-              </div>
-            )}
-            {projectLimit !== Infinity && projectPercentage >= 80 && projectPercentage < 100 && (
-              <p className="text-xs text-[#F59E0B] mt-1">
-                {projectLimit - projectCount} project{projectLimit - projectCount !== 1 ? "s" : ""}{" "}
-                remaining
-              </p>
-            )}
-            {projectLimit !== Infinity && projectPercentage >= 100 && (
-              <p className="text-xs text-[#EF4444] mt-1">
-                Project limit reached —{" "}
-                <Link href="/pricing" className="underline hover:text-white">
-                  upgrade
-                </Link>
-              </p>
-            )}
-            {projectLimit === Infinity && (
-              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
-            )}
-          </div>
-
-          {/* Exports Usage */}
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#A1A1AA]">Exports this month</span>
-              <span className="text-white">
-                {exportCount} / {exportLimit === Infinity ? "\u221E" : exportLimit}
-              </span>
-            </div>
-            {exportLimit !== Infinity && (
-              <div
-                className="h-2 bg-[#18181B] rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={exportCount}
-                aria-valuemin={0}
-                aria-valuemax={exportLimit}
-                aria-label={`Exports: ${exportCount} of ${exportLimit}`}
-              >
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    exportPercentage >= 100
-                      ? "bg-[#EF4444]"
-                      : exportPercentage >= 80
-                        ? "bg-[#F59E0B]"
-                        : "bg-[#6366F1]"
-                  }`}
-                  style={{ width: `${Math.min(exportPercentage, 100)}%` }}
-                />
-              </div>
-            )}
-            {exportLimit !== Infinity && exportPercentage >= 80 && exportPercentage < 100 && (
-              <p className="text-xs text-[#F59E0B] mt-1">
-                {exportLimit - exportCount} export{exportLimit - exportCount !== 1 ? "s" : ""}{" "}
-                remaining this month
-              </p>
-            )}
-            {exportLimit !== Infinity && exportPercentage >= 100 && (
-              <p className="text-xs text-[#EF4444] mt-1">
-                Export limit reached —{" "}
-                <Link href="/pricing" className="underline hover:text-white">
-                  upgrade
-                </Link>
-              </p>
-            )}
-            {exportLimit === Infinity && (
-              <p className="text-xs text-[#818CF8] font-medium">Unlimited</p>
-            )}
-          </div>
-
+        <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.06)]">
           {/* Monitored Accounts Usage */}
           <div>
             <div className="flex justify-between text-sm mb-2">
@@ -475,16 +384,28 @@ export function SubscriptionPanel({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => !loading && setConfirmAction(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !loading) setConfirmAction(null);
+          }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
             className="bg-[#111114] border border-[rgba(255,255,255,0.10)] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {confirmAction === "downgrade" ? (
               <>
-                <h3 className="text-lg font-semibold text-white mb-3">Downgrade Plan?</h3>
+                <h3 id="confirm-dialog-title" className="text-lg font-semibold text-white mb-3">
+                  Downgrade Plan?
+                </h3>
                 <p className="text-sm text-[#A1A1AA] mb-4">
-                  Your plan will change at the end of your billing period
+                  Your plan will change to{" "}
+                  <span className="font-medium text-white">
+                    {downgradeTier ? PLANS[downgradeTier].name : "a lower tier"}
+                  </span>{" "}
+                  at the end of your billing period
                   {currentPeriodEnd && <> ({formatDate(currentPeriodEnd)})</>}. You&apos;ll keep
                   full access until then. Your monitored account limit will decrease — existing
                   accounts are preserved but you won&apos;t be able to add new ones if over the new
@@ -499,7 +420,7 @@ export function SubscriptionPanel({
                     Keep Current Plan
                   </button>
                   <button
-                    onClick={handleDowngradeToPro}
+                    onClick={handleDowngrade}
                     disabled={loading}
                     className="px-4 py-2 text-sm text-white bg-[#F59E0B] rounded-lg hover:bg-[#D97706] transition-colors disabled:opacity-50 flex items-center gap-2"
                   >

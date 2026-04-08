@@ -23,7 +23,7 @@ interface HeartbeatResponse {
 }
 
 interface HeartbeatClientConfig {
-  /** Base URL of the AlgoStudio API (e.g. "https://app.example.com"). */
+  /** Base URL of the Algo Studio API (e.g. "https://app.example.com"). */
   baseUrl: string;
   /** Internal API key for x-internal-api-key header. */
   apiKey: string;

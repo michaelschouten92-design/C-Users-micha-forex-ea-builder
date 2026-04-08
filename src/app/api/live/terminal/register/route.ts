@@ -3,7 +3,8 @@ import { randomBytes, createHash } from "crypto";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canMonitorAdditionalTradingAccount } from "@/lib/plan-limits";
+import { resolveTier } from "@/lib/plan-limits";
+import { getMaxMonitoredAccounts, getTierDisplayName } from "@/lib/plans";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import {
   checkRateLimit,
@@ -73,29 +74,44 @@ export async function POST(request: NextRequest) {
   const { label, broker, accountNumber } = validation.data;
 
   try {
-    const accountCheck = await canMonitorAdditionalTradingAccount(session.user.id);
-    if (!accountCheck.allowed) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.PLAN_REQUIRED,
-          "Account limit reached",
-          `Your ${accountCheck.tierDisplayName} plan allows ${accountCheck.max === -1 ? "unlimited" : accountCheck.max} monitored trading account${accountCheck.max === 1 ? "" : "s"}. Upgrade to monitor more accounts.`
-        ),
-        { status: 403, headers: rateLimitHeaders }
-      );
-    }
-
     const apiKey = randomBytes(32).toString("hex");
     const apiKeyHash = createHash("sha256").update(apiKey).digest("hex");
 
-    const terminal = await prisma.terminalConnection.create({
-      data: {
-        userId: session.user.id,
-        label,
-        apiKeyHash,
-        broker: broker ?? null,
-        accountNumber: accountNumber ?? null,
-      },
+    // Atomic: check limit + create in a single transaction to prevent race conditions
+    const terminal = await prisma.$transaction(async (tx) => {
+      // Resolve tier directly from DB (no cache) for accurate enforcement
+      const subscription = await tx.subscription.findUnique({
+        where: { userId: session.user.id },
+      });
+      const tier = resolveTier(subscription);
+      const max = getMaxMonitoredAccounts(tier);
+
+      const current = await tx.terminalConnection.count({
+        where: {
+          userId: session.user.id,
+          deletedAt: null,
+          instances: { some: { deletedAt: null } },
+        },
+      });
+
+      if (current >= max) {
+        const displayName = getTierDisplayName(tier);
+        throw Object.assign(new Error("Account limit reached"), {
+          code: "LIMIT_EXCEEDED",
+          tierDisplayName: displayName,
+          max: max === Infinity ? -1 : max,
+        });
+      }
+
+      return tx.terminalConnection.create({
+        data: {
+          userId: session.user.id,
+          label,
+          apiKeyHash,
+          broker: broker ?? null,
+          accountNumber: accountNumber ?? null,
+        },
+      });
     });
 
     log.info({ terminalId: terminal.id, label }, "Terminal registered");
@@ -117,6 +133,17 @@ export async function POST(request: NextRequest) {
       { headers: rateLimitHeaders }
     );
   } catch (error) {
+    if (error instanceof Error && (error as Error & { code?: string }).code === "LIMIT_EXCEEDED") {
+      const err = error as Error & { tierDisplayName: string; max: number };
+      return NextResponse.json(
+        apiError(
+          ErrorCode.PLAN_REQUIRED,
+          "Account limit reached",
+          `Your ${err.tierDisplayName} plan allows ${err.max === -1 ? "unlimited" : err.max} monitored trading account${err.max === 1 ? "" : "s"}. Upgrade to monitor more accounts.`
+        ),
+        { status: 403, headers: rateLimitHeaders }
+      );
+    }
     log.error({ error: extractErrorDetails(error) }, "Failed to register terminal");
     return NextResponse.json(
       { error: "Failed to register terminal. Please try again." },

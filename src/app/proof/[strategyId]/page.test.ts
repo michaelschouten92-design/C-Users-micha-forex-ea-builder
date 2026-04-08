@@ -90,7 +90,7 @@ describe("/proof/[strategyId] page server component", () => {
 
     const meta = await callMetadata("AS-10F10DCA");
     expect(meta.title).toContain("Demo Strategy");
-    expect(meta.title).toContain("AlgoStudio");
+    expect(meta.title).toContain("Algo Studio");
   });
 
   // B5 — generateMetadata returns safe fallback for unknown strategy
@@ -98,7 +98,7 @@ describe("/proof/[strategyId] page server component", () => {
     mockFindUnique.mockResolvedValue(null);
 
     const meta = await callMetadata("AS-UNKNOWN1");
-    expect(meta.title).toBe("Strategy Not Found | AlgoStudio");
+    expect(meta.title).toBe("Strategy Not Found | Algo Studio");
   });
 
   // Caching exports

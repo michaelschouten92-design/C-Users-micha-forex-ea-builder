@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return {};
 
   return {
-    title: `${post.title} | AlgoStudio Blog`,
+    title: `${post.title} | Algo Studio Blog`,
     description: post.description,
     alternates: {
       canonical: `/blog/${slug}`,
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: "/opengraph-image",
           width: 1200,
           height: 630,
-          alt: "AlgoStudio — Strategy Monitoring & Governance",
+          alt: "Algo Studio — Strategy Monitoring & Governance",
         },
       ],
     },
@@ -76,7 +76,7 @@ export default async function BlogPostPage({ params }: Props) {
       },
       publisher: {
         "@type": "Organization",
-        name: "AlgoStudio",
+        name: "Algo Studio",
         url: baseUrl,
         logo: `${baseUrl}/opengraph-image`,
       },

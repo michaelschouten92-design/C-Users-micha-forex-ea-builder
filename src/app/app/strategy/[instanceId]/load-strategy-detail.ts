@@ -11,6 +11,8 @@
 
 import { createHash } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { computeEdgeScore, type EdgeScoreResult } from "@/domain/monitoring/edge-score";
+import { computeEdgeProjection, type EdgeProjection } from "@/domain/monitoring/edge-projection";
 import {
   resolveInstanceMonitoringStatus,
   resolveDeploymentCurrency,
@@ -73,6 +75,7 @@ export interface HealthHistoryPoint {
   overallScore: number;
   status: string;
   createdAt: string;
+  expectancy?: number | null;
 }
 
 export interface IncidentSummary {
@@ -118,6 +121,7 @@ export interface StrategyDetailData {
   isAutoDiscovered: boolean;
   lifecyclePhase: string;
   operatorHold: string;
+  tradingState: string;
   phaseEnteredAt: string;
   provenAt: string | null;
   retiredAt: string | null;
@@ -175,6 +179,11 @@ export interface StrategyDetailData {
    * Includes all versions, deployment counts per version, and current/outdated splits.
    */
   strategyLineage: StrategyLineage | null;
+
+  /** Edge Score — live performance vs backtest baseline. Null when no baseline or track record. */
+  edgeScore: EdgeScoreResult | null;
+  /** Edge decay projection — predicts future performance from health trends. Null when insufficient data. */
+  edgeProjection: EdgeProjection | null;
 }
 
 // ── Monitoring status resolution (delegates to shared semantic layer) ──
@@ -292,6 +301,7 @@ export async function loadStrategyDetail(
       lifecycleState: true,
       lifecyclePhase: true,
       operatorHold: true,
+      tradingState: true,
       phaseEnteredAt: true,
       provenAt: true,
       retiredAt: true,
@@ -300,6 +310,10 @@ export async function loadStrategyDetail(
       peakScoreAt: true,
       monitoringSuppressedUntil: true,
       strategyVersionId: true,
+      strategyVersion: {
+        select: { strategyIdentity: { select: { strategyId: true } } },
+      },
+      balance: true,
       terminalDeployments: {
         where: { ignoredAt: null },
         select: { symbol: true, magicNumber: true, materialFingerprint: true },
@@ -344,16 +358,14 @@ export async function loadStrategyDetail(
 
   // Instance-first: query incidents and monitoring runs scoped to this instance.
   // Falls back to strategyId for pre-migration data that lacks instanceId.
-  let strategyId: string | null = null;
-  if (instance.strategyVersionId) {
-    const sv = await prisma.strategyVersion.findUnique({
-      where: { id: instance.strategyVersionId },
-      select: {
-        strategyIdentity: { select: { strategyId: true } },
-      },
-    });
-    strategyId = sv?.strategyIdentity?.strategyId ?? null;
-  }
+  const strategyId =
+    (instance as Record<string, unknown>).strategyVersion != null
+      ? ((
+          (instance as Record<string, unknown>).strategyVersion as {
+            strategyIdentity?: { strategyId?: string };
+          }
+        )?.strategyIdentity?.strategyId ?? null)
+      : null;
 
   // Fetch incidents and latest monitoring run scoped to this instance
   const [incidents, latestRun] = await Promise.all([
@@ -436,6 +448,7 @@ export async function loadStrategyDetail(
     overallScore: s.overallScore,
     status: s.status,
     createdAt: s.createdAt.toISOString(),
+    expectancy: s.expectancy ?? null,
   }));
 
   const monitoringStatus = resolveInstanceMonitoringStatus(
@@ -582,6 +595,79 @@ export async function loadStrategyDetail(
     now: new Date(),
   });
 
+  // ── Edge Score ─────────────────────────────────────────
+  let edgeScore: EdgeScoreResult | null = null;
+  if (instance.strategyVersionId) {
+    try {
+      const [bl, tradeStats] = await Promise.all([
+        prisma.backtestBaseline.findUnique({
+          where: { strategyVersionId: instance.strategyVersionId },
+          select: {
+            winRate: true,
+            profitFactor: true,
+            maxDrawdownPct: true,
+            netReturnPct: true,
+            initialDeposit: true,
+          },
+        }),
+        prisma.$queryRaw<
+          { tradeCount: bigint; winCount: bigint; grossProfit: number; grossLoss: number }[]
+        >`
+          SELECT COUNT(*)::bigint AS "tradeCount",
+            COUNT(*) FILTER (WHERE profit > 0)::bigint AS "winCount",
+            COALESCE(SUM(CASE WHEN profit > 0 THEN profit ELSE 0 END), 0) AS "grossProfit",
+            COALESCE(SUM(CASE WHEN profit < 0 THEN ABS(profit) ELSE 0 END), 0) AS "grossLoss"
+          FROM "EATrade"
+          WHERE "instanceId" = ${instance.id} AND "closeTime" IS NOT NULL
+        `,
+      ]);
+      const stats = tradeStats[0];
+      if (bl && stats && Number(stats.tradeCount) > 0) {
+        edgeScore = computeEdgeScore(
+          {
+            totalTrades: Number(stats.tradeCount),
+            winCount: Number(stats.winCount),
+            lossCount: Number(stats.tradeCount) - Number(stats.winCount),
+            grossProfit: Number(stats.grossProfit),
+            grossLoss: Number(stats.grossLoss),
+            maxDrawdownPct: 0,
+            totalProfit: instance.balance != null ? instance.balance - bl.initialDeposit : 0,
+            balance: instance.balance ?? 0,
+          },
+          {
+            winRate: bl.winRate,
+            profitFactor: bl.profitFactor,
+            maxDrawdownPct: bl.maxDrawdownPct,
+            netReturnPct: bl.netReturnPct,
+            initialDeposit: bl.initialDeposit,
+          }
+        );
+      }
+    } catch {
+      // Non-critical — edge score won't be shown
+    }
+  }
+
+  // ── Edge Projection ───────────────────────────────────
+  let edgeProjection: EdgeProjection | null = null;
+  if (healthHistory.length >= 5) {
+    const projectionInput = healthHistory.map((h) => ({
+      overallScore: h.overallScore,
+      expectancy: h.expectancy ?? null,
+      createdAt: h.createdAt,
+    }));
+    const latestExpectancy = healthHistory[0]?.expectancy ?? null;
+    edgeProjection = computeEdgeProjection(
+      projectionInput,
+      instance.balance ?? 0,
+      latestExpectancy
+    );
+    // Only include if actually declining — don't show stable/improving projections
+    if (edgeProjection.trend !== "declining") {
+      edgeProjection = null;
+    }
+  }
+
   return {
     id: instance.id,
     eaName: instance.eaName,
@@ -601,6 +687,7 @@ export async function loadStrategyDetail(
       }),
     lifecyclePhase: instance.lifecyclePhase,
     operatorHold: instance.operatorHold,
+    tradingState: instance.tradingState,
     phaseEnteredAt: instance.phaseEnteredAt.toISOString(),
     provenAt: instance.provenAt?.toISOString() ?? null,
     retiredAt: instance.retiredAt?.toISOString() ?? null,
@@ -620,5 +707,7 @@ export async function loadStrategyDetail(
     versionNo,
     versionCurrency,
     strategyLineage,
+    edgeScore,
+    edgeProjection,
   };
 }

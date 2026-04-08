@@ -18,11 +18,6 @@ export async function GET(request: Request) {
     );
     const skip = (page - 1) * limit;
 
-    // Start of current month (UTC) for export count
-    const startOfMonth = new Date();
-    startOfMonth.setUTCDate(1);
-    startOfMonth.setUTCHours(0, 0, 0, 0);
-
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
     const sevenDaysFromNow = new Date(Date.now() + 7 * 86_400_000);
 
@@ -49,10 +44,7 @@ export async function GET(request: Request) {
           },
           _count: {
             select: {
-              projects: { where: { deletedAt: null } },
-              exports: {
-                where: { createdAt: { gte: startOfMonth } },
-              },
+              liveEAs: { where: { deletedAt: null } },
             },
           },
         },
@@ -103,8 +95,7 @@ export async function GET(request: Request) {
         lastLoginAt: user.lastLoginAt,
         role: user.role,
         subscription: { tier, status },
-        projectCount: user._count.projects,
-        exportCount: user._count.exports,
+        accountCount: user._count.liveEAs,
         referredBy: user.referredBy ?? null,
         suspended: user.suspended,
         activityStatus,

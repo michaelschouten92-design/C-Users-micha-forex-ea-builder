@@ -5,7 +5,7 @@ import { NotificationBell } from "./notification-bell";
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingModal";
 import { TIER_DISPLAY_NAMES, type PlanTier } from "@/lib/plans";
 
-export type NavItem = "evaluate" | "monitor" | "risk" | "settings";
+export type NavItem = "evaluate" | "monitor" | "alerts" | "referrals" | "settings";
 
 interface AppNavProps {
   activeItem?: NavItem;
@@ -20,8 +20,8 @@ const NAV_LINKS: {
   href: () => string;
 }[] = [
   { key: "monitor", label: "Command Center", href: () => "/app/live" },
-  { key: "evaluate", label: "Evaluate Strategy", href: () => "/app/evaluate" },
-  { key: "risk", label: "Risk", href: () => "/app/risk" },
+  { key: "evaluate", label: "Evaluate", href: () => "/app/evaluate" },
+  { key: "alerts", label: "Alerts", href: () => "/app/alerts" },
   { key: "settings", label: "Settings", href: () => "/app/settings" },
 ];
 
@@ -45,7 +45,7 @@ export function AppNav({ activeItem, session, tier, monitorStatus }: AppNavProps
               href="/app"
               className="text-xl font-bold text-white hover:text-[#818CF8] transition-colors"
             >
-              AlgoStudio
+              Algo Studio
             </Link>
           </div>
           <div className="flex items-center gap-4">
@@ -105,7 +105,7 @@ export function AppNav({ activeItem, session, tier, monitorStatus }: AppNavProps
                 Sign Out
               </button>
             </form>
-            <MobileNavMenu />
+            <MobileNavMenu activeItem={activeItem} />
           </div>
         </div>
       </div>

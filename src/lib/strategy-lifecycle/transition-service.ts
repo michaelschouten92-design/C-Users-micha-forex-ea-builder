@@ -44,10 +44,19 @@ export async function performLifecycleTransitionInTx(
     throw new Error(`Monitoring cannot transition ${from} → ${to}: must pass through EDGE_AT_RISK`);
   }
 
-  await tx.liveEAInstance.update({
-    where: { id: instanceId },
+  // Precondition: only update if current state matches expected `from` state.
+  // Prevents state regression from stale concurrent requests.
+  const updated = await tx.liveEAInstance.updateMany({
+    where: { id: instanceId, lifecycleState: from },
     data: { lifecycleState: to },
   });
+
+  if (updated.count === 0) {
+    throw new Error(
+      `Lifecycle transition conflict: instance ${instanceId} is no longer in state ${from}`
+    );
+  }
+
   log.info({ instanceId, from, to, reason, source }, "Lifecycle state transition");
 }
 
@@ -118,7 +127,11 @@ export async function setOperatorHold({
   if (hold === "HALTED" && instance.operatorHold !== "NONE") {
     return { ok: false, code: "INVALID_TRANSITION" };
   }
-  if (hold === "NONE" && instance.operatorHold !== "HALTED" && instance.operatorHold !== "OVERRIDE_PENDING") {
+  if (
+    hold === "NONE" &&
+    instance.operatorHold !== "HALTED" &&
+    instance.operatorHold !== "OVERRIDE_PENDING"
+  ) {
     return { ok: false, code: "INVALID_TRANSITION" };
   }
 

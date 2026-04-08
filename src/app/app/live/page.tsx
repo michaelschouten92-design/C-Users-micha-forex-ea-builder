@@ -1,14 +1,17 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
+
+export const metadata: Metadata = { title: "Command Center | Algo Studio" };
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
-import { MonitorTabs } from "./monitor-tabs";
-import { loadMonitorData, type AuthorityDecision } from "./load-monitor-data";
-import { explainReasonCode } from "@/domain/heartbeat/reason-explainers";
+import { loadMonitorData } from "./load-monitor-data";
+import { computeEdgeScore } from "@/domain/monitoring/edge-score";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
+import { resolveTier } from "@/lib/plan-limits";
 
 export default async function LiveEADashboardPage({
   searchParams,
@@ -44,7 +47,7 @@ export default async function LiveEADashboardPage({
 
   const { subscription } = data;
 
-  const tier = (subscription?.tier ?? "FREE") as import("@/lib/plans").PlanTier;
+  const tier = resolveTier(subscription);
 
   try {
     return renderDashboard(session, data, params, tier);
@@ -62,7 +65,7 @@ function renderDashboard(
   params: { decision?: string; relink?: string },
   tier: import("@/lib/plans").PlanTier
 ) {
-  const { eaInstances, authority } = data;
+  const { eaInstances, tradeAggregates, recentTrades } = data;
 
   // ── Serialize dates for client component ──
   const serializedInstances = eaInstances.map((ea) => ({
@@ -83,8 +86,8 @@ function renderDashboard(
     totalTrades: ea.totalTrades,
     totalProfit: ea.totalProfit,
     sortOrder: ea.sortOrder ?? 0,
-    strategyStatus: ea.strategyStatus as string,
-    operatorHold: (ea.operatorHold ?? "NONE") as string,
+    strategyStatus: ea.strategyStatus ?? "MONITORING",
+    operatorHold: ea.operatorHold ?? "NONE",
     mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
     parentInstanceId: ea.parentInstanceId ?? null,
     lifecycleState: ea.lifecycleState ?? null,
@@ -96,7 +99,9 @@ function renderDashboard(
     relinkRequired: ea.terminalDeployments.some(
       (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
     ),
-    monitoringReasons: ea.incidents?.[0] ? (ea.incidents[0].reasonCodes as string[]) : [],
+    monitoringReasons: Array.isArray(ea.incidents?.[0]?.reasonCodes)
+      ? (ea.incidents[0].reasonCodes as string[]).filter((r) => typeof r === "string")
+      : [],
     monitoringSuppressedUntil: ea.monitoringSuppressedUntil?.toISOString() ?? null,
     baseline: (() => {
       const bl = ea.strategyVersion?.backtestBaseline as
@@ -118,21 +123,66 @@ function renderDashboard(
           }
         : null;
     })(),
-    trades: ea.trades.map((t) => ({
-      profit: t.profit,
-      closeTime: t.closeTime?.toISOString() ?? null,
-      symbol: t.symbol,
-      magicNumber: t.magicNumber ?? null,
-    })),
-    heartbeats: ea.heartbeats.map((h) => ({
-      equity: h.equity,
-      createdAt: h.createdAt.toISOString(),
-    })),
+    trades: recentTrades
+      .filter((t) => t.instanceId === ea.id)
+      .map((t) => ({
+        profit: t.profit,
+        closeTime: t.closeTime,
+        symbol: t.symbol,
+        magicNumber: t.magicNumber,
+      })),
+    heartbeats: [],
     healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
       driftDetected: hs.driftDetected,
       driftSeverity: hs.driftSeverity,
       status: hs.status,
     })),
+    edgeScore: (() => {
+      const bl = ea.strategyVersion?.backtestBaseline as
+        | {
+            winRate: number | null;
+            profitFactor: number | null;
+            maxDrawdownPct: number | null;
+            netReturnPct: number | null;
+            initialDeposit: number | null;
+          }
+        | undefined;
+      if (!bl || bl.winRate == null || bl.profitFactor == null) return null;
+      const agg = tradeAggregates.get(ea.id);
+      if (!agg || agg.tradeCount === 0) {
+        return {
+          phase: "COLLECTING" as const,
+          score: null,
+          tradesCompleted: 0,
+          tradesRequired: 10,
+        };
+      }
+      const result = computeEdgeScore(
+        {
+          totalTrades: agg.tradeCount,
+          winCount: agg.winCount,
+          lossCount: agg.lossCount,
+          grossProfit: agg.grossProfit,
+          grossLoss: agg.grossLoss,
+          maxDrawdownPct: 0, // per-instance DD not available from aggregates
+          totalProfit: ea.totalProfit,
+          balance: ea.balance ?? 0,
+        },
+        {
+          winRate: bl.winRate,
+          profitFactor: bl.profitFactor,
+          maxDrawdownPct: bl.maxDrawdownPct ?? 0,
+          netReturnPct: bl.netReturnPct ?? 0,
+          initialDeposit: bl.initialDeposit ?? 0,
+        }
+      );
+      return {
+        phase: result.phase,
+        score: result.score,
+        tradesCompleted: result.tradesCompleted,
+        tradesRequired: result.tradesRequired,
+      };
+    })(),
   }));
 
   const relinkInstanceId = params.relink ?? null;
@@ -159,118 +209,99 @@ function renderDashboard(
           items={[{ label: "Dashboard", href: "/app" }, { label: "Command Center" }]}
         />
 
-        {/* ── System Command Board ── */}
-        <div className="mt-5 mb-4">
-          <div className="rounded-lg border border-[#1E293B]/50 bg-[#0A0118]/60 px-6 pt-5 pb-5">
-            {/* Title row */}
-            <div className="flex items-baseline justify-between gap-4">
-              <div className="flex items-baseline gap-3">
-                <h1 className="text-2xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
-                {eaInstances.length > 0 && (
-                  <span className="text-xs text-[#64748B] font-medium tabular-nums">
-                    {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"}{" "}
-                    monitored
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <p className="text-[12px] text-[#475569] max-w-xl mt-1.5 mb-5">
-              Monitor live trading strategies and detect edge drift, instability and risk anomalies
-              before they damage performance.
-            </p>
-
-            {/* System State Board */}
-            {eaInstances.length > 0 && (
-              <div className="rounded-lg bg-[rgba(10,1,24,0.5)] border border-[#1E293B]/40 px-4 py-4">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-3">
-                  System State
-                </p>
-                <SystemStatusStrip instances={eaInstances} authority={authority} />
-              </div>
-            )}
-          </div>
+        {/* ── Title ── */}
+        <div className="mt-4 mb-3 flex items-baseline gap-3">
+          <h1 className="text-xl font-bold text-[#F1F5F9] tracking-tight">Command Center</h1>
+          {eaInstances.length > 0 && (
+            <span className="text-xs text-[#64748B] font-medium tabular-nums">
+              {eaInstances.length} {eaInstances.length === 1 ? "instance" : "instances"} monitored
+            </span>
+          )}
         </div>
+
+        {/* ── Incident Summary Banner ── */}
+        <IncidentSummaryBanner instances={eaInstances} />
 
         {/* ══════════════════════════════════════════════════════
             ONBOARDING — Activation checklist (auto-hides)
             ══════════════════════════════════════════════════════ */}
         <ActivationPanel />
 
-        {/* ── Governance Alerts (compact — only shown when action needed) ── */}
-        {eaInstances.length > 0 &&
-          (() => {
-            const action = authority?.action ?? "PAUSE";
-            const isSetupRequired = !authority;
-            const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-            const halted = eaInstances.filter((ea) => ea.operatorHold !== "NONE");
-
-            const showAuthority = action !== "RUN";
-            const showHalted = halted.length > 0;
-
-            if (!showAuthority && !showHalted) return null;
-
-            const explanation = isSetupRequired
-              ? "Monitoring is paused until required baselines are linked."
-              : explainReasonCode(authority?.reasonCode ?? "COMPUTATION_FAILED");
-
-            return (
-              <section className="mb-4 space-y-2">
-                {showAuthority && (
-                  <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg"
-                    style={{
-                      backgroundColor: colors.bg,
-                      border: `1px solid ${colors.border}`,
-                    }}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: colors.dot }}
-                    />
-                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
-                      Governance
-                    </span>
-                    <span className="text-sm font-bold" style={{ color: colors.text }}>
-                      {action}
-                    </span>
-                    {isSetupRequired && (
-                      <span className="text-xs font-semibold text-[#F59E0B]">Setup required</span>
-                    )}
-                    <span className="text-xs text-[#94A3B8] leading-relaxed">{explanation}</span>
-                  </div>
-                )}
-                {showHalted && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 rounded-lg bg-[rgba(239,68,68,0.06)] border border-[rgba(239,68,68,0.15)]">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#EF4444]" />
-                    <span className="text-[10px] uppercase tracking-wider text-[#525B6B] font-medium">
-                      Operator Hold
-                    </span>
-                    <span className="text-sm font-bold text-[#EF4444]">{halted.length} halted</span>
-                    <span className="text-xs text-[#94A3B8]">
-                      {halted
-                        .slice(0, 3)
-                        .map((h) => h.eaName || h.symbol || h.id.slice(0, 8))
-                        .join(", ")}
-                      {halted.length > 3 && ` +${halted.length - 3} more`}
-                    </span>
-                  </div>
-                )}
-              </section>
-            );
-          })()}
-
         {/* ── Strategies, Terminals, Journal ── */}
         <section>
-          <MonitorTabs>
-            <LiveDashboardClient
-              initialData={serializedInstances}
-              tier={tier}
-              initialRelinkInstanceId={relinkInstanceId}
-            />
-          </MonitorTabs>
+          <LiveDashboardClient
+            initialData={serializedInstances}
+            tier={tier}
+            initialRelinkInstanceId={relinkInstanceId}
+          />
         </section>
       </main>
+    </div>
+  );
+}
+
+// ── Incident Summary Banner ──
+
+function IncidentSummaryBanner({
+  instances,
+}: {
+  instances: Array<{
+    id: string;
+    eaName: string;
+    incidents?: Array<{ reasonCodes: unknown }>;
+    strategyStatus: string | null;
+  }>;
+}) {
+  const withIncidents = instances.filter((ea) => ea.incidents && ea.incidents.length > 0);
+  const degradedCount = instances.filter((ea) => ea.strategyStatus === "EDGE_DEGRADED").length;
+  const unstableCount = instances.filter((ea) => ea.strategyStatus === "UNSTABLE").length;
+
+  const totalIssues = withIncidents.length + degradedCount;
+  if (totalIssues === 0) return null;
+
+  const hasCritical = degradedCount > 0;
+
+  return (
+    <div
+      className={`mb-4 rounded-lg border px-4 py-3 flex items-center gap-3 ${
+        hasCritical
+          ? "bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.2)]"
+          : "bg-[rgba(234,179,8,0.08)] border-[rgba(234,179,8,0.2)]"
+      }`}
+    >
+      <svg
+        className={`w-4 h-4 shrink-0 ${hasCritical ? "text-red-400" : "text-amber-400"}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+        />
+      </svg>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-[#E2E8F0]">
+          {degradedCount > 0 && (
+            <span className="font-medium text-red-400">{degradedCount} edge degraded</span>
+          )}
+          {degradedCount > 0 && unstableCount > 0 && <span className="text-[#64748B]"> · </span>}
+          {unstableCount > 0 && (
+            <span className="font-medium text-amber-400">{unstableCount} unstable</span>
+          )}
+          {(degradedCount > 0 || unstableCount > 0) && withIncidents.length > 0 && (
+            <span className="text-[#64748B]"> · </span>
+          )}
+          {withIncidents.length > 0 && (
+            <span className="text-[#94A3B8]">
+              {withIncidents.length} open {withIncidents.length === 1 ? "incident" : "incidents"}
+            </span>
+          )}
+        </p>
+      </div>
+      <span className="text-xs text-[#64748B] shrink-0">Click a strategy for details</span>
     </div>
   );
 }
@@ -309,20 +340,20 @@ function DegradedFallback({
             <h2 className="text-xl font-bold text-white mb-3">
               Command Center temporarily unavailable
             </h2>
-            <p className="text-[#94A3B8] mb-6">
+            <p className="text-[#A1A1AA] mb-6">
               Authority status could not be determined. All strategies should be considered under
               PAUSE governance until connectivity is restored.
             </p>
             <div className="flex gap-3 justify-center">
               <Link
                 href="/app/live"
-                className="px-6 py-2.5 bg-[#4F46E5] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
+                className="px-6 py-2.5 bg-[#6366F1] text-white rounded-lg hover:bg-[#6366F1] transition-colors"
               >
                 Try Again
               </Link>
               <Link
                 href="/app"
-                className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#CBD5E1] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
+                className="px-6 py-2.5 border border-[rgba(79,70,229,0.5)] text-[#FAFAFA] rounded-lg hover:bg-[rgba(79,70,229,0.1)] transition-colors"
               >
                 Back to Dashboard
               </Link>
@@ -330,88 +361,6 @@ function DegradedFallback({
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-// ── Server-rendered Control Cards ────────────────────────
-
-const AUTHORITY_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> =
-  {
-    RUN: {
-      bg: "rgba(16,185,129,0.08)",
-      border: "rgba(16,185,129,0.25)",
-      text: "#10B981",
-      dot: "#10B981",
-    },
-    PAUSE: {
-      bg: "rgba(245,158,11,0.08)",
-      border: "rgba(245,158,11,0.25)",
-      text: "#F59E0B",
-      dot: "#F59E0B",
-    },
-    STOP: {
-      bg: "rgba(239,68,68,0.08)",
-      border: "rgba(239,68,68,0.25)",
-      text: "#EF4444",
-      dot: "#EF4444",
-    },
-  };
-
-function SystemStatusStrip({
-  instances,
-  authority,
-}: {
-  instances: {
-    status: string;
-    operatorHold: string | null;
-    healthSnapshots?: { driftDetected: boolean }[];
-  }[];
-  authority: AuthorityDecision | null;
-}) {
-  const action = authority?.action ?? "PAUSE";
-  const colors = AUTHORITY_COLORS[action] ?? AUTHORITY_COLORS.PAUSE;
-  const halted = instances.filter((i) => i.operatorHold !== "NONE").length;
-  const online = instances.filter((i) => i.status === "ONLINE").length;
-
-  // Count instances where CUSUM detected drift (latest snapshot)
-  const driftCount = instances.filter((i) => i.healthSnapshots?.[0]?.driftDetected === true).length;
-
-  const items: { label: string; value: string; color?: string }[] = [
-    { label: "Execution", value: action, color: colors.text },
-    { label: "Online", value: `${online}/${instances.length}` },
-    { label: "Halted", value: String(halted), color: halted > 0 ? "#EF4444" : undefined },
-    { label: "Drift", value: String(driftCount), color: driftCount > 0 ? "#F59E0B" : undefined },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {items.map((item) => {
-        const hasActiveColor = item.color && item.color !== "#CBD5E1";
-        return (
-          <div
-            key={item.label}
-            className="rounded-md bg-[rgba(15,10,26,0.5)] border border-[#1E293B]/40 px-4 py-3.5 relative overflow-hidden"
-            style={hasActiveColor ? { boxShadow: `0 0 16px ${item.color}10` } : undefined}
-          >
-            {hasActiveColor && (
-              <div
-                className="absolute top-0 left-0 right-0 h-[2px]"
-                style={{ backgroundColor: item.color, opacity: 0.5 }}
-              />
-            )}
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-2">
-              {item.label}
-            </p>
-            <p
-              className="text-2xl font-bold font-mono tabular-nums leading-none"
-              style={{ color: item.color ?? "#CBD5E1" }}
-            >
-              {item.value}
-            </p>
-          </div>
-        );
-      })}
     </div>
   );
 }

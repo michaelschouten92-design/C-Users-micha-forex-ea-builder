@@ -52,3 +52,6 @@ next-env.d.ts
 e2e/.auth/
 
 .env*.local
+
+# Claude Code worktrees
+C-Users-micha-forex-ea-builder/

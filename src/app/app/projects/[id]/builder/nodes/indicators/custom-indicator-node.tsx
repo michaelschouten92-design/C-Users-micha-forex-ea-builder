@@ -25,22 +25,22 @@ export const CustomIndicatorNode = memo(function CustomIndicatorNode({
     >
       <div className="space-y-1">
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Timeframe:</span>
+          <span className="text-[#A1A1AA]">Timeframe:</span>
           <span className="font-medium">{data.timeframe}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Indicator:</span>
+          <span className="text-[#A1A1AA]">Indicator:</span>
           <span className="font-medium truncate max-w-[100px]" title={data.indicatorName}>
             {displayName}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-[#94A3B8]">Buffer:</span>
+          <span className="text-[#A1A1AA]">Buffer:</span>
           <span className="font-medium">{data.bufferIndex}</span>
         </div>
         {paramCount > 0 && (
           <div className="flex justify-between">
-            <span className="text-[#94A3B8]">Params:</span>
+            <span className="text-[#A1A1AA]">Params:</span>
             <span className="font-medium">{paramCount}</span>
           </div>
         )}

@@ -209,11 +209,21 @@ export function LinkBaselineDialog({
   const showSuggestion = suggestion && !suggestionDismissed;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && !linking) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="link-baseline-title"
+        className="bg-[#111114] border border-[rgba(255,255,255,0.08)] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
+      >
         {/* Header */}
         <div className="p-5 border-b border-[rgba(79,70,229,0.15)]">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 id="link-baseline-title" className="text-lg font-semibold text-white">
             {isRelink ? "Restore Baseline Trust" : "Link Strategy Baseline"}
           </h2>
           <p className="text-xs text-[#7C8DB0] mt-1">
@@ -223,7 +233,7 @@ export function LinkBaselineDialog({
           </p>
           {deploymentLabel && (
             <p className="text-[10px] text-[#64748B] mt-2">
-              Deployment: <span className="text-[#94A3B8] font-medium">{deploymentLabel}</span>
+              Deployment: <span className="text-[#A1A1AA] font-medium">{deploymentLabel}</span>
             </p>
           )}
         </div>
@@ -232,7 +242,7 @@ export function LinkBaselineDialog({
         <div className="flex-1 overflow-y-auto p-5">
           {loading && (
             <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
 
@@ -242,7 +252,7 @@ export function LinkBaselineDialog({
 
           {!loading && !error && backtests.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-sm text-[#94A3B8]">No eligible backtests found.</p>
+              <p className="text-sm text-[#A1A1AA]">No eligible backtests found.</p>
               <p className="text-xs text-[#64748B] mt-1">
                 Upload a backtest with at least 30 trades to link it as a baseline.
               </p>
@@ -251,7 +261,7 @@ export function LinkBaselineDialog({
 
           {/* Suggestion banner */}
           {!loading && showSuggestion && (
-            <div className="mb-3 p-3 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/25">
+            <div className="mb-3 p-3 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/25">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-[#A78BFA]">Suggested baseline</p>
@@ -271,7 +281,7 @@ export function LinkBaselineDialog({
                       setSelectedRunId(suggestion.runId);
                       setSuggestionDismissed(true);
                     }}
-                    className="px-2.5 py-1 rounded text-[10px] font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-colors"
+                    className="px-2.5 py-1 rounded text-[10px] font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] transition-colors"
                   >
                     Accept
                   </button>
@@ -304,8 +314,8 @@ export function LinkBaselineDialog({
                   onClick={() => setSelectedRunId(bt.runId)}
                   className={`w-full text-left p-3 rounded-lg border transition-all duration-150 ${
                     selectedRunId === bt.runId
-                      ? "border-[#4F46E5] bg-[#4F46E5]/10"
-                      : "border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.3)] bg-[#0A0118]/50"
+                      ? "border-[#6366F1] bg-[#6366F1]/10"
+                      : "border-[rgba(79,70,229,0.15)] hover:border-[rgba(79,70,229,0.3)] bg-[#0D0D12]/50"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -350,7 +360,7 @@ export function LinkBaselineDialog({
             <button
               onClick={handleLink}
               disabled={!selectedRunId || linking || isActivating}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isActivating ? "Activating..." : linking ? "Linking..." : "Link Baseline"}
             </button>

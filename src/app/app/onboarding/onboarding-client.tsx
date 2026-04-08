@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { getCsrfHeaders } from "@/lib/api-client";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ function useOnboardingStatus() {
     fetchStatus();
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") fetchStatus();
-    }, 5_000);
+    }, 10_000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
@@ -117,7 +118,7 @@ function StepIndicator({ step, currentStep }: { step: number; currentStep: numbe
           isComplete
             ? "bg-[#10B981]/15 border border-[#10B981]/30"
             : isActive
-              ? "bg-[#4F46E5]/20 border-2 border-[#818CF8]"
+              ? "bg-[#6366F1]/20 border-2 border-[#818CF8]"
               : "bg-[#1A1A2E] border border-[rgba(255,255,255,0.08)]"
         }`}
       >
@@ -140,10 +141,124 @@ function StepIndicator({ step, currentStep }: { step: number; currentStep: numbe
 
 function ProgressBar({ currentStep }: { currentStep: number }) {
   return (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div
+      className="flex items-center justify-center gap-0 mb-8"
+      role="progressbar"
+      aria-valuenow={currentStep}
+      aria-valuemin={1}
+      aria-valuemax={5}
+      aria-label={`Onboarding progress: step ${currentStep} of 5`}
+    >
       {[1, 2, 3, 4, 5].map((step) => (
         <StepIndicator key={step} step={step} currentStep={currentStep} />
       ))}
+    </div>
+  );
+}
+
+// ── Troubleshoot toggle ──────────────────────────────────
+
+function TroubleshootToggle({
+  autoExpandAfterMs = 5 * 60 * 1000,
+}: { autoExpandAfterMs?: number } = {}) {
+  const [open, setOpen] = useState(false);
+
+  // Auto-expand troubleshooting after waiting period to proactively help stuck users
+  useEffect(() => {
+    if (open) return;
+    const timer = setTimeout(() => setOpen(true), autoExpandAfterMs);
+    return () => clearTimeout(timer);
+  }, [open, autoExpandAfterMs]);
+
+  return (
+    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+      >
+        <span className="text-xs font-medium text-[#F59E0B]">
+          Not connecting? Check these common issues
+        </span>
+        <svg
+          className={`w-4 h-4 text-[#7C8DB0] transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 space-y-3 border-t border-[rgba(255,255,255,0.06)]">
+          <TroubleshootItem
+            title="WebRequest URL not added"
+            description={
+              <>
+                Go to <strong className="text-white">Tools → Options → Expert Advisors</strong> and
+                make sure{" "}
+                <code className="text-xs bg-[#0D0D12] px-1 py-0.5 rounded text-[#22D3EE]">
+                  https://algo-studio.com
+                </code>{" "}
+                is in the allowed list.
+              </>
+            }
+          />
+          <TroubleshootItem
+            title="AutoTrading is disabled"
+            description={
+              <>
+                Check that the <strong className="text-white">AutoTrading</strong> button in the MT5
+                toolbar is enabled (green icon). The EA needs this to send data.
+              </>
+            }
+          />
+          <TroubleshootItem
+            title="EA not attached to a chart"
+            description={
+              <>
+                Open any chart, then drag <strong className="text-white">AlgoStudio_Monitor</strong>{" "}
+                from the Navigator panel onto it. You should see a smiley face in the top-right
+                corner of the chart.
+              </>
+            }
+          />
+          <TroubleshootItem
+            title="Firewall or VPS blocking outbound traffic"
+            description={
+              <>
+                If you run MT5 on a VPS, make sure outbound HTTPS (port 443) is allowed. Some VPS
+                providers block this by default.
+              </>
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TroubleshootItem({ title, description }: { title: string; description: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 pt-3">
+      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#F59E0B]/10 flex items-center justify-center mt-0.5">
+        <svg
+          className="w-3 h-3 text-[#F59E0B]"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+          />
+        </svg>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-white">{title}</p>
+        <p className="text-[11px] text-[#A1A1AA] mt-0.5 leading-relaxed">{description}</p>
+      </div>
     </div>
   );
 }
@@ -159,16 +274,16 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
         subtitle={
           complete
             ? "Terminal connected"
-            : "Install the AlgoStudio Monitor EA to start sending live data."
+            : "Install the Algo Studio Monitor EA to start sending live data."
         }
         complete={complete}
       />
 
       {!complete && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             <h4 className="text-sm font-medium text-white">Quick Setup</h4>
-            <ol className="space-y-3 text-sm text-[#94A3B8]">
+            <ol className="space-y-3 text-sm text-[#A1A1AA]">
               <li className="flex gap-3">
                 <StepBullet n={1} />
                 <span>
@@ -181,7 +296,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
                     AlgoStudio_Monitor.ex5
                   </a>{" "}
                   and copy it to your MetaTrader{" "}
-                  <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#CBD5E1]">
+                  <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#FAFAFA]">
                     MQL5/Experts
                   </code>{" "}
                   folder.
@@ -196,7 +311,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
                   </strong>{" "}
                   and enable <strong className="text-white">Allow WebRequest for listed URL</strong>
                   . Add:{" "}
-                  <code className="text-xs bg-[#0A0118] px-1.5 py-0.5 rounded text-[#22D3EE]">
+                  <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
                     https://algo-studio.com
                   </code>
                 </span>
@@ -213,7 +328,7 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
             <a
               href="/downloads/AlgoStudio_Monitor.ex5"
               download
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -228,6 +343,8 @@ function StepConnectTerminal({ complete }: { complete: boolean }) {
           </div>
 
           <WaitingPulse message="Waiting for terminal connection..." />
+
+          <TroubleshootToggle />
         </>
       )}
 
@@ -253,12 +370,12 @@ function StepWaitingForTrades({
         subtitle={
           complete
             ? "Strategy detected from trade activity"
-            : "AlgoStudio will auto-discover strategies from your trade history."
+            : "Strategies appear automatically when they open a position or place an order."
         }
         complete={complete}
       />
 
-      <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-3">
+      <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-3">
         <StatusRow label="Terminal" value="Connected" ok />
         <StatusRow label="Heartbeat" value="Receiving" ok />
         {terminal?.broker && <StatusRow label="Broker" value={terminal.broker} ok />}
@@ -273,7 +390,7 @@ function StepWaitingForTrades({
       </div>
 
       {!complete && (
-        <WaitingPulse message="Monitoring trade activity... A strategy will appear once trades are detected." />
+        <WaitingPulse message="Waiting for your first trade... As soon as an EA opens a position or places an order, it will appear here automatically." />
       )}
 
       {complete && <SuccessBanner message="Strategy auto-discovered from trade activity." />}
@@ -308,7 +425,7 @@ function StepStrategyDiscovered({
           {strategies.map((s) => (
             <div
               key={s.instanceId}
-              className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5"
+              className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -338,8 +455,41 @@ function StepStrategyDiscovered({
 
       {complete && <SuccessBanner message="Strategy discovered and ready for baseline linking." />}
 
+      {!complete && strategies.length > 0 && (
+        <div className="rounded-xl bg-[rgba(79,70,229,0.04)] border border-[rgba(79,70,229,0.12)] p-4 space-y-2">
+          <p className="text-xs font-medium text-[#818CF8]">What happens next?</p>
+          <p className="text-[11px] text-[#A1A1AA] leading-relaxed">
+            Once you link a baseline backtest, Algo Studio will continuously compare your live
+            results against it. You&apos;ll get:
+          </p>
+          <ul className="space-y-1.5 text-[11px] text-[#A1A1AA]">
+            <li className="flex items-start gap-2">
+              <span className="text-[#10B981] mt-0.5">&#10003;</span>
+              <span>
+                <strong className="text-white">Edge Score</strong> — see if your live performance
+                matches your backtest
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#10B981] mt-0.5">&#10003;</span>
+              <span>
+                <strong className="text-white">Drift Detection</strong> — get alerted when your
+                strategy starts behaving differently
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[#10B981] mt-0.5">&#10003;</span>
+              <span>
+                <strong className="text-white">Health Scoring</strong> — a 0–100 score tracking your
+                strategy&apos;s reliability over time
+              </span>
+            </li>
+          </ul>
+        </div>
+      )}
+
       {!complete && strategies.length === 0 && (
-        <WaitingPulse message="Waiting for strategy discovery..." />
+        <WaitingPulse message="Waiting for your EAs to open a position or place an order..." />
       )}
     </div>
   );
@@ -347,16 +497,121 @@ function StepStrategyDiscovered({
 
 // ── Step 4: Link baseline ─────────────────────────────────
 
+function InlineBacktestUpload({ onUploaded }: { onUploaded: () => void }) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!file.name.endsWith(".html") && !file.name.endsWith(".htm")) {
+      setError("Please upload an HTML file from MT5 Strategy Tester.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File is too large (max 5 MB).");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/backtest/upload", {
+        method: "POST",
+        headers: getCsrfHeaders(),
+        body: formData,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? "Upload failed");
+      }
+      setSuccess(true);
+      onUploaded();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  if (success) {
+    return <SuccessBanner message="Backtest uploaded. Evaluating your strategy..." />;
+  }
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        const f = e.dataTransfer.files[0];
+        if (f) handleFile(f);
+      }}
+      className={`relative rounded-xl border-2 border-dashed transition-colors p-6 text-center ${
+        dragging
+          ? "border-[#6366F1] bg-[rgba(79,70,229,0.08)]"
+          : "border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.02)] hover:border-[rgba(255,255,255,0.15)]"
+      }`}
+    >
+      {uploading ? (
+        <div className="flex items-center justify-center gap-2">
+          <SpinnerIcon />
+          <span className="text-sm text-[#A1A1AA]">Uploading and analyzing...</span>
+        </div>
+      ) : (
+        <>
+          <svg
+            className="w-8 h-8 mx-auto mb-2 text-[#7C8DB0]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+            />
+          </svg>
+          <p className="text-sm text-[#A1A1AA] mb-1">Drag your MT5 backtest report here</p>
+          <p className="text-[11px] text-[#7C8DB0] mb-3">or click to browse</p>
+          <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors cursor-pointer">
+            Choose File
+            <input
+              type="file"
+              accept=".html,.htm"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+              }}
+            />
+          </label>
+        </>
+      )}
+      {error && <p className="mt-3 text-xs text-[#EF4444]">{error}</p>}
+    </div>
+  );
+}
+
 function StepLinkBaseline({
   complete,
   strategies,
   hasBacktest,
   availableBaselines,
+  onRefresh,
 }: {
   complete: boolean;
   strategies: DiscoveredStrategy[];
   hasBacktest: boolean;
   availableBaselines: AvailableBaseline[];
+  onRefresh: () => void;
 }) {
   // Find the first strategy that doesn't have a baseline yet (not in monitoring states)
   const MONITORING_STATES = new Set(["LIVE_MONITORING", "EDGE_AT_RISK", "INVALIDATED"]);
@@ -381,52 +636,26 @@ function StepLinkBaseline({
             ? "Baseline linked to strategy"
             : hasLinkableBaseline
               ? "Link your backtest baseline to activate monitoring for your discovered strategy."
-              : "AlgoStudio compares live behavior against a baseline backtest. This enables health scoring, drift detection, and edge-at-risk alerts."
+              : "Algo Studio compares live behavior against a baseline backtest. This enables health scoring, drift detection, and edge-at-risk alerts."
         }
         complete={complete}
       />
 
       {!complete && !hasLinkableBaseline && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-[#94A3B8]">
-                A baseline is your strategy&apos;s backtest report from MetaTrader. AlgoStudio uses
-                it to detect when live performance drifts from what you tested.
-              </p>
-              <p className="text-sm text-[#94A3B8]">
-                Without a baseline, monitoring cannot score health or detect edge drift.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3 border-t border-[rgba(79,70,229,0.1)]">
-              <Link
-                href="/app/evaluate"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                  />
-                </svg>
-                Upload backtest report
-              </Link>
-              {!hasBacktest && (
-                <span className="text-[10px] text-[#7C8DB0]">MT5 Strategy Tester HTML report</span>
-              )}
-            </div>
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
+            <p className="text-sm text-[#A1A1AA]">
+              Upload your strategy&apos;s backtest report from MT5 Strategy Tester. Algo Studio uses
+              it to detect when live performance drifts from what you tested.
+            </p>
+            <InlineBacktestUpload onUploaded={onRefresh} />
           </div>
-
-          <WaitingPulse message="Upload a backtest to continue..." />
         </>
       )}
 
       {!complete && hasLinkableBaseline && (
         <>
-          <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-5 space-y-4">
+          <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-5 space-y-4">
             {/* Show best available baseline */}
             {bestBaseline && (
               <div className="flex items-start gap-3">
@@ -472,7 +701,7 @@ function StepLinkBaseline({
                 </div>
                 <Link
                   href={`/app/live?relink=${displayStrategy.instanceId}`}
-                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -603,7 +832,7 @@ function StepMonitoringActive({
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/app/live"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#4F46E5] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
         >
           Go to Command Center
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -613,7 +842,7 @@ function StepMonitoringActive({
         {instance && (
           <Link
             href={`/app/strategy/${instance.instanceId}`}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-[#A78BFA] text-sm font-medium hover:bg-[#4F46E5]/10 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[rgba(79,70,229,0.3)] text-[#A78BFA] text-sm font-medium hover:bg-[#6366F1]/10 transition-colors"
           >
             View Strategy Detail
           </Link>
@@ -642,14 +871,14 @@ function StepHeader({
         Step {stepNumber} of {TOTAL_STEPS}
       </p>
       <h2 className="text-xl font-bold text-white">{title}</h2>
-      <p className="text-sm text-[#94A3B8] mt-1">{subtitle}</p>
+      <p className="text-sm text-[#A1A1AA] mt-1">{subtitle}</p>
     </div>
   );
 }
 
 function StepBullet({ n }: { n: number }) {
   return (
-    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#4F46E5]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium mt-0.5">
+    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#6366F1]/20 text-[#A78BFA] text-xs flex items-center justify-center font-medium mt-0.5">
       {n}
     </span>
   );
@@ -676,7 +905,7 @@ function WaitingPulse({ message }: { message: string }) {
         <span className="block w-2.5 h-2.5 rounded-full bg-[#818CF8] animate-pulse" />
         <span className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-[#818CF8] animate-ping opacity-30" />
       </div>
-      <p className="text-xs text-[#94A3B8]">{message}</p>
+      <p className="text-xs text-[#A1A1AA]">{message}</p>
     </div>
   );
 }
@@ -695,13 +924,13 @@ function SuccessBanner({ message }: { message: string }) {
 // ── Main component ────────────────────────────────────────
 
 export function OnboardingClient() {
-  const { data, loading } = useOnboardingStatus();
+  const { data, loading, refetch } = useOnboardingStatus();
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white">Setting up AlgoStudio</h1>
+          <h1 className="text-2xl font-bold text-white">Setting up Algo Studio</h1>
           <p className="text-sm text-[#7C8DB0] mt-2">Loading your setup progress...</p>
         </div>
         <div className="flex justify-center py-12">
@@ -726,7 +955,7 @@ export function OnboardingClient() {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-2xl font-bold text-white">
-          {currentStep === 5 ? "You're all set" : "Get started with AlgoStudio"}
+          {currentStep === 5 ? "You're all set" : "Get started with Algo Studio"}
         </h1>
         <p className="text-sm text-[#7C8DB0] mt-2">
           {currentStep === 5
@@ -758,6 +987,7 @@ export function OnboardingClient() {
           strategies={data.discoveredStrategies}
           hasBacktest={data.hasBacktest}
           availableBaselines={data.availableBaselines}
+          onRefresh={refetch}
         />
       )}
       {currentStep === 4 && (
@@ -766,6 +996,7 @@ export function OnboardingClient() {
           strategies={data.discoveredStrategies}
           hasBacktest={data.hasBacktest}
           availableBaselines={data.availableBaselines}
+          onRefresh={refetch}
         />
       )}
 

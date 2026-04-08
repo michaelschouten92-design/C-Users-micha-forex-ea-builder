@@ -42,7 +42,7 @@ export function MultiPairPanel() {
   }
 
   return (
-    <div className="border border-[rgba(79,70,229,0.2)] rounded-lg p-4 bg-[#1A0626]/50">
+    <div className="border border-[rgba(79,70,229,0.2)] rounded-lg p-4 bg-[#111114]/50">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-white">Multi-Pair Mode</h3>
@@ -54,7 +54,7 @@ export function MultiPairPanel() {
           type="button"
           onClick={() => setEnabled(!enabled)}
           className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-            enabled ? "bg-[#4F46E5]" : "bg-[#334155]"
+            enabled ? "bg-[#6366F1]" : "bg-[#334155]"
           }`}
           aria-label="Toggle multi-pair mode"
         >
@@ -75,7 +75,7 @@ export function MultiPairPanel() {
 
           {/* Symbol Input */}
           <div>
-            <label htmlFor="multi-pair-input" className="block text-xs text-[#94A3B8] mb-1">
+            <label htmlFor="multi-pair-input" className="block text-xs text-[#A1A1AA] mb-1">
               Add symbols
             </label>
             <input
@@ -102,8 +102,8 @@ export function MultiPairPanel() {
                   disabled
                   className={`text-[10px] px-2 py-1 rounded border transition-colors ${
                     symbols.includes(pair)
-                      ? "bg-[#4F46E5]/20 border-[#4F46E5]/50 text-[#A78BFA]"
-                      : "bg-[rgba(79,70,229,0.1)] border-[rgba(79,70,229,0.2)] text-[#94A3B8]"
+                      ? "bg-[#6366F1]/20 border-[#6366F1]/50 text-[#A78BFA]"
+                      : "bg-[rgba(79,70,229,0.1)] border-[rgba(79,70,229,0.2)] text-[#A1A1AA]"
                   }`}
                 >
                   {pair}
@@ -115,12 +115,12 @@ export function MultiPairPanel() {
           {/* Selected Symbols */}
           {symbols.length > 0 && (
             <div>
-              <p className="text-xs text-[#94A3B8] mb-1.5">Selected ({symbols.length}):</p>
+              <p className="text-xs text-[#A1A1AA] mb-1.5">Selected ({symbols.length}):</p>
               <div className="flex flex-wrap gap-1.5">
                 {symbols.map((symbol) => (
                   <span
                     key={symbol}
-                    className="text-[10px] px-2 py-1 rounded bg-[#4F46E5]/20 border border-[#4F46E5]/50 text-[#A78BFA] flex items-center gap-1"
+                    className="text-[10px] px-2 py-1 rounded bg-[#6366F1]/20 border border-[#6366F1]/50 text-[#A78BFA] flex items-center gap-1"
                   >
                     {symbol}
                     <button
@@ -139,7 +139,7 @@ export function MultiPairPanel() {
 
           {/* Settings preview */}
           <div className="border-t border-[rgba(79,70,229,0.15)] pt-3 space-y-2">
-            <label className="flex items-center gap-2 text-xs text-[#94A3B8]">
+            <label className="flex items-center gap-2 text-xs text-[#A1A1AA]">
               <input
                 type="checkbox"
                 disabled
@@ -149,7 +149,7 @@ export function MultiPairPanel() {
               Correlation filter (avoid correlated entries)
             </label>
             <div className="flex items-center gap-2">
-              <label htmlFor="max-total" className="text-xs text-[#94A3B8]">
+              <label htmlFor="max-total" className="text-xs text-[#A1A1AA]">
                 Max total positions:
               </label>
               <input

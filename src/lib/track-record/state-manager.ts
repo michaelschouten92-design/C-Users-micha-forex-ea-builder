@@ -34,6 +34,8 @@ export function createInitialState(): TrackRecordRunningState {
     totalCommission: 0,
     winCount: 0,
     lossCount: 0,
+    grossProfit: 0,
+    grossLoss: 0,
     openPositions: [],
     cumulativeCashflow: 0,
     maxDrawdownDurationSec: 0,
@@ -178,6 +180,8 @@ export function stateToDbUpdate(state: TrackRecordRunningState) {
     totalCommission: state.totalCommission,
     winCount: state.winCount,
     lossCount: state.lossCount,
+    grossProfit: state.grossProfit,
+    grossLoss: state.grossLoss,
     openPositions: JSON.parse(JSON.stringify(state.openPositions)),
     cumulativeCashflow: state.cumulativeCashflow,
     maxDrawdownDurationSec: state.maxDrawdownDurationSec,
@@ -203,6 +207,8 @@ export function stateFromDb(dbState: {
   totalCommission: number;
   winCount: number;
   lossCount: number;
+  grossProfit: number;
+  grossLoss: number;
   openPositions: unknown;
   cumulativeCashflow: number;
   maxDrawdownDurationSec: number;
@@ -223,6 +229,8 @@ export function stateFromDb(dbState: {
     totalCommission: dbState.totalCommission,
     winCount: dbState.winCount,
     lossCount: dbState.lossCount,
+    grossProfit: dbState.grossProfit,
+    grossLoss: dbState.grossLoss,
     openPositions: (dbState.openPositions as OpenPosition[]) ?? [],
     cumulativeCashflow: dbState.cumulativeCashflow,
     maxDrawdownDurationSec: dbState.maxDrawdownDurationSec,

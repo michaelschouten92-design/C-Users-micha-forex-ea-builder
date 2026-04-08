@@ -4,3001 +4,30 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { showInfo, showSuccess, showError } from "@/lib/toast";
 import { getCsrfHeaders } from "@/lib/api-client";
-import { HealthDetailPanel } from "@/components/app/health-detail-panel";
-import { ProofPanel } from "@/components/app/proof-panel";
-import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
-import type { StrategyStatus } from "@/lib/strategy-status/resolver";
-import { ShareTrackRecordButton } from "@/components/app/share-track-record-button";
-import { useLiveStream, type ConnectionStatus } from "./use-live-stream";
+import { useLiveStream } from "./use-live-stream";
 import { RegisterEADialog } from "./register-ea-dialog";
-import {
-  LinkBaselineDialog,
-  type BaselineData,
-  type DeploymentContext,
-} from "./link-baseline-dialog";
-import { resolveInstanceBaselineTrust } from "@/lib/live/baseline-trust-state";
+import { LinkBaselineDialog, type DeploymentContext } from "./link-baseline-dialog";
 import { formatMonitoringReasons } from "@/lib/live/monitoring-reason-copy";
 import {
-  type LiveInstanceDTO,
   type LiveHeartbeatPatch,
   isAccountContainer,
   applyHeartbeatPatch,
 } from "@/lib/live/live-instance-dto";
-import { updateOperatorHold } from "./actions";
-
-// ============================================
-// TYPES
-// ============================================
-
-// EAInstanceData extends LiveInstanceDTO with optional UI-specific fields
-// that may not be present in every data source.
-type EAInstanceData = LiveInstanceDTO & {
-  healthScore?: number | null;
-};
-
-interface TradeRecord {
-  id: string;
-  ticket: string;
-  symbol: string;
-  type: string;
-  openPrice: number;
-  closePrice: number | null;
-  lots: number;
-  profit: number;
-  openTime: string;
-  closeTime: string | null;
-  mode: string | null;
-}
-
-interface AlertConfig {
-  id: string;
-  instanceId: string | null;
-  instanceName: string | null;
-  alertType: string;
-  threshold: number | null;
-  channel: string;
-  webhookUrl: string | null;
-  alertState: "ACTIVE" | "DISABLED";
-  lastTriggered: string | null;
-  createdAt: string;
-}
-
-interface LiveDashboardClientProps {
-  initialData: EAInstanceData[];
-  tier?: string;
-  initialRelinkInstanceId?: string | null;
-}
-
-const ALERT_TYPE_LABELS: Record<string, string> = {
-  DRAWDOWN: "Floating Drawdown",
-  OFFLINE: "EA Offline",
-  NEW_TRADE: "New Trade",
-  ERROR: "EA Error",
-  DAILY_LOSS: "Daily Loss Limit",
-  WEEKLY_LOSS: "Weekly Loss Limit",
-  EQUITY_TARGET: "Equity Target",
-};
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-function formatCurrency(value: number | null): string {
-  if (value === null || value === undefined) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-}
-
-function formatRelativeTime(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-
-  if (diffSec < 60) return "Just now";
-  if (diffSec < 3600) {
-    const mins = Math.floor(diffSec / 60);
-    return `${mins} min ago`;
-  }
-  if (diffSec < 86400) {
-    const hours = Math.floor(diffSec / 3600);
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(diffSec / 86400);
-  return `${days}d ago`;
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function calculateWinRate(trades: { profit: number; closeTime: string | null }[]): number {
-  const closed = trades.filter((t) => t.closeTime !== null);
-  if (closed.length === 0) return 0;
-  const winners = closed.filter((t) => t.profit > 0).length;
-  return (winners / closed.length) * 100;
-}
-
-function calculateProfitFactor(trades: { profit: number; closeTime: string | null }[]): number {
-  const closed = trades.filter((t) => t.closeTime !== null);
-  const grossProfit = closed.filter((t) => t.profit > 0).reduce((sum, t) => sum + t.profit, 0);
-  const grossLoss = Math.abs(
-    closed.filter((t) => t.profit < 0).reduce((sum, t) => sum + t.profit, 0)
-  );
-  if (grossLoss === 0) return grossProfit > 0 ? Infinity : 0;
-  return grossProfit / grossLoss;
-}
-
-// ============================================
-// MINI EQUITY CHART
-// ============================================
-
-function MiniEquityChart({ heartbeats }: { heartbeats: { equity: number; createdAt: string }[] }) {
-  if (heartbeats.length < 2) {
-    return (
-      <div className="h-16 flex items-center justify-center text-xs text-[#7C8DB0]">No data</div>
-    );
-  }
-
-  const sorted = [...heartbeats].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
-
-  const width = 200;
-  const height = 60;
-  const padding = 4;
-
-  const equities = sorted.map((h) => h.equity);
-  const minEq = Math.min(...equities);
-  const maxEq = Math.max(...equities);
-  const range = maxEq - minEq || 1;
-
-  const points = sorted.map((h, i) => {
-    const x = padding + (i / (sorted.length - 1)) * (width - padding * 2);
-    const y = padding + (1 - (h.equity - minEq) / range) * (height - padding * 2);
-    return `${x},${y}`;
-  });
-
-  const isPositive = sorted[sorted.length - 1].equity >= sorted[0].equity;
-  const lineColor = isPositive ? "#10B981" : "#EF4444";
-  const fillColor = isPositive ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)";
-
-  const areaPoints = [
-    `${padding},${height - padding}`,
-    ...points,
-    `${width - padding},${height - padding}`,
-  ].join(" ");
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16">
-      <polygon points={areaPoints} fill={fillColor} />
-      <polyline points={points.join(" ")} fill="none" stroke={lineColor} strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-// ============================================
-// STATUS BADGE
-// ============================================
-
-const STATUS_TOOLTIPS: Record<string, string> = {
-  ONLINE: "EA is connected and actively trading. Heartbeat received within the last 2 minutes.",
-  OFFLINE: "EA has not sent a heartbeat recently. Check your MT5 terminal and internet connection.",
-  ERROR: "EA reported an error. Check the error message below for details.",
-};
-
-function StatusBadge({
-  status,
-  animate,
-}: {
-  status: "ONLINE" | "OFFLINE" | "ERROR";
-  animate?: boolean;
-}) {
-  if (status === "ONLINE") {
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 text-xs font-medium text-[#10B981] ${animate ? "animate-pulse" : ""}`}
-        title={STATUS_TOOLTIPS.ONLINE}
-      >
-        <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-        Online
-      </span>
-    );
-  }
-  if (status === "ERROR") {
-    return (
-      <span
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#EF4444]"
-        title={STATUS_TOOLTIPS.ERROR}
-      >
-        <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
-        Error
-      </span>
-    );
-  }
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs font-medium text-[#64748B]"
-      title={STATUS_TOOLTIPS.OFFLINE}
-    >
-      <span className="w-2 h-2 rounded-full bg-[#64748B]" />
-      Offline
-    </span>
-  );
-}
-
-// ============================================
-// TRADE LOG PANEL
-// ============================================
-
-function TradeLogPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
-  const [trades, setTrades] = useState<TradeRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/live/${instanceId}/trades?page=${page}&pageSize=20`);
-        if (!cancelled) {
-          if (res.ok) {
-            const json = await res.json();
-            setTrades(json.data);
-            setTotalPages(json.pagination.totalPages);
-          } else {
-            setError("Failed to load trades. Please try again.");
-          }
-        }
-      } catch {
-        if (!cancelled) setError("Network error loading trades.");
-      }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [page, instanceId]);
-
-  function handleExportCSV() {
-    if (trades.length === 0) return;
-    const headers = [
-      "Type",
-      "Symbol",
-      "Lots",
-      "Open Price",
-      "Close Price",
-      "P/L",
-      "Open Time",
-      "Close Time",
-    ];
-    const rows = trades.map((t) => [
-      t.type,
-      t.symbol,
-      t.lots.toFixed(2),
-      t.openPrice.toFixed(5),
-      t.closePrice !== null ? t.closePrice.toFixed(5) : "",
-      t.profit.toFixed(2),
-      t.openTime,
-      t.closeTime ?? "",
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${eaName.replace(/[^a-zA-Z0-9]/g, "_")}_trades.csv`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 150);
-  }
-
-  return (
-    <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">
-            Trade Log - {eaName}
-          </p>
-          {trades.length > 0 && (
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded border border-[rgba(79,70,229,0.2)] text-[#22D3EE] hover:bg-[rgba(34,211,238,0.1)] transition-colors"
-              title="Export trades as CSV"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-              Export CSV
-            </button>
-          )}
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-2 py-0.5 text-[10px] rounded border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Prev
-            </button>
-            <span className="text-[10px] text-[#7C8DB0]">
-              {page}/{totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-2 py-0.5 text-[10px] rounded border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading trades...</div>
-      ) : error ? (
-        <div className="text-xs text-[#EF4444] py-4 text-center">{error}</div>
-      ) : trades.length === 0 ? (
-        <div className="text-xs text-[#7C8DB0] py-4 text-center">No trades recorded yet</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-[#7C8DB0] border-b border-[rgba(79,70,229,0.1)]">
-                <th className="text-left py-1.5 pr-2">Type</th>
-                <th className="text-left py-1.5 pr-2">Symbol</th>
-                <th className="text-right py-1.5 pr-2">Lots</th>
-                <th className="text-right py-1.5 pr-2">Open</th>
-                <th className="text-right py-1.5 pr-2">Close</th>
-                <th className="text-right py-1.5 pr-2">P/L</th>
-                <th className="text-right py-1.5 pr-2">Opened</th>
-                <th className="text-right py-1.5">Closed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trades.map((trade) => (
-                <tr
-                  key={trade.id}
-                  className="border-b border-[rgba(79,70,229,0.05)] hover:bg-[rgba(79,70,229,0.03)]"
-                >
-                  <td className="py-1.5 pr-2">
-                    <span
-                      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        trade.type.toUpperCase().includes("BUY")
-                          ? "bg-[#10B981]/15 text-[#10B981]"
-                          : "bg-[#EF4444]/15 text-[#EF4444]"
-                      }`}
-                    >
-                      {trade.type}
-                    </span>
-                  </td>
-                  <td className="py-1.5 pr-2 text-[#CBD5E1]">{trade.symbol}</td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">{trade.lots.toFixed(2)}</td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
-                    {trade.openPrice.toFixed(5)}
-                  </td>
-                  <td className="py-1.5 pr-2 text-right text-[#CBD5E1]">
-                    {trade.closePrice !== null ? trade.closePrice.toFixed(5) : "---"}
-                  </td>
-                  <td
-                    className={`py-1.5 pr-2 text-right font-medium ${
-                      trade.profit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
-                    }`}
-                  >
-                    {formatCurrency(trade.profit)}
-                  </td>
-                  <td className="py-1.5 pr-2 text-right text-[#7C8DB0]">
-                    {formatDateTime(trade.openTime)}
-                  </td>
-                  <td className="py-1.5 text-right text-[#7C8DB0]">
-                    {trade.closeTime ? formatDateTime(trade.closeTime) : "Open"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================
-// TRACK RECORD PANEL
-// ============================================
-
-interface TrackRecordVerification {
-  instanceId: string;
-  eaName: string;
-  mode: string;
-  chain: {
-    valid: boolean;
-    length: number;
-    firstEventHash: string | null;
-    lastEventHash: string | null;
-    error?: string;
-  };
-  checkpoints: {
-    count: number;
-    lastHmac: string | null;
-    verified: boolean;
-  };
-  verified: boolean;
-}
-
-interface TrackRecordMetricsData {
-  sharpeRatio: number;
-  sortinoRatio: number;
-  calmarRatio: number;
-  profitFactor: number;
-  drawdownDuration: number;
-}
-
-function formatMetricsDuration(seconds: number): string {
-  if (seconds <= 0) return "---";
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  if (days > 0) return `${days}d ${hours}h`;
-  const mins = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${mins}m`;
-  return `${mins}m`;
-}
-
-function TrackRecordPanel({ instanceId, eaName }: { instanceId: string; eaName: string }) {
-  const [data, setData] = useState<TrackRecordVerification | null>(null);
-  const [metrics, setMetrics] = useState<TrackRecordMetricsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [verifyRes, metricsRes] = await Promise.all([
-          fetch(`/api/track-record/verify?instanceId=${instanceId}`),
-          fetch(`/api/track-record/metrics/${instanceId}`),
-        ]);
-        if (!cancelled) {
-          if (verifyRes.ok) {
-            setData(await verifyRes.json());
-          } else {
-            setError("Failed to load track record.");
-          }
-          if (metricsRes.ok) {
-            setMetrics(await metricsRes.json());
-          }
-        }
-      } catch {
-        if (!cancelled) setError("Network error loading track record.");
-      }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [instanceId]);
-
-  async function handleExport() {
-    setExporting(true);
-    try {
-      const res = await fetch(`/api/track-record/export/${instanceId}`);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `track-record-${eaName.replace(/[^a-zA-Z0-9]/g, "_")}.json`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 150);
-        showSuccess("Track record exported");
-      } else {
-        showError("Export failed", "Could not generate track record export.");
-      }
-    } catch {
-      showError("Export failed");
-    }
-    setExporting(false);
-  }
-
-  if (loading) {
-    return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-        <div className="flex items-center gap-2 text-xs text-[#7C8DB0]">
-          <div className="w-3 h-3 border-2 border-[#7C8DB0] border-t-transparent rounded-full animate-spin" />
-          Loading track record...
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-        <p className="text-xs text-[#EF4444]">{error}</p>
-      </div>
-    );
-  }
-
-  if (!data || data.chain.length === 0) {
-    return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-        <p className="text-xs text-[#7C8DB0]">
-          No track record events yet. Events will appear once the EA starts sending data.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h4 className="text-xs font-semibold text-white uppercase tracking-wider">
-            Verified Track Record
-          </h4>
-          {data.verified ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30">
-              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Chain Verified
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30">
-              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-              Chain Broken
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <ShareTrackRecordButton instanceId={instanceId} />
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#22D3EE]/20 text-[#22D3EE] border border-[#22D3EE]/30 hover:bg-[#22D3EE]/30 transition-all duration-200 disabled:opacity-50"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            {exporting ? "Exporting..." : "Export Record"}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Chain Length</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{data.chain.length.toLocaleString()}</p>
-        </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Checkpoints</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{data.checkpoints.count}</p>
-        </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">HMAC Status</p>
-          <p
-            className={`text-sm font-medium ${data.checkpoints.verified ? "text-[#10B981]" : data.checkpoints.count === 0 ? "text-[#7C8DB0]" : "text-[#EF4444]"}`}
-          >
-            {data.checkpoints.count === 0 ? "N/A" : data.checkpoints.verified ? "Valid" : "Invalid"}
-          </p>
-        </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Integrity</p>
-          <p
-            className={`text-sm font-medium ${data.verified ? "text-[#10B981]" : "text-[#EF4444]"}`}
-          >
-            {data.verified ? "Self-Reported, Verified" : "Unverified"}
-          </p>
-        </div>
-      </div>
-
-      {/* Risk Metrics */}
-      {metrics && (metrics.sharpeRatio !== 0 || metrics.sortinoRatio !== 0) && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-3">
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Sharpe</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.sharpeRatio.toFixed(2)}</p>
-          </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Sortino</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.sortinoRatio.toFixed(2)}</p>
-          </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Calmar</p>
-            <p className="text-sm font-medium text-[#CBD5E1]">{metrics.calmarRatio.toFixed(2)}</p>
-          </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-              Profit Factor
-            </p>
-            <p className="text-sm font-medium text-[#CBD5E1]">
-              {metrics.profitFactor === Infinity ? "∞" : metrics.profitFactor.toFixed(2)}
-            </p>
-          </div>
-          <div className="bg-[#0A0118]/50 rounded-lg p-2.5">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-              Max DD Duration
-            </p>
-            <p className="text-sm font-medium text-[#CBD5E1]">
-              {formatMetricsDuration(metrics.drawdownDuration)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {data.chain.error && (
-        <div className="mt-2 px-3 py-2 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <p className="text-xs text-[#EF4444]">{data.chain.error}</p>
-        </div>
-      )}
-
-      {data.chain.lastEventHash && (
-        <div
-          className="mt-2 text-[10px] text-[#7C8DB0] font-mono truncate"
-          title={data.chain.lastEventHash}
-        >
-          Last hash: {data.chain.lastEventHash}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================
-// INSTANCE ATTENTION RESOLVER (shared by Action Required panel + card detail box)
-// ============================================
-
-interface InstanceAttention {
-  statusLabel: string;
-  reason: string;
-  actionLabel: string;
-  color: string;
-}
-
-function resolveInstanceAttention(
-  ea: EAInstanceData,
-  monitoringReasonFormatter: (reasons: string[]) => string[]
-): InstanceAttention | null {
-  const trust = resolveInstanceBaselineTrust({
-    hasBaseline: !!ea.baseline,
-    relinkRequired: !!ea.relinkRequired,
-  });
-
-  if (trust.state === "SUSPENDED") {
-    return {
-      statusLabel: "Baseline suspended",
-      reason: "Material change invalidated baseline trust",
-      actionLabel: trust.actionLabel!,
-      color: "#F59E0B",
-    };
-  }
-  if (trust.state === "MISSING") {
-    return {
-      statusLabel: "No baseline linked",
-      reason: "No baseline is linked to this deployment",
-      actionLabel: trust.actionLabel!,
-      color: "#71717A",
-    };
-  }
-  if (ea.lifecycleState === "EDGE_AT_RISK" || ea.strategyStatus === "EDGE_DEGRADED") {
-    return {
-      statusLabel: "Edge at risk",
-      reason: ea.monitoringReasons?.length
-        ? monitoringReasonFormatter(ea.monitoringReasons)[0]
-        : "Live performance has materially diverged from baseline",
-      actionLabel: "Inspect drift",
-      color: "#EF4444",
-    };
-  }
-  if (ea.strategyStatus === "UNSTABLE") {
-    return {
-      statusLabel: "Unstable",
-      reason: ea.monitoringReasons?.length
-        ? monitoringReasonFormatter(ea.monitoringReasons)[0]
-        : "Health metrics show early signs of deviation",
-      actionLabel: "Inspect performance",
-      color: "#F59E0B",
-    };
-  }
-  if (ea.healthStatus === "INSUFFICIENT_DATA" || ea.strategyStatus === "TESTING") {
-    return {
-      statusLabel: "Waiting for data",
-      reason: "More live samples are needed before evaluation",
-      actionLabel: "Collect more data",
-      color: "#A78BFA",
-    };
-  }
-  if (ea.status === "ERROR") {
-    return {
-      statusLabel: "Connection error",
-      reason: ea.lastError ?? "EA reported an error state",
-      actionLabel: "Check connection",
-      color: "#EF4444",
-    };
-  }
-  return null;
-}
-
-// ============================================
-// ACCOUNT GROUPING
-// ============================================
-
-interface AccountGroup {
-  key: string;
-  broker: string | null;
-  accountNumber: string | null;
-  instances: EAInstanceData[];
-  /** Account-wide instance (symbol === null) if present, otherwise first instance */
-  primary: EAInstanceData;
-}
-
-function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
-  const map = new Map<string, EAInstanceData[]>();
-
-  // Identify known parent ids: instances that at least one child points to
-  const knownParentIds = new Set(
-    instances.map((ea) => ea.parentInstanceId).filter((id): id is string => id != null)
-  );
-
-  for (const ea of instances) {
-    let key: string;
-    if (ea.parentInstanceId) {
-      // Child with explicit parent link — group under parent
-      key = ea.parentInstanceId;
-    } else if (knownParentIds.has(ea.id)) {
-      // This instance is a known parent (children point to it) — group by own id
-      key = ea.id;
-    } else {
-      // Standalone or legacy instance without parent relation — group by broker|accountNumber
-      key = `${ea.broker ?? "Unknown"}|${ea.accountNumber ?? ea.id}`;
-    }
-
-    const group = map.get(key) ?? [];
-    group.push(ea);
-    map.set(key, group);
-  }
-  return Array.from(map.entries()).map(([key, group]) => {
-    // Use account-wide instance as primary if available, otherwise first
-    const accountWide = group.find((ea) => ea.symbol === null);
-    const primary = accountWide ?? group[0];
-    return {
-      key,
-      broker: primary.broker,
-      accountNumber: primary.accountNumber,
-      instances: group,
-      primary,
-    };
-  });
-}
-
-// ============================================
-// PRIORITY SORTING
-// ============================================
-
-/**
- * Compute a numeric priority for an instance. Lower = more urgent.
- *
- * Priority buckets:
- *   0 — EDGE_AT_RISK lifecycle
- *   1 — DEGRADED health (product label: "Edge at Risk")
- *   2 — WARNING health
- *   3 — Discovered / Draft / needs activation
- *   4 — Active healthy strategies (LIVE_MONITORING + HEALTHY)
- *   5 — Inactive / paused / no signal
- */
-function instancePriority(ea: EAInstanceData): number {
-  // Bucket 0: lifecycle EDGE_AT_RISK
-  if (ea.lifecycleState === "EDGE_AT_RISK") return 0;
-
-  // Bucket 1: health DEGRADED
-  const healthStatus = ea.healthSnapshots?.[0]?.status ?? ea.healthStatus ?? null;
-  if (healthStatus === "DEGRADED") return 1;
-
-  // Bucket 2: health WARNING
-  if (healthStatus === "WARNING") return 2;
-
-  // Bucket 3: discovered / draft / needs baseline
-  if (ea.isAutoDiscovered || ea.lifecycleState === "DRAFT") return 3;
-
-  // Bucket 4: active healthy
-  if (
-    ea.status === "ONLINE" &&
-    (healthStatus === "HEALTHY" || healthStatus === "INSUFFICIENT_DATA" || healthStatus === null)
-  ) {
-    return 4;
-  }
-
-  // Bucket 5: everything else (offline, inactive, etc.)
-  return 5;
-}
-
-/**
- * Tie-breaker comparator within the same priority bucket.
- * Negative = a before b.
- */
-function instanceTieBreaker(a: EAInstanceData, b: EAInstanceData): number {
-  // 1. Drift detected first
-  const aDrift = a.healthSnapshots?.[0]?.driftDetected === true ? 0 : 1;
-  const bDrift = b.healthSnapshots?.[0]?.driftDetected === true ? 0 : 1;
-  if (aDrift !== bDrift) return aDrift - bDrift;
-
-  // 2. Worse health score first (lower score = worse)
-  const aScore = a.healthSnapshots?.[0] ? 1 - (a.healthSnapshots[0].driftSeverity ?? 0) : 1;
-  const bScore = b.healthSnapshots?.[0] ? 1 - (b.healthSnapshots[0].driftSeverity ?? 0) : 1;
-  if (aScore !== bScore) return aScore - bScore;
-
-  // 3. More recent heartbeat first
-  const aTime = a.lastHeartbeat ? new Date(a.lastHeartbeat).getTime() : 0;
-  const bTime = b.lastHeartbeat ? new Date(b.lastHeartbeat).getTime() : 0;
-  if (aTime !== bTime) return bTime - aTime;
-
-  // 4. Stable fallback: id
-  return a.id.localeCompare(b.id);
-}
-
-function compareInstances(a: EAInstanceData, b: EAInstanceData): number {
-  const pa = instancePriority(a);
-  const pb = instancePriority(b);
-  if (pa !== pb) return pa - pb;
-  return instanceTieBreaker(a, b);
-}
-
-/**
- * Sort account groups by firstSeen (createdAt of the primary instance) ascending.
- * Oldest accounts stay at the top — operators rely on spatial memory.
- * Also sorts instances within each group by priority.
- */
-function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
-  // Sort instances within each group (strategies inside an account)
-  for (const group of groups) {
-    group.instances.sort(compareInstances);
-  }
-
-  // Stable account order: user-defined sortOrder first, then createdAt fallback
-  return groups.sort((a, b) => {
-    const sa = a.primary.sortOrder ?? 0;
-    const sb = b.primary.sortOrder ?? 0;
-    // Both have explicit sort order → use it
-    if (sa !== 0 && sb !== 0) return sa - sb;
-    // One has sort order, the other doesn't → sorted one comes first
-    if (sa !== 0) return -1;
-    if (sb !== 0) return 1;
-    // Neither has sort order → fall back to createdAt
-    const ta = new Date(a.primary.createdAt).getTime();
-    const tb = new Date(b.primary.createdAt).getTime();
-    return ta - tb;
-  });
-}
-
-// ============================================
-// STRATEGY HEALTH DISPLAY
-// ============================================
-
-type StrategyHealthLabel = "Healthy" | "Elevated" | "Edge at Risk" | "Pending";
-
-function deriveStrategyHealth(instance: EAInstanceData | undefined): StrategyHealthLabel {
-  if (!instance) return "Pending";
-
-  // Lifecycle state is the strongest signal
-  if (instance.lifecycleState === "EDGE_AT_RISK" || instance.lifecycleState === "INVALIDATED") {
-    return "Edge at Risk";
-  }
-
-  // Latest health snapshot
-  const snap = instance.healthSnapshots?.[0];
-  if (snap) {
-    if (snap.status === "AT_RISK" || snap.status === "DEGRADED") return "Edge at Risk";
-    if (snap.status === "WARNING" || snap.driftDetected) return "Elevated";
-    if (snap.status === "HEALTHY") return "Healthy";
-  }
-
-  // Fallback: strategy status
-  if (instance.strategyStatus === "EDGE_DEGRADED") return "Edge at Risk";
-  if (instance.strategyStatus === "UNSTABLE") return "Elevated";
-
-  // No explicit health confirmation — treat as pending
-  return "Pending";
-}
-
-const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: string; dot: string }> = {
-  Healthy: { bg: "bg-[#10B981]/10", text: "text-[#10B981]", dot: "bg-[#10B981]" },
-  Elevated: { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]", dot: "bg-[#F59E0B]" },
-  "Edge at Risk": { bg: "bg-[#EF4444]/10", text: "text-[#EF4444]", dot: "bg-[#EF4444]" },
-  Pending: { bg: "bg-[#64748B]/10", text: "text-[#64748B]", dot: "bg-[#64748B]" },
-};
-
-// ============================================
-// EDGE STATUS INDICATOR
-// ============================================
-
-// ============================================
-// INVESTIGATION PANEL
-// ============================================
-
-function deriveSignalSummary(
-  health: StrategyHealthLabel,
-  snap: (EAInstanceData["healthSnapshots"] extends (infer U)[] | undefined ? U : never) | undefined,
-  isLinked: boolean
-): string {
-  if (!isLinked) return "No baseline linked — monitoring inactive";
-  if (!snap) return "Awaiting first monitoring evaluation";
-  switch (health) {
-    case "Healthy":
-      return "Snapshot status: HEALTHY";
-    case "Elevated":
-      return snap.driftDetected
-        ? "Drift detected by CUSUM monitoring"
-        : `Snapshot status: ${snap.status}`;
-    case "Edge at Risk":
-      return `Snapshot status: ${snap.status} — drift detected: ${snap.driftDetected ? "yes" : "no"} — manual review required`;
-    case "Pending":
-      return "No health snapshot available";
-  }
-}
-
-function InvestigationPanel({
-  instance,
-  trades,
-  health,
-  isLinked,
-}: {
-  instance: EAInstanceData;
-  trades: { profit: number; closeTime: string | null }[];
-  health: StrategyHealthLabel;
-  isLinked: boolean;
-}) {
-  const snap = instance.healthSnapshots?.[0];
-  const recentTrades = trades
-    .filter((t) => t.closeTime)
-    .sort((a, b) => (b.closeTime! > a.closeTime! ? 1 : b.closeTime! < a.closeTime! ? -1 : 0))
-    .slice(0, 10);
-  const wins = recentTrades.filter((t) => t.profit > 0).length;
-  const losses = recentTrades.filter((t) => t.profit < 0).length;
-  const hs = HEALTH_STYLES[health];
-
-  return (
-    <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] space-y-3">
-      {/* Status Header */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-        <span className={`inline-flex items-center gap-1 font-medium ${hs.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-          {health}
-        </span>
-        <span className="text-[#7C8DB0]">
-          Lifecycle: <span className="text-[#CBD5E1]">{instance.lifecycleState ?? "—"}</span>
-        </span>
-        {snap && (
-          <span className="text-[#7C8DB0]">
-            Snapshot: <span className="text-[#CBD5E1]">{snap.status}</span>
-          </span>
-        )}
-        <span className="text-[#7C8DB0]">
-          Baseline: <span className="text-[#CBD5E1]">{isLinked ? "Linked" : "Not linked"}</span>
-        </span>
-      </div>
-
-      {/* Signal Summary */}
-      <p className="text-[11px] text-[#94A3B8] leading-relaxed">
-        {deriveSignalSummary(health, snap, isLinked)}
-      </p>
-
-      {/* Drift Context */}
-      {snap && (
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px]">
-          <span className="text-[#7C8DB0]">
-            CUSUM severity: <span className="text-[#CBD5E1]">{snap.driftSeverity.toFixed(3)}</span>
-          </span>
-          <span className="text-[#7C8DB0]">
-            Drift detected:{" "}
-            <span className="text-[#CBD5E1]">{snap.driftDetected ? "Yes" : "No"}</span>
-          </span>
-        </div>
-      )}
-
-      {/* Recent Evidence */}
-      {recentTrades.length > 0 && (
-        <div className="text-[10px]">
-          <span className="text-[#7C8DB0]">Last {recentTrades.length} trades: </span>
-          <span className="text-[#10B981]">{wins}W</span>
-          <span className="text-[#64748B]"> / </span>
-          <span className="text-[#EF4444]">{losses}L</span>
-          <span className="text-[#64748B]"> · Net: </span>
-          <span
-            className={
-              recentTrades.reduce((s, t) => s + t.profit, 0) >= 0
-                ? "text-[#10B981]"
-                : "text-[#EF4444]"
-            }
-          >
-            {formatCurrency(recentTrades.reduce((s, t) => s + t.profit, 0))}
-          </span>
-        </div>
-      )}
-
-      {/* Monitoring Integrity */}
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[10px] text-[#7C8DB0] border-t border-[rgba(79,70,229,0.08)] pt-2">
-        <span>
-          Status:{" "}
-          <span className={instance.status === "ONLINE" ? "text-[#10B981]" : "text-[#EF4444]"}>
-            {instance.status}
-          </span>
-        </span>
-        <span>
-          Heartbeat:{" "}
-          <span className="text-[#CBD5E1]">
-            {instance.lastHeartbeat ? formatRelativeTime(instance.lastHeartbeat) : "Never"}
-          </span>
-        </span>
-        {instance.operatorHold && instance.operatorHold !== "NONE" && (
-          <span>
-            Hold: <span className="text-[#F59E0B]">{instance.operatorHold}</span>
-          </span>
-        )}
-        {instance.monitoringSuppressedUntil &&
-          new Date(instance.monitoringSuppressedUntil) > new Date() && (
-            <span>
-              Monitoring suppressed until:{" "}
-              <span className="text-[#F59E0B]">
-                {formatDateTime(instance.monitoringSuppressedUntil)}
-              </span>
-            </span>
-          )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// ACCOUNT CARD
-// ============================================
-
-function AccountCard({
-  account,
-  changedIds,
-  onTogglePause,
-  onDelete,
-  onLinkBaseline,
-  onUnlinkBaseline,
-  forceExpandId,
-}: {
-  account: AccountGroup;
-  changedIds: Set<string>;
-  onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
-  onDelete: (instanceId: string) => void;
-  onLinkBaseline: (instanceId: string) => void;
-  onUnlinkBaseline: (instanceId: string) => void;
-  forceExpandId?: string | null;
-}) {
-  const { primary, instances } = account;
-  const shouldForceExpand =
-    forceExpandId != null &&
-    (forceExpandId === primary.id || instances.some((ea) => ea.id === forceExpandId));
-  const hasRiskyStrategy = instances.some((ea) => {
-    const h = deriveStrategyHealth(ea);
-    return h === "Edge at Risk" || h === "Elevated";
-  });
-  const [manualExpanded, setExpanded] = useState(hasRiskyStrategy);
-  const expanded = manualExpanded || shouldForceExpand;
-  const [expandedStrategyKey, setExpandedStrategyKey] = useState<string | null>(null);
-  const [rotatedKey, setRotatedKey] = useState<string | null>(null);
-  const [rotateLoading, setRotateLoading] = useState(false);
-  const [showRotateConfirm, setShowRotateConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [trackRecordToken, setTrackRecordToken] = useState<string | null>(
-    primary.trackRecordToken ?? null
-  );
-  const [trackRecordLoading, setTrackRecordLoading] = useState(false);
-  const [trackRecordCopied, setTrackRecordCopied] = useState(false);
-
-  // Account-level metrics: use primary (account-wide if available), else aggregate
-  const isAccountWide = primary.symbol === null;
-  const balance = isAccountWide
-    ? primary.balance
-    : instances.reduce((sum, ea) => sum + (ea.balance ?? 0), 0) || null;
-  const equity = isAccountWide
-    ? primary.equity
-    : instances.reduce((sum, ea) => sum + (ea.equity ?? 0), 0) || null;
-  const totalProfit = isAccountWide
-    ? primary.totalProfit
-    : instances.reduce((sum, ea) => sum + ea.totalProfit, 0);
-  const totalTrades = isAccountWide
-    ? primary.totalTrades
-    : instances.reduce((sum, ea) => sum + ea.totalTrades, 0);
-  const openTrades = isAccountWide
-    ? primary.openTrades
-    : instances.reduce((sum, ea) => sum + ea.openTrades, 0);
-
-  const allHeartbeats = isAccountWide
-    ? primary.heartbeats
-    : instances.flatMap((ea) => ea.heartbeats ?? []);
-  // Always aggregate trades from all instances so manifest context instance trades
-  // (Milestone C) are included alongside account-wide trades.
-  const allTrades = instances.flatMap((ea) => ea.trades ?? []);
-  const winRate = calculateWinRate(allTrades);
-  const profitFactor = calculateProfitFactor(allTrades);
-  // Count strategies flagged as Edge at Risk (lifecycle or health DEGRADED).
-  const edgeAtRiskCount = instances.filter(
-    (ea) => ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED"
-  ).length;
-  // Group trades by symbol + magicNumber to identify unique strategies.
-  // Also includes manifest context instances as rows even before any trades exist.
-  const strategyGroups = (() => {
-    const map = new Map<
-      string,
-      {
-        symbol: string;
-        magicNumber: number | null;
-        trades: typeof allTrades;
-        instanceId: string | null;
-      }
-    >();
-    // Normalize broker suffixes: "EURUSD.r" → "EURUSD", "EURUSDm" → "EURUSD"
-    const normSym = (s: string) => s.replace(/[.\-_].*$/, "").toUpperCase();
-    for (const t of allTrades) {
-      const key = `${t.symbol}|${t.magicNumber ?? "none"}`;
-      const existing = map.get(key);
-      if (existing) {
-        existing.trades.push(t);
-      } else {
-        // Match trade to owning instance (with broker-suffix normalization)
-        const tradeSym = normSym(t.symbol ?? "");
-        const inst = instances.find(
-          (ea) =>
-            (ea.symbol && normSym(ea.symbol) === tradeSym) ||
-            ea.deployments?.some((d) => normSym(d.symbol) === tradeSym)
-        );
-        map.set(key, {
-          symbol: t.symbol ?? "UNKNOWN",
-          magicNumber: t.magicNumber ?? null,
-          trades: [t],
-          instanceId: inst?.id ?? null,
-        });
-      }
-    }
-    // Manifest/auto-discovered mode: add context instances (non-primary, with symbol set)
-    // as strategy rows so strategies appear immediately after the first heartbeat, before
-    // any trades. Resolve magicNumber from the instance's deployment if available.
-    for (const ctx of instances) {
-      if (ctx.id === primary.id || !ctx.symbol) continue;
-      const key = `ctx:${ctx.id}`;
-      if (!map.has(key)) {
-        const dep = ctx.deployments?.find(
-          (d) => normSym(d.symbol) === normSym(ctx.symbol!)
-        );
-        map.set(key, {
-          symbol: ctx.symbol,
-          magicNumber: dep?.magicNumber ?? null,
-          trades: [],
-          instanceId: ctx.id,
-        });
-      }
-    }
-    return Array.from(map.entries())
-      .sort(([keyA, a], [keyB, b]) => {
-        // Match strategy group to its owning instance for priority sorting
-        const matchInstance = (k: string): EAInstanceData | undefined => {
-          if (k.startsWith("ctx:")) return instances.find((ea) => ea.id === k.slice(4));
-          const [sym] = k.split("|");
-          const normKey = normSym(sym ?? "");
-          return instances.find(
-            (ea) =>
-              (ea.symbol && normSym(ea.symbol) === normKey) ||
-              ea.deployments?.some((d) => normSym(d.symbol) === normKey)
-          );
-        };
-        const instA = matchInstance(keyA);
-        const instB = matchInstance(keyB);
-        if (instA && instB) {
-          const cmp = compareInstances(instA, instB);
-          if (cmp !== 0) return cmp;
-        }
-        // Fallback: PnL magnitude for rows without a matching instance
-        const pnlA = a.trades.reduce((s, t) => s + t.profit, 0);
-        const pnlB = b.trades.reduce((s, t) => s + t.profit, 0);
-        return Math.abs(pnlB) - Math.abs(pnlA);
-      })
-      .map(([, v]) => v);
-  })();
-
-  const statusChanged = instances.some((ea) => changedIds.has(ea.id));
-  const onlineCount = instances.filter((ea) => ea.status === "ONLINE").length;
-  const accountStatus: "ONLINE" | "OFFLINE" | "ERROR" =
-    onlineCount > 0
-      ? "ONLINE"
-      : instances.some((ea) => ea.status === "ERROR")
-        ? "ERROR"
-        : "OFFLINE";
-
-  // Account-level pause/halt
-  const allPaused = instances.every((ea) => ea.tradingState === "PAUSED");
-  const anyHalted = instances.some((ea) => (ea.operatorHold ?? "NONE") !== "NONE");
-  const [pauseLoading, setPauseLoading] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  async function handleAccountPause() {
-    setPauseLoading(true);
-    const target = allPaused ? "TRADING" : "PAUSED";
-    for (const ea of instances) {
-      await onTogglePause(ea.id, target);
-    }
-    setPauseLoading(false);
-  }
-
-  async function handleAccountDelete() {
-    setDeleteLoading(true);
-    for (const ea of instances) {
-      await onDelete(ea.id);
-    }
-  }
-
-  async function handleRotateKey() {
-    setRotateLoading(true);
-    try {
-      const res = await fetch(`/api/live/${primary.id}/rotate-key`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRotatedKey(data.apiKey);
-        setShowRotateConfirm(false);
-        showSuccess("API key regenerated", "Copy your new key now — it won't be shown again.");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showError("Key rotation failed", data.message ?? "Something went wrong");
-      }
-    } catch {
-      showError("Key rotation failed", "Network error");
-    }
-    setRotateLoading(false);
-  }
-
-  async function handleCopyKey() {
-    if (!rotatedKey) return;
-    try {
-      await navigator.clipboard.writeText(rotatedKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      showError("Copy failed", "Could not copy to clipboard");
-    }
-  }
-
-  async function handleTrackRecordAction(action: "publish" | "unpublish") {
-    setTrackRecordLoading(true);
-    try {
-      const res = await fetch(`/api/live/${primary.id}/track-record-share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify({ action }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTrackRecordToken(data.isPublic ? data.token : null);
-      } else {
-        showError("Failed", "Could not update track record share");
-      }
-    } catch {
-      showError("Failed", "Network error");
-    }
-    setTrackRecordLoading(false);
-  }
-
-  async function handleCopyTrackRecordUrl() {
-    if (!trackRecordToken) return;
-    const url = `${window.location.origin}/track-record/${trackRecordToken}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setTrackRecordCopied(true);
-      setTimeout(() => setTrackRecordCopied(false), 2000);
-    } catch {
-      showError("Copy failed", "Could not copy to clipboard");
-    }
-  }
-
-  // Aggregate health counts from child strategy instances
-  const healthCounts = (() => {
-    const counts: Record<StrategyHealthLabel, number> = {
-      Healthy: 0,
-      Elevated: 0,
-      "Edge at Risk": 0,
-      Pending: 0,
-    };
-    for (const ea of instances) {
-      if (ea.id === primary.id && !ea.symbol) continue; // skip account-wide parent
-      counts[deriveStrategyHealth(ea)]++;
-    }
-    return counts;
-  })();
-  const healthSummaryParts = (
-    ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
-  ).filter((label) => healthCounts[label] > 0);
-
-  const lastHeartbeat = instances
-    .map((ea) => ea.lastHeartbeat)
-    .filter(Boolean)
-    .sort()
-    .pop();
-
-  return (
-    <div
-      id={`account-card-${primary.id}`}
-      className={`bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${
-        healthCounts["Edge at Risk"] > 0
-          ? "border-l-2 border-l-[#EF4444]/60 border-[#1E293B]"
-          : statusChanged
-            ? "border-[#475569] shadow-[0_0_12px_rgba(100,116,139,0.15)]"
-            : "border-[#1E293B]/80 hover:border-[#334155]"
-      }`}
-    >
-      {/* Header zone */}
-      <div className="px-5 pt-4 pb-3">
-        <div className="flex justify-between items-start">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <StatusBadge status={accountStatus} animate={statusChanged} />
-              <h3 className="font-semibold text-white truncate text-[15px]">{primary.eaName}</h3>
-              {(() => {
-                const overridePending = instances.some(
-                  (ea) => (ea.operatorHold ?? "NONE") === "OVERRIDE_PENDING"
-                );
-                const execState = overridePending
-                  ? "OVERRIDE_PENDING"
-                  : anyHalted
-                    ? "HALTED"
-                    : allPaused
-                      ? "PAUSED"
-                      : "RUN";
-                if (execState === "RUN") return null;
-                const execColor =
-                  execState === "HALTED" || execState === "OVERRIDE_PENDING"
-                    ? "#EF4444"
-                    : "#F59E0B";
-                const execLabel =
-                  execState === "OVERRIDE_PENDING" ? "OVERRIDE PENDING" : execState;
-                return (
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-mono font-medium rounded"
-                    style={{
-                      backgroundColor: `${execColor}15`,
-                      color: execColor,
-                    }}
-                  >
-                    {execLabel}
-                  </span>
-                );
-              })()}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-[#525B6B]">
-              {account.broker && <span>{account.broker}</span>}
-              {account.accountNumber && (
-                <>
-                  {account.broker && <span className="text-[#334155]">·</span>}
-                  <span>#{account.accountNumber}</span>
-                </>
-              )}
-              {(account.broker || account.accountNumber) && (
-                <span className="text-[#334155]">·</span>
-              )}
-              <span>Portfolio</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {instances.some((ea) => ea.mode === "PAPER") && (
-              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/10 text-[#F59E0B]/80">
-                PAPER
-              </span>
-            )}
-            {/* Edge monitoring status badge — only show non-healthy states */}
-            {(() => {
-              const latestSnapshot = instances
-                .map((ea) => ea.healthSnapshots?.[0])
-                .filter(Boolean)[0];
-              if (!latestSnapshot) return null;
-              const { driftDetected, driftSeverity, status } = latestSnapshot;
-              if (driftDetected) {
-                return (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/10 text-[#EF4444]">
-                    <span className="w-1 h-1 rounded-full bg-[#EF4444] animate-pulse" />
-                    Drift
-                  </span>
-                );
-              }
-              if (driftSeverity > 0.3 || status === "WARNING") {
-                return (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#F59E0B]/10 text-[#F59E0B]">
-                    <span className="w-1 h-1 rounded-full bg-[#F59E0B]" />
-                    Warning
-                  </span>
-                );
-              }
-              if (status === "DEGRADED") {
-                return (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#EF4444]/10 text-[#EF4444]">
-                    <span className="w-1 h-1 rounded-full bg-[#EF4444]" />
-                    Edge at Risk
-                  </span>
-                );
-              }
-              return null; // Healthy state — no badge needed, reduces noise
-            })()}
-            {instances.some((ea) => ea.isAutoDiscovered) && (
-              <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#8B5CF6]/10 text-[#A78BFA]/80">
-                Discovered
-              </span>
-            )}
-            {/* Show baseline link CTA when any instance is missing a baseline */}
-            {(() => {
-              const unlinkable = instances.find(
-                (ea) => !ea.baseline && !ea.relinkRequired && ea.isExternal
-              );
-              if (!unlinkable) return null;
-              return (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onLinkBaseline(unlinkable.id);
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-medium rounded border border-[#4F46E5]/30 text-[#818CF8] hover:bg-[#4F46E5]/10 transition-colors"
-                >
-                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
-                  </svg>
-                  Link Baseline
-                </button>
-              );
-            })()}
-          </div>
-        </div>
-
-        {/* Strategy health strip */}
-        {healthSummaryParts.length > 0 && (
-          <div className="flex items-center gap-3 mt-2.5">
-            {healthSummaryParts.map((label) => {
-              const hs = HEALTH_STYLES[label];
-              return (
-                <span
-                  key={label}
-                  className={`inline-flex items-center gap-1 text-[10px] font-medium ${hs.text}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                  {healthCounts[label]} {label}
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Financial metrics — primary row */}
-      <div className="grid grid-cols-3 gap-3 px-5 py-3 border-y border-[#1E293B]/40">
-        <div>
-          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Balance</p>
-          <p className="text-base font-semibold text-white tabular-nums">
-            {formatCurrency(balance)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Equity</p>
-          <p className="text-base font-semibold text-white tabular-nums">
-            {formatCurrency(equity)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase tracking-wider text-[#475569] mb-0.5">Profit</p>
-          <p
-            className={`text-base font-semibold tabular-nums ${totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-          >
-            {formatCurrency(totalProfit)}
-          </p>
-        </div>
-      </div>
-
-      {/* Performance metrics + actions */}
-      <div className="px-5 pt-3 pb-4">
-        {/* Secondary metrics */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-3">
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm font-semibold text-white tabular-nums">{totalTrades}</span>
-            <span className="text-[10px] text-[#475569]">trades</span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm font-semibold text-white tabular-nums">
-              {winRate.toFixed(1)}%
-            </span>
-            <span className="text-[10px] text-[#475569]">win rate</span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm font-semibold text-white tabular-nums">
-              {profitFactor === Infinity ? "∞" : profitFactor.toFixed(2)}
-            </span>
-            <span className="text-[10px] text-[#475569]">PF</span>
-          </div>
-          {edgeAtRiskCount > 0 && (
-            <div className="flex items-baseline gap-1 ml-auto">
-              <span className="text-sm font-semibold text-[#EF4444] tabular-nums">
-                {edgeAtRiskCount}
-              </span>
-              <span className="text-[10px] text-[#EF4444]/70">at risk</span>
-            </div>
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleAccountPause}
-            disabled={pauseLoading}
-            className={`px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
-              allPaused
-                ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20"
-                : "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
-            }`}
-          >
-            {allPaused ? "Resume All" : "Pause All"}
-          </button>
-
-          {showDeleteConfirm ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-[#EF4444]">Delete all?</span>
-              <button
-                onClick={handleAccountDelete}
-                disabled={deleteLoading}
-                className="px-2 py-0.5 text-[10px] font-medium text-white bg-[#EF4444] rounded-md hover:bg-[#DC2626]"
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-2 py-0.5 text-[10px] font-medium text-[#64748B] hover:text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-2.5 py-1 rounded-md text-[10px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#EF4444] hover:border-[#EF4444]/30 transition-colors"
-            >
-              Delete
-            </button>
-          )}
-
-          <span className="ml-auto text-[9px] text-[#475569]">
-            Heartbeat {formatRelativeTime(lastHeartbeat ?? null).toLowerCase()}
-          </span>
-        </div>
-      </div>
-      {/* close px-5 pt-3 pb-4 wrapper */}
-
-      {/* API Key management — only for root/parent instances (not child/discovered) */}
-      {!primary.parentInstanceId && (
-        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">API Key</p>
-              {rotatedKey ? (
-                <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-[#10B981] truncate max-w-[280px]">
-                    {rotatedKey}
-                  </code>
-                  <button
-                    onClick={handleCopyKey}
-                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors shrink-0"
-                  >
-                    {copied ? "Copied!" : "Copy"}
-                  </button>
-                  <button
-                    onClick={() => setRotatedKey(null)}
-                    className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors shrink-0"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs font-mono text-[#64748B]">
-                  ••••••••••••{primary.apiKeySuffix ?? "••••"}
-                </p>
-              )}
-            </div>
-            {!rotatedKey && (
-              <div className="shrink-0">
-                {showRotateConfirm ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[#F59E0B]">Invalidate current key?</span>
-                    <button
-                      onClick={handleRotateKey}
-                      disabled={rotateLoading}
-                      className="px-2 py-0.5 text-[10px] font-medium text-white bg-[#F59E0B] rounded-md hover:bg-[#D97706] disabled:opacity-50"
-                    >
-                      {rotateLoading ? "..." : "Confirm"}
-                    </button>
-                    <button
-                      onClick={() => setShowRotateConfirm(false)}
-                      className="px-2 py-0.5 text-[10px] text-[#64748B] hover:text-white"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowRotateConfirm(true)}
-                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors"
-                  >
-                    Regenerate
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Public Track Record share — only for root instances */}
-      {!primary.parentInstanceId && (
-        <div className="mx-5 mb-2 px-3 py-2 rounded-md bg-white/[0.02] border border-[#1E293B]/50">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#525B6B] mb-0.5">
-                Public Track Record
-              </p>
-              {trackRecordToken ? (
-                <p className="text-[10px] text-[#10B981]">Published</p>
-              ) : (
-                <p className="text-[10px] text-[#64748B]">
-                  Share a verified live account track record monitored by AlgoStudio.
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {trackRecordToken ? (
-                <>
-                  <a
-                    href={`/track-record/${trackRecordToken}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors"
-                  >
-                    View Track Record ↗
-                  </a>
-                  <button
-                    onClick={handleCopyTrackRecordUrl}
-                    className="text-[10px] text-[#94A3B8] hover:text-white transition-colors"
-                  >
-                    {trackRecordCopied ? "✓ Copied" : "Copy link"}
-                  </button>
-                  <a
-                    href={`https://x.com/intent/tweet?text=${encodeURIComponent("Verified live account track record monitored by AlgoStudio.")}&url=${encodeURIComponent(`${typeof window !== "undefined" ? window.location.origin : ""}/track-record/${trackRecordToken}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-[#94A3B8] hover:text-white transition-colors"
-                  >
-                    Share on X
-                  </a>
-                  <button
-                    onClick={() => handleTrackRecordAction("unpublish")}
-                    disabled={trackRecordLoading}
-                    className="text-[10px] text-[#475569] hover:text-[#EF4444] transition-colors disabled:opacity-50"
-                  >
-                    Unpublish
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => handleTrackRecordAction("publish")}
-                  disabled={trackRecordLoading}
-                  className="text-[10px] font-medium text-[#94A3B8] hover:text-white transition-colors disabled:opacity-50"
-                >
-                  {trackRecordLoading ? "Sharing..." : "Share Track Record"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Expand strategies toggle */}
-      <div className="mx-5 mb-4 mt-1 border-t border-[#1E293B]/40 pt-3">
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 text-[11px] font-medium text-[#64748B] hover:text-[#94A3B8] transition-colors"
-        >
-          <svg
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          Show strategies ({strategyGroups.length})
-        </button>
-
-        {expanded && (
-          <div className="mt-3 space-y-1">
-            {strategyGroups.length === 0 ? (
-              <div className="px-3 py-3">
-                <div className="flex items-start gap-2.5">
-                  <span className="mt-0.5 w-2 h-2 rounded-full bg-[#10B981] animate-pulse flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-[#CBD5E1] font-medium">Awaiting first trade...</p>
-                    <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-                      Your Monitor EA is connected and listening. Strategies will appear here
-                      automatically once a trade is detected — this typically takes under 60
-                      seconds after your EA opens or closes its first position. If no strategy
-                      appears after several minutes, verify that your EA is using a non-zero
-                      Magic Number.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {/* Header row */}
-                <div className="grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#64748B]">
-                  <span>Symbol</span>
-                  <span>Edge Status</span>
-                  <span>Baseline</span>
-                </div>
-                {/* Strategy rows */}
-                {strategyGroups.map((sg) => {
-                  // Resolve health badge from owning instance.
-                  // Fallback: if trade→instance match failed, pick the first
-                  // linkable non-container instance in this account card so the
-                  // "Link" button still renders.
-                  const owningInstance = sg.instanceId
-                    ? instances.find((ea) => ea.id === sg.instanceId)
-                    : instances.find((ea) => ea.id !== primary.id && !isAccountContainer(ea));
-                  const resolvedInstanceId = sg.instanceId ?? owningInstance?.id ?? null;
-                  // Derive baseline status from instance-level truth (deployments not serialized to client)
-                  const relinkRequired = owningInstance?.relinkRequired ?? false;
-                  const isLinked = !relinkRequired && !!owningInstance?.baseline;
-                  const health = deriveStrategyHealth(owningInstance);
-                  const hs = HEALTH_STYLES[health];
-                  const baselineTrades = owningInstance?.baseline?.totalTrades;
-                  const rowKey = `${sg.symbol}|${sg.magicNumber ?? "none"}`;
-                  const isExpanded = expandedStrategyKey === rowKey;
-                  const isHighlighted = forceExpandId != null && resolvedInstanceId === forceExpandId;
-                  return (
-                    <div key={rowKey}>
-                      <div
-                        onClick={() => setExpandedStrategyKey(isExpanded ? null : rowKey)}
-                        className={`grid grid-cols-[1fr_110px_150px] gap-2 px-3 py-2 rounded-md bg-white/[0.02] border cursor-pointer transition-colors ${
-                          isHighlighted
-                            ? "border-[#F59E0B]/40 bg-[#F59E0B]/5"
-                            : isExpanded
-                              ? "border-[#334155] bg-[#0F0A1A]"
-                              : "border-[#1E293B] hover:border-[#334155]"
-                        }`}
-                      >
-                        <p className="text-xs font-semibold text-[#CBD5E1] truncate self-center">
-                          {sg.symbol}
-                        </p>
-                        <div className="self-center">
-                          <span
-                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${hs.bg} ${hs.text}`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                            {health}
-                          </span>
-                        </div>
-                        <div className="self-center flex items-center gap-2">
-                          <p
-                            className={`text-xs ${isLinked ? "text-[#10B981] font-medium" : relinkRequired ? "text-[#F59E0B] font-medium" : "text-[#64748B]"}`}
-                          >
-                            {isLinked
-                              ? `Linked${baselineTrades ? ` (${baselineTrades} trades)` : ""}`
-                              : relinkRequired
-                                ? "Relink required"
-                                : "Missing"}
-                          </p>
-                          {resolvedInstanceId && (isLinked ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onUnlinkBaseline(resolvedInstanceId);
-                              }}
-                              className="text-[9px] font-medium text-[#EF4444]/70 hover:text-[#EF4444] transition-colors"
-                            >
-                              Unlink
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onLinkBaseline(resolvedInstanceId);
-                              }}
-                              className="text-[9px] font-medium text-[#94A3B8] hover:text-white transition-colors"
-                            >
-                              {relinkRequired ? "Relink" : "Link"}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      {isExpanded && owningInstance && (
-                        <InvestigationPanel
-                          instance={owningInstance}
-                          trades={sg.trades}
-                          health={health}
-                          isLinked={isLinked}
-                        />
-                      )}
-                      {isExpanded && !owningInstance && (
-                        <div className="ml-3 mr-3 mb-1 px-4 py-3 rounded-b-lg bg-[#0A0118]/60 border border-t-0 border-[rgba(79,70,229,0.15)] text-[11px] text-[#64748B]">
-                          No instance data available for investigation.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// EA CARD
-// ============================================
-
-function EACard({
-  ea,
-  statusChanged,
-  onTogglePause,
-  onDelete,
-  onLinkBaseline,
-}: {
-  ea: EAInstanceData;
-  statusChanged: boolean;
-  onTogglePause: (instanceId: string, tradingState: "TRADING" | "PAUSED") => void;
-  onDelete: (instanceId: string) => void;
-  onLinkBaseline?: (instanceId: string) => void;
-}) {
-  const [showTradeLog, setShowTradeLog] = useState(false);
-  const [showTrackRecord, setShowTrackRecord] = useState(false);
-  const [showHealth, setShowHealth] = useState(false);
-  const [showProof, setShowProof] = useState(false);
-  const [pauseLoading, setPauseLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [haltState, setHaltState] = useState(ea.operatorHold ?? "NONE");
-  const [haltLoading, setHaltLoading] = useState(false);
-  const [showHaltConfirm, setShowHaltConfirm] = useState(false);
-  const trades = ea.trades ?? [];
-  const heartbeats = ea.heartbeats ?? [];
-  const winRate = calculateWinRate(trades);
-  const profitFactor = calculateProfitFactor(trades);
-  const closedCount = ea.totalTrades;
-  const isEdgeAtRisk = ea.lifecycleState === "EDGE_AT_RISK" || ea.healthStatus === "DEGRADED";
-
-  async function handleTogglePause(): Promise<void> {
-    setPauseLoading(true);
-    onTogglePause(ea.id, ea.tradingState === "TRADING" ? "PAUSED" : "TRADING");
-    setPauseLoading(false);
-  }
-
-  async function handleDelete(): Promise<void> {
-    setDeleteLoading(true);
-    onDelete(ea.id);
-  }
-
-  function handleToggleHalt(): void {
-    if (haltState === "HALTED") {
-      executeHalt("NONE");
-    } else {
-      setShowHaltConfirm(true);
-    }
-  }
-
-  async function executeHalt(target: "HALTED" | "NONE"): Promise<void> {
-    setShowHaltConfirm(false);
-    setHaltLoading(true);
-    const result = await updateOperatorHold(ea.id, target);
-    if (result.ok) {
-      setHaltState(target);
-    }
-    setHaltLoading(false);
-  }
-
-  return (
-    <div
-      id={`ea-card-${ea.id}`}
-      className={`bg-[#1A0626] border rounded-xl p-6 transition-all duration-500 hover:shadow-[0_4px_24px_rgba(79,70,229,0.15)] ${
-        statusChanged
-          ? "border-[#A78BFA] shadow-[0_0_20px_rgba(167,139,250,0.2)]"
-          : "border-[rgba(79,70,229,0.2)] hover:border-[rgba(79,70,229,0.4)]"
-      } ${ea.mode === "PAPER" ? "border-l-2 border-l-[#F59E0B]" : ""}`}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white truncate" title={ea.eaName}>
-            {ea.eaName}
-          </h3>
-          <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-[#7C8DB0]">
-            {ea.symbol ? (
-              <span>{ea.symbol}</span>
-            ) : (
-              <span className="text-[#7C8DB0]/70 italic">Account-wide (portfolio mode)</span>
-            )}
-            {ea.timeframe && <span>{ea.timeframe}</span>}
-            {ea.broker && (
-              <>
-                <span className="text-[#334155]">|</span>
-                <span>{ea.broker}</span>
-              </>
-            )}
-            {ea.accountNumber && (
-              <>
-                <span className="text-[#334155]">|</span>
-                <span>#{ea.accountNumber}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status={ea.status} animate={statusChanged} />
-          {ea.strategyStatus && (
-            <StrategyStatusBadge status={ea.strategyStatus as StrategyStatus} variant="compact" />
-          )}
-          {(() => {
-            const execState =
-              haltState === "HALTED" ? "HALTED" : ea.tradingState === "PAUSED" ? "PAUSED" : "RUN";
-            const execColor =
-              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
-            const execBg =
-              execState === "HALTED" ? "#EF4444" : execState === "PAUSED" ? "#F59E0B" : "#10B981";
-            return (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-medium rounded-full"
-                style={{
-                  backgroundColor: `${execBg}20`,
-                  color: execColor,
-                  border: `1px solid ${execBg}4D`,
-                }}
-              >
-                {execState}
-              </span>
-            );
-          })()}
-          {ea.mode === "PAPER" && (
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30">
-              Paper
-            </span>
-          )}
-          {(() => {
-            const trust = resolveInstanceBaselineTrust({
-              hasBaseline: !!ea.baseline,
-              relinkRequired: !!ea.relinkRequired,
-            });
-            const bgMap = { VERIFIED: "#4F46E5", SUSPENDED: "#F59E0B", MISSING: "#64748B" };
-            const bg = bgMap[trust.state];
-            return (
-              <span
-                className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full"
-                style={{
-                  backgroundColor: `${bg}33`,
-                  color: trust.color,
-                  borderWidth: 1,
-                  borderColor: `${bg}4D`,
-                }}
-                title={
-                  trust.state === "VERIFIED" && ea.baseline
-                    ? `Baseline: WR ${(ea.baseline.winRate ?? 0).toFixed(1)}% | PF ${(ea.baseline.profitFactor ?? 0).toFixed(2)} | ${ea.baseline.totalTrades} trades`
-                    : undefined
-                }
-              >
-                Baseline {trust.label.toLowerCase()}
-              </span>
-            );
-          })()}
-          {/* Auto-discovered strategy badge */}
-          {ea.isAutoDiscovered && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/30">
-              Discovered
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Status Detail Box — compact interpretation aid for non-healthy instances */}
-      {/* Skipped for SUSPENDED (the relink warning below already covers that case) */}
-      {(() => {
-        const attention = resolveInstanceAttention(ea, formatMonitoringReasons);
-        if (!attention || attention.statusLabel === "Baseline suspended") return null;
-        return (
-          <div
-            className="mb-4 rounded-lg p-3 flex items-start gap-3"
-            style={{
-              backgroundColor: `${attention.color}08`,
-              borderWidth: 1,
-              borderStyle: "solid",
-              borderColor: `${attention.color}20`,
-            }}
-          >
-            <span
-              className="mt-1 w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ backgroundColor: attention.color }}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium" style={{ color: attention.color }}>
-                {attention.statusLabel}
-              </p>
-              <p className="text-[10px] text-[#94A3B8] mt-0.5 leading-relaxed">
-                {attention.reason}
-              </p>
-              <p className="text-[10px] mt-1" style={{ color: `${attention.color}CC` }}>
-                → {attention.actionLabel}
-              </p>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Relink required warning */}
-      {ea.relinkRequired && (
-        <div className="mb-4 rounded-lg bg-[#F59E0B]/[0.06] border border-[#F59E0B]/20 p-4">
-          <div className="flex items-start gap-3">
-            <svg
-              className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[#F59E0B] mb-1">
-                Material configuration change detected — baseline trust suspended
-              </p>
-              <p className="text-[11px] text-[#94A3B8] leading-relaxed mb-3">
-                Monitoring is running without a trusted baseline. Governance may emit NO_BASELINE
-                until a replacement baseline is linked.
-              </p>
-              {onLinkBaseline && (
-                <button
-                  onClick={() => onLinkBaseline(ea.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 hover:bg-[#F59E0B]/30 transition-colors"
-                >
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                    />
-                  </svg>
-                  Restore baseline trust
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Baseline Snapshot — only when trusted */}
-      {!ea.relinkRequired && ea.baseline && (
-        <div className="mb-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.12)] p-3">
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-            Baseline Snapshot
-          </p>
-          <p className="text-[10px] text-[#64748B] mb-2">
-            Derived from linked backtest
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div>
-              <p className="text-[10px] text-[#64748B]">Trades</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">{ea.baseline.totalTrades}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-[#64748B]">Profit Factor</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">
-                {(ea.baseline.profitFactor ?? 0).toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-[#64748B]">Max Drawdown</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">
-                {(ea.baseline.maxDrawdownPct ?? 0).toFixed(1)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-[#64748B]">Sharpe</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">
-                {(ea.baseline.sharpeRatio ?? 0).toFixed(2)}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Why At Risk — only when degraded/unstable with active reasons */}
-      {(ea.strategyStatus === "EDGE_DEGRADED" || ea.strategyStatus === "UNSTABLE") &&
-        ea.monitoringReasons &&
-        ea.monitoringReasons.length > 0 && (
-          <div className="mb-4 rounded-lg bg-[#EF4444]/[0.04] border border-[#EF4444]/15 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-[#EF4444] mb-1.5">
-              Why At Risk
-            </p>
-            <ul className="space-y-1">
-              {formatMonitoringReasons(ea.monitoringReasons).map((reason) => (
-                <li key={reason} className="flex items-start gap-1.5 text-[11px] text-[#CBD5E1]">
-                  <span className="mt-1 w-1 h-1 rounded-full bg-[#EF4444] shrink-0" />
-                  {reason}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-      {/* Financial Metrics */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Balance</p>
-          <p className="text-sm font-medium text-white">{formatCurrency(ea.balance)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Equity</p>
-          <p className="text-sm font-medium text-white">{formatCurrency(ea.equity)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Profit</p>
-          <p
-            className={`text-sm font-medium ${ea.totalProfit >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-          >
-            {formatCurrency(ea.totalProfit)}
-          </p>
-        </div>
-      </div>
-
-      {/* Mini equity chart */}
-      <div className="mb-4 rounded-lg bg-[#0A0118]/50 p-2">
-        <MiniEquityChart heartbeats={ea.heartbeats ?? []} />
-      </div>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-[rgba(79,70,229,0.15)]">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Trades</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{closedCount}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Win Rate</p>
-          <p className="text-sm font-medium text-[#CBD5E1]">{winRate.toFixed(1)}%</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">
-            Profit Factor
-          </p>
-          <p className="text-sm font-medium text-[#CBD5E1]">
-            {profitFactor === Infinity ? "---" : profitFactor.toFixed(2)}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-0.5">Edge Status</p>
-          <p
-            className={`text-sm font-medium ${isEdgeAtRisk ? "text-[#EF4444]" : "text-[#10B981]"}`}
-          >
-            {isEdgeAtRisk ? "At Risk" : "Healthy"}
-          </p>
-        </div>
-      </div>
-
-      {/* Slippage info (estimated from trade data) */}
-      {(() => {
-        const closedTrades = (ea.trades ?? []).filter((t) => t.closeTime !== null);
-        if (closedTrades.length < 5) return null;
-        // Estimate average absolute profit deviation as a proxy for slippage awareness
-        const avgProfit =
-          closedTrades.reduce((s, t) => s + Math.abs(t.profit), 0) / closedTrades.length;
-        const variance =
-          closedTrades.reduce((s, t) => s + Math.pow(Math.abs(t.profit) - avgProfit, 2), 0) /
-          closedTrades.length;
-        const stdDev = Math.sqrt(variance);
-        return (
-          <div
-            className="flex items-center gap-2 mt-2 text-[10px] text-[#7C8DB0]"
-            title="Estimated from trade profit variance. High variance may indicate significant slippage."
-          >
-            <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>P/L Std Dev: {formatCurrency(stdDev)} (higher values may indicate slippage)</span>
-          </div>
-        );
-      })()}
-
-      {/* Controls Row */}
-      <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-[rgba(79,70,229,0.1)]">
-        {/* Suppress pause/halt for DRAFT strategies — governance already returns PAUSE */}
-        {ea.lifecycleState !== "DRAFT" && (
-          <>
-            <button
-              onClick={handleTogglePause}
-              disabled={pauseLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                ea.tradingState === "PAUSED"
-                  ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-                  : "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/30"
-              } disabled:opacity-50`}
-            >
-              {ea.tradingState === "PAUSED" ? (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              ) : (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              )}
-              {ea.tradingState === "PAUSED" ? "Resume Strategy" : "Pause Strategy"}
-            </button>
-
-            <button
-              onClick={handleToggleHalt}
-              disabled={haltLoading || haltState === "OVERRIDE_PENDING"}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 disabled:opacity-50 ${
-                haltState === "HALTED"
-                  ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30 hover:bg-[#10B981]/30"
-                  : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/25 hover:bg-[#EF4444]/20"
-              }`}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={
-                    haltState === "HALTED"
-                      ? "M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                      : "M21 12a9 9 0 11-18 0 9 9 0 0118 0zM9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"
-                  }
-                />
-              </svg>
-              {haltLoading ? "…" : haltState === "HALTED" ? "Resume Trading" : "Emergency Halt"}
-            </button>
-          </>
-        )}
-
-        <button
-          onClick={() => setShowTradeLog(!showTradeLog)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)] transition-all duration-200"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            />
-          </svg>
-          {showTradeLog ? "Hide Trades" : "Trade Log"}
-        </button>
-
-        <button
-          onClick={() => setShowTrackRecord(!showTrackRecord)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            showTrackRecord
-              ? "bg-[#22D3EE]/20 text-[#22D3EE] border-[#22D3EE]/30"
-              : "border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)]"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-          {showTrackRecord ? "Hide Record" : "Track Record"}
-        </button>
-
-        <button
-          onClick={() => setShowHealth(!showHealth)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            showHealth
-              ? "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30"
-              : "border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)]"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            />
-          </svg>
-          {showHealth ? "Hide Health" : "Health"}
-        </button>
-
-        <button
-          onClick={() => setShowProof(!showProof)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-            showProof
-              ? "bg-[#A78BFA]/20 text-[#A78BFA] border-[#A78BFA]/30"
-              : "border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white hover:border-[rgba(79,70,229,0.4)]"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-            />
-          </svg>
-          {showProof ? "Hide Proof" : "Proof"}
-        </button>
-
-        {ea.isAutoDiscovered && onLinkBaseline ? (
-          <button
-            onClick={() => onLinkBaseline(ea.id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#8B5CF6]/40 text-[#A78BFA] hover:bg-[#8B5CF6]/20 hover:border-[#8B5CF6]/60 transition-all duration-200"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-              />
-            </svg>
-            Link &amp; Activate
-          </button>
-        ) : ea.isExternal && !ea.baseline && !ea.relinkRequired && onLinkBaseline ? (
-          <button
-            onClick={() => onLinkBaseline(ea.id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(79,70,229,0.3)] text-[#818CF8] hover:bg-[#4F46E5]/20 hover:border-[#4F46E5]/50 transition-all duration-200"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-              />
-            </svg>
-            Link baseline
-          </button>
-        ) : null}
-
-        <div className="flex-1 min-w-0" />
-
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-[#7C8DB0] whitespace-nowrap">
-            Last heartbeat: {formatRelativeTime(ea.lastHeartbeat)}
-          </span>
-
-          {/* Delete button */}
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[rgba(239,68,68,0.2)] text-[#7C8DB0] hover:text-[#EF4444] hover:border-[#EF4444]/40 transition-all duration-200"
-            title="Delete this EA instance"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-            Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Delete confirmation dialog */}
-      {showDeleteConfirm && (
-        <div className="mt-3 p-4 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <p className="text-sm text-[#EF4444] font-medium mb-1">
-            Delete &ldquo;{ea.eaName}&rdquo;?
-          </p>
-          <p className="text-xs text-[#7C8DB0] mb-3">
-            This will remove the EA instance and all its data from your dashboard. This action
-            cannot be undone.
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-[#EF4444] hover:bg-[#DC2626] transition-all duration-200 disabled:opacity-50"
-            >
-              {deleteLoading ? "Deleting..." : "Yes, delete"}
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showHaltConfirm && (
-        <div className="mt-3 p-4 rounded-lg bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <p className="text-sm text-[#EF4444] font-medium mb-1">Emergency Halt</p>
-          <p className="text-xs text-[#CBD5E1] mb-1">
-            This will block AlgoStudio from approving trades for this strategy.
-          </p>
-          <p className="text-xs text-[#7C8DB0] mb-3">
-            Trading on the terminal will not be automatically stopped.
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => executeHalt("HALTED")}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium text-white bg-[#EF4444] hover:bg-[#DC2626] transition-all duration-200"
-            >
-              Emergency Halt
-            </button>
-            <button
-              onClick={() => setShowHaltConfirm(false)}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium text-[#7C8DB0] border border-[rgba(79,70,229,0.2)] hover:text-white transition-all duration-200"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Error display */}
-      {ea.lastError && ea.status === "ERROR" && (
-        <div className="mt-2">
-          <span className="text-xs text-[#EF4444] truncate block max-w-full" title={ea.lastError}>
-            {ea.lastError}
-          </span>
-        </div>
-      )}
-
-      {/* Trade Log (expandable) */}
-      {showTradeLog && <TradeLogPanel instanceId={ea.id} eaName={ea.eaName} />}
-
-      {/* Track Record (expandable) */}
-      {showTrackRecord && <TrackRecordPanel instanceId={ea.id} eaName={ea.eaName} />}
-
-      {/* Health Detail (expandable) */}
-      {showHealth && (
-        <HealthDetailPanel
-          instanceId={ea.id}
-          strategyStatus={(ea.strategyStatus as StrategyStatus) ?? null}
-        />
-      )}
-
-      {/* Proof Panel (expandable) */}
-      {showProof && <ProofPanel instanceId={ea.id} />}
-    </div>
-  );
-}
-
-// ============================================
-// CONNECTION INDICATOR
-// ============================================
-
-function computeTimeLabel(lastUpdated: Date | null): string {
-  if (!lastUpdated) return "Never";
-  const seconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
-  if (seconds < 5) return "Just now";
-  return `${seconds}s ago`;
-}
-
-const CONNECTION_STATUS_CONFIG: Record<
-  ConnectionStatus,
-  { color: string; label: string; ping: boolean }
-> = {
-  connecting: { color: "#F59E0B", label: "Connecting", ping: false },
-  connected: { color: "#10B981", label: "Receiving", ping: true },
-  "fallback-polling": { color: "#3B82F6", label: "Last update", ping: false },
-  disconnected: { color: "#EF4444", label: "Disconnected", ping: false },
-};
-
-function ConnectionIndicator({
-  connectionStatus,
-  lastUpdated,
-}: {
-  connectionStatus: ConnectionStatus;
-  lastUpdated: Date | null;
-}) {
-  const [timeSinceUpdate, setTimeSinceUpdate] = useState(() => computeTimeLabel(lastUpdated));
-
-  useEffect(() => {
-    if (!lastUpdated) return;
-
-    const interval = setInterval(() => {
-      setTimeSinceUpdate(computeTimeLabel(lastUpdated));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lastUpdated]);
-
-  const config = CONNECTION_STATUS_CONFIG[connectionStatus];
-
-  return (
-    <div
-      className="flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs"
-      style={{
-        borderColor: `${config.color}20`,
-        backgroundColor: `${config.color}08`,
-        color: config.color,
-      }}
-    >
-      <span className="relative flex h-2 w-2">
-        {config.ping && (
-          <span
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
-            style={{ backgroundColor: config.color }}
-          />
-        )}
-        <span
-          className="relative inline-flex rounded-full h-2 w-2"
-          style={{ backgroundColor: config.color }}
-        />
-      </span>
-      <span className="font-medium">
-        {config.label}
-        {lastUpdated ? (
-          <span className="text-[#7C8DB0] font-normal"> · {timeSinceUpdate}</span>
-        ) : null}
-      </span>
-    </div>
-  );
-}
-
-// ============================================
-// SUMMARY CARD
-// ============================================
-
-function SummaryCard({
-  label,
-  subtitle,
-  value,
-  isCurrency = true,
-}: {
-  label: string;
-  subtitle?: string;
-  value: number;
-  isCurrency?: boolean;
-}) {
-  const accentColor = isCurrency ? (value >= 0 ? "#10B981" : "#EF4444") : "#818CF8";
-
-  return (
-    <div
-      className="bg-[#0F0A1A] border border-[#1E293B]/60 rounded-lg px-4 py-4 relative overflow-hidden"
-      style={{ boxShadow: `0 1px 16px ${accentColor}06` }}
-    >
-      <div
-        className="absolute top-0 left-0 right-0 h-[2px]"
-        style={{ backgroundColor: accentColor, opacity: 0.3 }}
-      />
-      <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
-        {label}
-      </p>
-      <p
-        className={`text-3xl font-bold tabular-nums leading-none ${isCurrency ? (value >= 0 ? "text-[#10B981]" : "text-[#EF4444]") : "text-white"}`}
-      >
-        {isCurrency ? formatCurrency(value) : value}
-      </p>
-      {subtitle && <p className="text-[10px] text-[#475569] mt-1.5">{subtitle}</p>}
-    </div>
-  );
-}
-
-// ============================================
-// ALERTS MODAL
-// ============================================
-
-function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onClose: () => void }) {
-  const [alerts, setAlerts] = useState<AlertConfig[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  // New alert form state
-  const [newAlertType, setNewAlertType] = useState("DRAWDOWN");
-  const [newThreshold, setNewThreshold] = useState("5");
-  const [newChannel, setNewChannel] = useState("EMAIL");
-  const [newWebhookUrl, setNewWebhookUrl] = useState("");
-  const [newInstanceId, setNewInstanceId] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const res = await fetch("/api/live/alerts");
-      if (!cancelled && res.ok) {
-        const json = await res.json();
-        setAlerts(json.data);
-      }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function handleCreateAlert(): Promise<void> {
-    setSaving(true);
-    const body: Record<string, unknown> = {
-      alertType: newAlertType,
-      channel: newChannel,
-      alertState: "ACTIVE" as const,
-    };
-
-    if (newInstanceId) {
-      body.instanceId = newInstanceId;
-    }
-
-    if (["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"].includes(newAlertType)) {
-      const threshold = parseFloat(newThreshold);
-      if (isNaN(threshold) || threshold <= 0) {
-        showError("Invalid threshold", "Please enter a valid threshold value.");
-        setSaving(false);
-        return;
-      }
-      body.threshold = threshold;
-    }
-
-    if (newChannel === "WEBHOOK") {
-      if (!newWebhookUrl) {
-        showError("Missing webhook URL", "Please enter a webhook URL.");
-        setSaving(false);
-        return;
-      }
-      body.webhookUrl = newWebhookUrl;
-    }
-
-    const res = await fetch("/api/live/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify(body),
-    });
-
-    if (res.ok) {
-      showSuccess("Alert created");
-      // Refresh alerts list
-      const refreshRes = await fetch("/api/live/alerts");
-      if (refreshRes.ok) {
-        const refreshJson = await refreshRes.json();
-        setAlerts(refreshJson.data);
-      }
-      // Reset form
-      setNewAlertType("DRAWDOWN");
-      setNewThreshold("5");
-      setNewChannel("EMAIL");
-      setNewWebhookUrl("");
-      setNewInstanceId("");
-    } else {
-      const json = await res.json().catch(() => ({ error: "Failed to create alert" }));
-      showError("Failed to create alert", json.error);
-    }
-    setSaving(false);
-  }
-
-  async function handleToggleAlert(
-    alertId: string,
-    alertState: "ACTIVE" | "DISABLED"
-  ): Promise<void> {
-    const res = await fetch("/api/live/alerts", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({ id: alertId, alertState }),
-    });
-    if (res.ok) {
-      setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, alertState } : a)));
-    }
-  }
-
-  async function handleDeleteAlert(alertId: string): Promise<void> {
-    const res = await fetch("/api/live/alerts", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({ id: alertId }),
-    });
-    if (res.ok) {
-      setAlerts((prev) => prev.filter((a) => a.id !== alertId));
-      showSuccess("Alert deleted");
-    }
-  }
-
-  const needsThreshold = ["DRAWDOWN", "DAILY_LOSS", "WEEKLY_LOSS", "EQUITY_TARGET"].includes(
-    newAlertType
-  );
-  const needsWebhook = newChannel === "WEBHOOK";
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[rgba(79,70,229,0.15)]">
-          <h2 className="text-lg font-semibold text-white">Alert Configuration</h2>
-          <button onClick={onClose} className="text-[#7C8DB0] hover:text-white transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Create New Alert */}
-        <div className="p-6 border-b border-[rgba(79,70,229,0.15)]">
-          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Create New Alert</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Alert Type */}
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Alert Type
-              </label>
-              <select
-                value={newAlertType}
-                onChange={(e) => setNewAlertType(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
-              >
-                <option value="DRAWDOWN">Floating Drawdown</option>
-                <option value="OFFLINE">EA Offline</option>
-                <option value="NEW_TRADE">New Trade</option>
-                <option value="ERROR">EA Error</option>
-                <option value="DAILY_LOSS">Daily Loss Limit</option>
-                <option value="WEEKLY_LOSS">Weekly Loss Limit</option>
-                <option value="EQUITY_TARGET">Equity Target</option>
-              </select>
-            </div>
-
-            {/* Instance Scope */}
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Applies To
-              </label>
-              <select
-                value={newInstanceId}
-                onChange={(e) => setNewInstanceId(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
-              >
-                <option value="">All Instances</option>
-                {instances.map((inst) => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.eaName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Threshold (conditional) */}
-            {needsThreshold && (
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                  Threshold (%)
-                </label>
-                <input
-                  type="number"
-                  value={newThreshold}
-                  onChange={(e) => setNewThreshold(e.target.value)}
-                  min="0.1"
-                  max="100"
-                  step="0.1"
-                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
-                  placeholder="5.0"
-                />
-              </div>
-            )}
-
-            {/* Channel */}
-            <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                Channel
-              </label>
-              <select
-                value={newChannel}
-                onChange={(e) => setNewChannel(e.target.value)}
-                className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
-              >
-                <option value="EMAIL">Email</option>
-                <option value="WEBHOOK">Webhook</option>
-                <option value="BROWSER_PUSH">Browser Push</option>
-              </select>
-            </div>
-
-            {/* Webhook URL (conditional) */}
-            {needsWebhook && (
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] uppercase tracking-wider text-[#7C8DB0] mb-1">
-                  Webhook URL
-                </label>
-                <input
-                  type="url"
-                  value={newWebhookUrl}
-                  onChange={(e) => setNewWebhookUrl(e.target.value)}
-                  className="w-full rounded-lg bg-[#0A0118] border border-[rgba(79,70,229,0.2)] text-[#CBD5E1] px-3 py-2 text-xs focus:outline-none focus:border-[#4F46E5]"
-                  placeholder="https://hooks.example.com/alert"
-                />
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={handleCreateAlert}
-            disabled={saving}
-            className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] transition-all duration-200 disabled:opacity-50"
-          >
-            {saving ? "Creating..." : "Create Alert"}
-          </button>
-        </div>
-
-        {/* Existing Alerts */}
-        <div className="p-6">
-          <h3 className="text-sm font-medium text-[#CBD5E1] mb-4">Active Alerts</h3>
-
-          {loading ? (
-            <div className="text-xs text-[#7C8DB0] py-4 text-center">Loading alerts...</div>
-          ) : alerts.length === 0 ? (
-            <div className="text-xs text-[#7C8DB0] py-4 text-center">
-              No alerts configured yet. Create one above to get started.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-200 ${
-                    alert.alertState === "ACTIVE"
-                      ? "bg-[rgba(79,70,229,0.05)] border-[rgba(79,70,229,0.15)]"
-                      : "bg-[#0A0118]/50 border-[rgba(79,70,229,0.08)] opacity-60"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-[#CBD5E1]">
-                        {ALERT_TYPE_LABELS[alert.alertType] ?? alert.alertType}
-                      </span>
-                      {alert.threshold !== null && (
-                        <span className="text-[10px] text-[#A78BFA]">at {alert.threshold}%</span>
-                      )}
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(79,70,229,0.1)] text-[#7C8DB0]">
-                        {alert.channel}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-[#7C8DB0]">
-                        {alert.instanceName ?? "All instances"}
-                      </span>
-                      {alert.lastTriggered && (
-                        <span className="text-[10px] text-[#7C8DB0]">
-                          Last triggered: {formatRelativeTime(alert.lastTriggered)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <button
-                      onClick={() =>
-                        handleToggleAlert(
-                          alert.id,
-                          alert.alertState === "ACTIVE" ? "DISABLED" : "ACTIVE"
-                        )
-                      }
-                      className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${
-                        alert.alertState === "ACTIVE" ? "bg-[#10B981]" : "bg-[#374151]"
-                      }`}
-                      title={alert.alertState === "ACTIVE" ? "Disable" : "Enable"}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform duration-200 ${
-                          alert.alertState === "ACTIVE" ? "translate-x-4" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAlert(alert.id)}
-                      className="text-[#7C8DB0] hover:text-[#EF4444] transition-colors"
-                      title="Delete alert"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+import { AccountCard } from "./components/account-card";
+import { AccountTile } from "./components/account-tile";
+import { ActivityFeed, type FeedItem } from "./components/activity-feed";
+import { StatCard } from "./components/stat-card";
+import { AlertsModal } from "./components/alerts-modal";
+import { AlertsSidebar } from "./components/alerts-sidebar";
+import type { EAInstanceData, LiveDashboardClientProps } from "./components/types";
+import {
+  formatCurrency,
+  formatPnl,
+  formatRelativeTime,
+  resolveInstanceAttention,
+  groupByAccount,
+  sortByPriority,
+} from "./components/utils";
 
 // ============================================
 // MAIN COMPONENT
@@ -3006,7 +35,6 @@ function AlertsModal({ instances, onClose }: { instances: EAInstanceData[]; onCl
 
 export function LiveDashboardClient({
   initialData,
-  tier,
   initialRelinkInstanceId,
 }: LiveDashboardClientProps) {
   const [eaInstances, setEaInstances] = useState<EAInstanceData[]>(initialData);
@@ -3014,7 +42,10 @@ export function LiveDashboardClient({
   const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const [modeFilter, setModeFilter] = useState<"ALL" | "LIVE" | "PAPER">("ALL");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const registerDialogRef = useRef<HTMLButtonElement>(null);
   const [scrollExpandId, setScrollExpandId] = useState<string | null>(null);
+  const [selectedAccountKey, setSelectedAccountKey] = useState<string | null>(null);
+  const [liveFeedItems, setLiveFeedItems] = useState<FeedItem[]>([]);
   const [draggedAccountKey, setDraggedAccountKey] = useState<string | null>(null);
   const [dragOverAccountKey, setDragOverAccountKey] = useState<string | null>(null);
   const [linkBaselineInstanceId, setLinkBaselineInstanceId] = useState<string | null>(() => {
@@ -3024,7 +55,6 @@ export function LiveDashboardClient({
     }
     return null;
   });
-  const [linkingInstanceId, setLinkingInstanceId] = useState<string | null>(null);
   const [activatingInstanceId, setActivatingInstanceId] = useState<string | null>(null);
   const [linkedSuccessBanner, setLinkedSuccessBanner] = useState(false);
   const linkedSuccessBannerTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -3042,11 +72,7 @@ export function LiveDashboardClient({
     }
   }, [initialRelinkInstanceId]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
-  const [showRestoreGuide] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem("algostudio:onboarding-dismissed") === "1"; } catch { return false; }
-  });
-  const [globalDrawdownThreshold, setGlobalDrawdownThreshold] = useState("10");
+  // tabs removed — accounts are always visible
   const previousDataRef = useRef<Map<string, EAInstanceData>>(new Map());
   const changedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const soundAlertsRef = useRef(soundAlerts);
@@ -3096,11 +122,31 @@ export function LiveDashboardClient({
       }
     }
 
+    // Merge polling data with existing static data (baseline, edgeScore, etc.)
+    // Skip stale updates: if polling data has an older heartbeat, keep existing data
+    const mergedInstances = newInstances.map((ea) => {
+      const prev = previousMap.get(ea.id);
+      if (!prev) return ea;
+      // Freshness guard: don't downgrade to older data
+      if (prev.lastHeartbeat && ea.lastHeartbeat && ea.lastHeartbeat < prev.lastHeartbeat) {
+        return prev;
+      }
+      return {
+        ...prev,
+        ...ea,
+        // Preserve static fields that polling doesn't include
+        baseline: ea.baseline ?? prev.baseline,
+        edgeScore: ea.edgeScore ?? prev.edgeScore,
+        trackRecordToken: ea.trackRecordToken ?? prev.trackRecordToken,
+        trades: ea.trades.length > 0 ? ea.trades : prev.trades,
+      };
+    });
+
     const newMap = new Map<string, EAInstanceData>();
-    newInstances.forEach((ea) => newMap.set(ea.id, ea));
+    mergedInstances.forEach((ea) => newMap.set(ea.id, ea));
     previousDataRef.current = newMap;
 
-    setEaInstances(newInstances);
+    setEaInstances(mergedInstances);
     setChangedIds(changed);
 
     if (changed.size > 0) {
@@ -3112,7 +158,9 @@ export function LiveDashboardClient({
   // SSE live stream with polling fallback
   const { status: connectionStatus, lastUpdated } = useLiveStream({
     onInit: (data) => {
-      processUpdate(data as EAInstanceData[]);
+      // SSE sends empty init to signal connection ready; only update if data is present
+      const arr = data as EAInstanceData[];
+      if (arr.length > 0) processUpdate(arr);
     },
     onHeartbeat: (data) => {
       const hb = data as LiveHeartbeatPatch;
@@ -3126,15 +174,36 @@ export function LiveDashboardClient({
     onTrade: (data) => {
       const trade = data as {
         instanceId: string;
+        ticket?: string;
         profit: number;
         closeTime: string | null;
         symbol?: string | null;
         magicNumber?: number | null;
+        openPrice?: number;
+        closePrice?: number | null;
+        lots?: number;
+        type?: string;
       };
+      const ea = previousDataRef.current.get(trade.instanceId);
       if (soundAlertsRef.current) {
-        const ea = previousDataRef.current.get(trade.instanceId);
         showInfo(`New trade on ${ea?.eaName ?? "EA"}`, `P/L: $${trade.profit.toFixed(2)}`);
       }
+      // Add to live activity feed
+      setLiveFeedItems((prev) =>
+        [
+          {
+            id: trade.ticket ?? `${trade.instanceId}-${Date.now()}`,
+            symbol: trade.symbol ?? "UNKNOWN",
+            type: trade.type ?? "BUY",
+            profit: trade.profit,
+            lots: trade.lots,
+            eaName: ea?.eaName ?? "EA",
+            closeTime: trade.closeTime,
+            isNew: true,
+          },
+          ...prev,
+        ].slice(0, 20)
+      );
       // Prepend the new trade so AccountCard metrics stay current without a full refresh
       setEaInstances((prev) =>
         prev.map((ea) =>
@@ -3147,6 +216,11 @@ export function LiveDashboardClient({
                     closeTime: trade.closeTime ?? null,
                     symbol: trade.symbol ?? null,
                     magicNumber: trade.magicNumber ?? null,
+                    ticket: trade.ticket,
+                    openPrice: trade.openPrice,
+                    closePrice: trade.closePrice ?? null,
+                    lots: trade.lots,
+                    type: trade.type,
                   },
                   ...ea.trades,
                 ].slice(0, 20),
@@ -3158,7 +232,7 @@ export function LiveDashboardClient({
     onError: () => {
       // SSE error events handled internally
     },
-    pollingInterval: 10000,
+    pollingInterval: 30000,
     pollingUrl: "/api/live/status",
     onPollingData: (data) => {
       processUpdate(data as EAInstanceData[]);
@@ -3241,7 +315,10 @@ export function LiveDashboardClient({
     const sorted = sortByPriority(groupByAccount(eaInstances));
     const fromIdx = sorted.findIndex((g) => g.key === draggedAccountKey);
     const toIdx = sorted.findIndex((g) => g.key === targetKey);
-    if (fromIdx < 0 || toIdx < 0) { handleDragEnd(); return; }
+    if (fromIdx < 0 || toIdx < 0) {
+      handleDragEnd();
+      return;
+    }
 
     const reordered = [...sorted];
     const [moved] = reordered.splice(fromIdx, 1);
@@ -3275,6 +352,23 @@ export function LiveDashboardClient({
     }
   }
 
+  function handleKeyboardReorder(e: React.KeyboardEvent, accountKey: string) {
+    if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+    e.preventDefault();
+
+    const sorted = sortByPriority(groupByAccount(eaInstances));
+    const fromIdx = sorted.findIndex((g) => g.key === accountKey);
+    if (fromIdx < 0) return;
+
+    const toIdx = e.key === "ArrowUp" ? fromIdx - 1 : fromIdx + 1;
+    if (toIdx < 0 || toIdx >= sorted.length) return;
+
+    // Reuse the same reorder logic as drag-drop
+    const targetKey = sorted[toIdx].key;
+    setDraggedAccountKey(accountKey);
+    handleDrop(targetKey);
+  }
+
   async function handleUnlinkBaseline(instanceId: string): Promise<void> {
     const res = await fetch(`/api/live/${instanceId}/unlink-baseline`, {
       method: "POST",
@@ -3290,796 +384,555 @@ export function LiveDashboardClient({
       showSuccess("Baseline unlinked", "You can link a new baseline at any time.");
     } else {
       const data = await res.json().catch(() => ({}));
-      showError("Failed to unlink", (data as { message?: string }).message ?? "Something went wrong");
+      showError(
+        "Failed to unlink",
+        (data as { message?: string }).message ?? "Something went wrong"
+      );
     }
   }
 
-  async function handleSaveGlobalDrawdown(): Promise<void> {
-    const threshold = parseFloat(globalDrawdownThreshold);
-    if (isNaN(threshold) || threshold <= 0 || threshold > 100) {
-      showError("Invalid threshold", "Please enter a value between 0.1 and 100.");
-      return;
-    }
+  // ── Hoisted metrics ──
+  const containers = eaInstances.filter(isAccountContainer);
+  const metricsSource =
+    containers.length > 0 ? containers : eaInstances.filter((ea) => ea.mode === "LIVE");
 
-    // Create or update a global drawdown alert (no instanceId)
-    const res = await fetch("/api/live/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-      body: JSON.stringify({
-        alertType: "DRAWDOWN",
-        threshold,
-        channel: "EMAIL",
-        alertState: "ACTIVE",
-      }),
-    });
+  // ── Action items for monitoring tab ──
+  const actionItems = eaInstances
+    .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
+    .map((ea) => {
+      const att = resolveInstanceAttention(ea, formatMonitoringReasons);
+      if (!att) return null;
+      const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
+      const isBaselineAction =
+        att.statusLabel === "Baseline suspended" || att.statusLabel === "No baseline linked";
+      return {
+        id: ea.id,
+        identity,
+        ...att,
+        onClick: isBaselineAction
+          ? () => setLinkBaselineInstanceId(ea.id)
+          : () => {
+              const cardId = ea.parentInstanceId || ea.id;
+              if (ea.parentInstanceId) setScrollExpandId(ea.id);
+              setTimeout(
+                () =>
+                  document
+                    .getElementById(`account-card-${cardId}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                100
+              );
+            },
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    if (res.ok) {
-      showSuccess("Floating drawdown alert saved", `Alert at ${threshold}% floating DD`);
-    } else {
-      showError("Failed to save alert");
+  // Group action items
+  const alertGroups = new Map<
+    string,
+    {
+      statusLabel: string;
+      reason: string;
+      actionLabel: string;
+      color: string;
+      members: typeof actionItems;
     }
+  >();
+  for (const item of actionItems) {
+    const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
+    const existing = alertGroups.get(groupKey);
+    if (existing) existing.members.push(item);
+    else
+      alertGroups.set(groupKey, {
+        statusLabel: item.statusLabel,
+        reason: item.reason,
+        actionLabel: item.actionLabel,
+        color: item.color,
+        members: [item],
+      });
   }
+  const ALERT_PRIORITY: Record<string, number> = {
+    "Edge at risk": 0,
+    Unstable: 1,
+    "Connection error": 2,
+    "Baseline suspended": 3,
+    "Waiting for data": 4,
+    "No baseline linked": 5,
+  };
+  const sortedAlertGroups = [...alertGroups.values()].sort(
+    (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
+  );
+  // ── New dashboard stats ──
+  const filteredInstances =
+    modeFilter === "ALL" ? eaInstances : eaInstances.filter((ea) => ea.mode === modeFilter);
+  const accountGroups = sortByPriority(groupByAccount(filteredInstances));
+  const totalAccounts = accountGroups.length;
+  const totalStrategies = filteredInstances.filter((ea) => ea.symbol !== null).length;
+  // ── Portfolio totals (split by mode) ──
+  // Live: from containers (account-wide aggregates) which only include mode=LIVE
+  const liveBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const liveEquity = metricsSource.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
+  const liveFloatingPnl = liveEquity - liveBalance;
+  // Paper: from paper account containers (mode-agnostic container = no parent + no symbol)
+  const paperPrimaries = eaInstances.filter(
+    (ea) => ea.mode === "PAPER" && !ea.parentInstanceId && !ea.symbol
+  );
+  const paperBalance = paperPrimaries.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const paperEquity = paperPrimaries.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
+  const paperFloatingPnl = paperEquity - paperBalance;
+  // Combined totals across all account modes
+  const totalFloatingPnl = liveFloatingPnl + paperFloatingPnl;
+  const totalOpenTrades =
+    metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0) +
+    paperPrimaries.reduce((sum, ea) => sum + ea.openTrades, 0);
 
-  // Portfolio-level strategy health summary (excludes base/account containers)
-  const portfolioHealthCounts = (() => {
-    const counts: Record<StrategyHealthLabel, number> = {
-      Healthy: 0,
-      Elevated: 0,
-      "Edge at Risk": 0,
-      Pending: 0,
-    };
+  // ── Activity feed: merge live SSE trades with recent historical trades ──
+  const feedItems: FeedItem[] = (() => {
+    const liveIds = new Set(liveFeedItems.map((f) => f.id));
+    const historical: FeedItem[] = [];
     for (const ea of eaInstances) {
-      if (!ea.symbol) continue; // skip account-wide parent containers
-      counts[deriveStrategyHealth(ea)]++;
+      for (const t of ea.trades ?? []) {
+        const id = t.ticket ?? `${ea.id}-${t.closeTime ?? t.profit}`;
+        if (liveIds.has(id)) continue;
+        historical.push({
+          id,
+          symbol: t.symbol ?? "UNKNOWN",
+          type: t.type ?? (t.profit >= 0 ? "BUY" : "SELL"),
+          profit: t.profit,
+          lots: t.lots,
+          eaName: ea.eaName,
+          closeTime: t.closeTime,
+        });
+      }
     }
-    return counts;
+    historical.sort((a, b) => {
+      if (a.closeTime && b.closeTime)
+        return new Date(b.closeTime).getTime() - new Date(a.closeTime).getTime();
+      if (a.closeTime) return -1;
+      if (b.closeTime) return 1;
+      return 0;
+    });
+    return [...liveFeedItems, ...historical].slice(0, 15);
   })();
-  const portfolioHealthParts = (
-    ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
-  ).filter((label) => portfolioHealthCounts[label] > 0);
+
+  // Sidebar content (shared between desktop and mobile render)
+  const sidebarContent = (
+    <>
+      <AlertsSidebar
+        alertGroups={sortedAlertGroups}
+        totalCount={actionItems.length}
+        onDismiss={(id) => setDismissedAlerts((prev) => new Set([...prev, id]))}
+        onConfigureAlerts={() => setShowAlertsModal(true)}
+      />
+    </>
+  );
 
   return (
-    <div className="space-y-5">
-      {/* Controls bar */}
-      <div className="flex flex-wrap items-center justify-end gap-2.5 px-3 py-2 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/30">
-        {/* Mode filter */}
-        <div className="flex items-center rounded-md border border-[#1E293B] overflow-hidden">
-          {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setModeFilter(mode)}
-              className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                modeFilter === mode
-                  ? mode === "PAPER"
-                    ? "bg-[#F59E0B]/15 text-[#F59E0B]"
-                    : "bg-white/5 text-white"
-                  : "text-[#64748B] hover:text-[#94A3B8]"
-              }`}
-            >
-              {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
-            </button>
-          ))}
-        </div>
-
-        {/* Connection status indicator */}
-        <ConnectionIndicator connectionStatus={connectionStatus} lastUpdated={lastUpdated} />
-
-        {/* Sound toggle */}
-        <button
-          onClick={() => setSoundAlerts(!soundAlerts)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border transition-colors ${
-            soundAlerts
-              ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
-              : "text-[#64748B] border-[#1E293B] hover:text-[#94A3B8]"
-          }`}
-          title={soundAlerts ? "Notifications on" : "Notifications off"}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            {soundAlerts ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-              />
-            )}
-          </svg>
-          Notifications
-        </button>
-
-        {/* Alerts config button */}
-        <button
-          onClick={() => setShowAlertsModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] transition-colors"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+    <div>
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* ═══ MAIN CONTENT ═══ */}
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* ── Stat Cards Row ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard
+              label="Live Balance"
+              value={formatCurrency(liveBalance)}
+              accentColor="#10B981"
+              subValue={
+                paperBalance > 0
+                  ? `Paper: ${formatCurrency(paperBalance)}`
+                  : `Equity: ${formatCurrency(liveEquity)}`
+              }
+              subColor="#64748B"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              }
             />
-          </svg>
-          Alerts
-        </button>
+            <StatCard
+              label="Floating P&L"
+              value={formatPnl(totalFloatingPnl)}
+              accentColor={totalFloatingPnl >= 0 ? "#10B981" : "#EF4444"}
+              subValue={`${totalOpenTrades} open positions`}
+              subColor="#818CF8"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              }
+            />
+            <StatCard
+              label="Strategies"
+              value={totalStrategies}
+              accentColor="#A78BFA"
+              subValue={`across ${totalAccounts} accounts`}
+              subColor="#64748B"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+              }
+            />
+            <StatCard
+              label="Connection"
+              value={
+                connectionStatus === "connected"
+                  ? "Live"
+                  : connectionStatus === "fallback-polling"
+                    ? "Delayed"
+                    : "Offline"
+              }
+              accentColor={
+                connectionStatus === "connected"
+                  ? "#10B981"
+                  : connectionStatus === "fallback-polling"
+                    ? "#F59E0B"
+                    : "#EF4444"
+              }
+              subValue={
+                lastUpdated
+                  ? `Updated ${Math.round((Date.now() - lastUpdated.getTime()) / 1000)}s ago`
+                  : undefined
+              }
+              subColor="#64748B"
+              icon={
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                  />
+                </svg>
+              }
+              actionLabel="Connect Account"
+              onAction={() => registerDialogRef.current?.click()}
+            />
+          </div>
 
-        {/* Connect external EA */}
-        <RegisterEADialog onSuccess={fetchUpdate} />
-
-        {/* Manual refresh */}
-        <button
-          onClick={fetchUpdate}
-          className="px-3 py-1.5 rounded-md text-[11px] font-medium text-[#64748B] border border-[#1E293B] hover:text-[#94A3B8] transition-colors"
-        >
-          Refresh Now
-        </button>
-      </div>
-
-      {/* ── System Status Zone ── */}
-      {eaInstances.length > 0 &&
-        (() => {
-          let healthy = 0;
-          let attentionCount = 0;
-          let monitoring = 0;
-          let paused = 0;
-
-          for (const ea of eaInstances) {
-            if (ea.tradingState === "PAUSED") {
-              paused++;
-              continue;
-            }
-            const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-            if (!att) {
-              healthy++;
-            } else if (att.statusLabel === "Waiting for data") {
-              monitoring++;
-            } else {
-              attentionCount++;
-            }
-          }
-
-          const total = healthy + attentionCount + monitoring + paused;
-          const allHealthy = attentionCount === 0 && paused === 0 && monitoring === 0;
-
-          // Build action-required items
-          const actionItems = eaInstances
-            .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
-            .map((ea) => {
-              const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-              if (!att) return null;
-              const identity = [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-              const isBaselineAction =
-                att.statusLabel === "Baseline suspended" ||
-                att.statusLabel === "No baseline linked";
-              return {
-                id: ea.id,
-                identity,
-                ...att,
-                onClick: isBaselineAction
-                  ? () => setLinkBaselineInstanceId(ea.id)
-                  : () => {
-                      const cardId = ea.parentInstanceId || ea.id;
-                      if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                      document
-                        .getElementById(`account-card-${cardId}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    },
-              };
-            })
-            .filter((item): item is NonNullable<typeof item> => item !== null);
-
-          // Group action items
-          const groups = new Map<
-            string,
-            {
-              statusLabel: string;
-              reason: string;
-              actionLabel: string;
-              color: string;
-              members: typeof actionItems;
-            }
-          >();
-          for (const item of actionItems) {
-            const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
-            const existing = groups.get(groupKey);
-            if (existing) {
-              existing.members.push(item);
-            } else {
-              groups.set(groupKey, {
-                statusLabel: item.statusLabel,
-                reason: item.reason,
-                actionLabel: item.actionLabel,
-                color: item.color,
-                members: [item],
-              });
-            }
-          }
-
-          const ALERT_PRIORITY: Record<string, number> = {
-            "Edge at risk": 0,
-            Unstable: 1,
-            "Connection error": 2,
-            "Baseline suspended": 3,
-            "Waiting for data": 4,
-            "No baseline linked": 5,
-          };
-          const sortedGroups = [...groups.values()].sort(
-            (a, b) => (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
-          );
-
-          const hasRed = actionItems.some((i) => i.color === "#EF4444");
-          const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
-
-          return (
-            <div className="sticky top-0 z-20 py-2.5 px-3 border-b border-[#1E293B]/40 bg-[#0A0118]/98 backdrop-blur-sm rounded-lg">
-              {/* System pulse header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    {allHealthy && (
-                      <span
-                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
-                        style={{ backgroundColor: "#10B981" }}
-                      />
-                    )}
-                    <span
-                      className="relative inline-flex rounded-full h-2.5 w-2.5"
-                      style={{
-                        backgroundColor: allHealthy
-                          ? "#10B981"
-                          : hasRed
-                            ? "#EF4444"
-                            : attentionCount > 0
-                              ? "#F59E0B"
-                              : "#A78BFA",
-                      }}
-                    />
-                  </span>
-                  <p className="text-sm font-semibold text-[#CBD5E1]">
-                    {allHealthy
-                      ? "All systems nominal"
-                      : attentionCount > 0
-                        ? `${attentionCount} ${attentionCount === 1 ? "instance" : "instances"} need attention`
-                        : monitoring > 0
-                          ? "Collecting baseline data"
-                          : paused > 0
-                            ? "Trading paused"
-                            : "System monitoring active"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {connectionStatus === "connected" && (
-                    <span className="flex items-center gap-1.5 text-[10px] text-[#10B981]/70 font-medium">
-                      <span className="relative flex h-1 w-1">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-50" />
-                        <span className="relative inline-flex rounded-full h-1 w-1 bg-[#10B981]" />
-                      </span>
-                      Telemetry active
-                    </span>
-                  )}
-                  <p className="text-[10px] text-[#475569]">
-                    {total} instance{total !== 1 ? "s" : ""} monitored
-                  </p>
-                </div>
-              </div>
+          {/* ── Connection warning (only for disconnected — polling is shown inline) ── */}
+          {connectionStatus === "disconnected" && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20 text-[10px] text-[#EF4444]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0" />
+              Connection lost. Reconnecting...
             </div>
-          );
-        })()}
+          )}
 
-      {/* ── Two-Column Control Zone ── */}
-      {eaInstances.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* LEFT: Operations */}
-          <div className="lg:col-span-3 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-              Operations
-            </p>
-            {/* Primary readings */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <SummaryCard
-                label="Floating P&L"
-                subtitle="unrealized"
-                value={eaInstances
-                  .filter((ea) => isAccountContainer(ea) && ea.equity != null && ea.balance != null)
-                  .reduce((sum, ea) => sum + (ea.equity! - ea.balance!), 0)}
-              />
-              <SummaryCard
-                label="Total Trades"
-                value={eaInstances
-                  .filter(isAccountContainer)
-                  .reduce((sum, ea) => sum + ea.totalTrades, 0)}
-                isCurrency={false}
-              />
-              <SummaryCard
-                label="Open Trades"
-                value={eaInstances
-                  .filter(isAccountContainer)
-                  .reduce((sum, ea) => sum + ea.openTrades, 0)}
-                isCurrency={false}
-              />
-            </div>
-            {/* Secondary reading: Paper P&L (only when paper instances exist) */}
-            {eaInstances.some((ea) => ea.mode === "PAPER") && (
-              <div className="flex items-baseline gap-2 px-1">
-                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                  Paper P&L
-                </span>
-                <span
-                  className={`text-xs font-semibold tabular-nums ${
-                    eaInstances
-                      .filter((ea) => ea.mode === "PAPER")
-                      .reduce((sum, ea) => sum + ea.totalProfit, 0) >= 0
-                      ? "text-[#10B981]"
-                      : "text-[#EF4444]"
+          {/* ── Controls bar ── */}
+          <div className="flex flex-wrap items-center gap-2.5 px-1">
+            <div className="flex items-center rounded-full bg-[#0D0D12]/60 border border-[#1E293B]/30 p-0.5">
+              {(["ALL", "LIVE", "PAPER"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setModeFilter(mode)}
+                  aria-label={`Filter: ${mode === "ALL" ? "All modes" : mode === "LIVE" ? "Live only" : "Paper only"}`}
+                  aria-pressed={modeFilter === mode}
+                  className={`px-2.5 py-1 text-[10px] font-medium transition-colors rounded-full ${
+                    modeFilter === mode
+                      ? mode === "PAPER"
+                        ? "bg-[#F59E0B]/15 text-[#F59E0B]"
+                        : "bg-white/10 text-white"
+                      : "text-[#64748B] hover:text-[#A1A1AA]"
                   }`}
                 >
-                  {formatCurrency(
-                    eaInstances
-                      .filter((ea) => ea.mode === "PAPER")
-                      .reduce((sum, ea) => sum + ea.totalProfit, 0)
-                  )}
-                </span>
-                <span className="text-[9px] text-[#475569]">tracked total</span>
-              </div>
-            )}
-
-            {/* Secondary: health + exposure */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
-              {/* Strategy Health */}
-              {portfolioHealthParts.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                    Health
-                  </span>
-                  {portfolioHealthParts.map((label) => {
-                    const hs = HEALTH_STYLES[label];
-                    return (
-                      <span
-                        key={label}
-                        className={`inline-flex items-center gap-1 text-xs font-medium ${hs.text}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${hs.dot}`} />
-                        {portfolioHealthCounts[label]} {label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-              {/* Exposure */}
-              <div className="flex items-center gap-3">
-                <span className="text-[9px] uppercase tracking-[0.15em] text-[#475569]">
-                  Exposure
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-white">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades > 0).length} Active
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#64748B]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#334155]" />
-                  {eaInstances.filter((ea) => ea.symbol && ea.openTrades === 0).length} Idle
-                </span>
-              </div>
+                  {mode === "ALL" ? "All" : mode === "LIVE" ? "Live" : "Paper"}
+                </button>
+              ))}
             </div>
 
-            {/* Per-Symbol Breakdown */}
-            {(() => {
-              const symbolMap = new Map<
-                string,
-                { pnl: number; count: number; openTrades: number }
-              >();
-              const filtered = eaInstances.filter(
-                (ea) => ea.symbol && (modeFilter === "ALL" || ea.mode === modeFilter)
-              );
-              for (const ea of filtered) {
-                const sym = ea.symbol!;
-                const existing = symbolMap.get(sym) || { pnl: 0, count: 0, openTrades: 0 };
-                existing.pnl += ea.totalProfit;
-                existing.count += 1;
-                existing.openTrades += ea.openTrades;
-                symbolMap.set(sym, existing);
-              }
-              if (symbolMap.size <= 1) return null;
-              const entries = Array.from(symbolMap.entries()).sort(
-                (a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl)
-              );
-              return (
-                <div className="px-3 py-2 rounded-md bg-white/[0.015] border border-[#1E293B]/25">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] mb-1.5">
-                    Symbols
-                  </p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {entries.map(([sym, data]) => (
-                      <span
-                        key={sym}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-mono"
-                      >
-                        <span className="font-medium text-[#94A3B8]">{sym}</span>
-                        <span
-                          className={`font-semibold tabular-nums ${data.pnl >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}
-                        >
-                          {formatCurrency(data.pnl)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* RIGHT: Monitoring */}
-          <div className="lg:col-span-2 space-y-4 rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-            <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-              Monitoring
-            </p>
-            {(() => {
-              const actionItems = eaInstances
-                .filter((ea) => !isAccountContainer(ea) && !dismissedAlerts.has(ea.id))
-                .map((ea) => {
-                  const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-                  if (!att) return null;
-                  const identity =
-                    [ea.symbol, ea.timeframe].filter(Boolean).join(" · ") || ea.eaName;
-                  const isBaselineAction =
-                    att.statusLabel === "Baseline suspended" ||
-                    att.statusLabel === "No baseline linked";
-                  return {
-                    id: ea.id,
-                    identity,
-                    ...att,
-                    onClick: isBaselineAction
-                      ? () => setLinkBaselineInstanceId(ea.id)
-                      : () => {
-                          const cardId = ea.parentInstanceId || ea.id;
-                          if (ea.parentInstanceId) setScrollExpandId(ea.id);
-                          document
-                            .getElementById(`account-card-${cardId}`)
-                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                        },
-                  };
-                })
-                .filter((item): item is NonNullable<typeof item> => item !== null);
-
-              if (actionItems.length === 0) return null;
-
-              // Group action items
-              const groups = new Map<
-                string,
-                {
-                  statusLabel: string;
-                  reason: string;
-                  actionLabel: string;
-                  color: string;
-                  members: typeof actionItems;
-                }
-              >();
-              for (const item of actionItems) {
-                const groupKey = `${item.statusLabel}|${item.reason}|${item.actionLabel}`;
-                const existing = groups.get(groupKey);
-                if (existing) {
-                  existing.members.push(item);
-                } else {
-                  groups.set(groupKey, {
-                    statusLabel: item.statusLabel,
-                    reason: item.reason,
-                    actionLabel: item.actionLabel,
-                    color: item.color,
-                    members: [item],
-                  });
-                }
-              }
-
-              const ALERT_PRIORITY: Record<string, number> = {
-                "Edge at risk": 0,
-                Unstable: 1,
-                "Connection error": 2,
-                "Baseline suspended": 3,
-                "Waiting for data": 4,
-                "No baseline linked": 5,
-              };
-              const sortedGroups = [...groups.values()].sort(
-                (a, b) =>
-                  (ALERT_PRIORITY[a.statusLabel] ?? 9) - (ALERT_PRIORITY[b.statusLabel] ?? 9)
-              );
-
-              const hasRed = actionItems.some((i) => i.color === "#EF4444");
-              const alertBorderColor = hasRed ? "#EF4444" : "#F59E0B";
-
-              return (
-                <div
-                  className="rounded-md px-3 py-3"
-                  style={{
-                    borderColor: `${alertBorderColor}20`,
-                    borderWidth: "1px",
-                    borderStyle: "solid",
-                    backgroundColor: `${alertBorderColor}05`,
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="relative flex h-2 w-2">
-                      <span
-                        className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40"
-                        style={{ backgroundColor: alertBorderColor }}
-                      />
-                      <span
-                        className="relative inline-flex rounded-full h-2 w-2"
-                        style={{ backgroundColor: alertBorderColor }}
-                      />
-                    </span>
-                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium">
-                      Alerts
-                    </p>
-                    <span
-                      className="text-[10px] font-semibold tabular-nums"
-                      style={{ color: alertBorderColor }}
-                    >
-                      {actionItems.length}
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {sortedGroups.map((group) => (
-                      <div
-                        key={group.statusLabel}
-                        className="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 bg-white/[0.02]"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[11px] font-semibold" style={{ color: group.color }}>
-                              {group.statusLabel}
-                            </p>
-                            <span className="text-[10px] text-[#475569]">
-                              ({group.members.length})
-                            </span>
-                            <span className="text-[10px] text-[#475569]">—</span>
-                            <span className="text-[10px] text-[#64748B] truncate">
-                              {group.reason}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {group.members.map((m) => (
-                              <span
-                                key={m.id}
-                                className="inline-flex items-center gap-1.5 text-[9px] text-[#94A3B8] bg-white/[0.04] px-1.5 py-0.5 rounded"
-                              >
-                                {m.identity}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    m.onClick();
-                                  }}
-                                  disabled={linkingInstanceId === m.id || activatingInstanceId === m.id}
-                                  className="text-[9px] font-medium transition-colors hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                                  style={{ color: group.color }}
-                                >
-                                  {activatingInstanceId === m.id
-                                    ? "Activating..."
-                                    : linkingInstanceId === m.id
-                                      ? "Linking..."
-                                      : group.actionLabel}
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setDismissedAlerts(
-                                (prev) => new Set([...prev, ...group.members.map((m) => m.id)])
-                              )
-                            }
-                            className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors p-0.5"
-                            title="Dismiss"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-            {(() => {
-              let healthy = 0;
-              let attentionCount = 0;
-              let monitoring = 0;
-              let paused = 0;
-              for (const ea of eaInstances) {
-                if (ea.tradingState === "PAUSED") {
-                  paused++;
-                  continue;
-                }
-                const att = resolveInstanceAttention(ea, formatMonitoringReasons);
-                if (!att) {
-                  healthy++;
-                } else if (att.statusLabel === "Waiting for data") {
-                  monitoring++;
-                } else {
-                  attentionCount++;
-                }
-              }
-              return (
-                <div className="rounded-md border border-[#1E293B]/25 bg-white/[0.015] px-3 py-2.5">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-2">
-                    Health
-                  </p>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { label: "Healthy", count: healthy, color: "#10B981" },
-                      { label: "Attention", count: attentionCount, color: "#F59E0B" },
-                      { label: "Collecting", count: monitoring, color: "#A78BFA" },
-                      { label: "Paused", count: paused, color: "#64748B" },
-                    ].map((c) => (
-                      <div key={c.label} className="text-center">
-                        <p
-                          className="text-lg font-bold font-mono tabular-nums leading-none"
-                          style={{ color: c.count > 0 ? c.color : "#27272A" }}
-                        >
-                          {c.count}
-                        </p>
-                        <p className="text-[8px] uppercase tracking-wider text-[#525B6B] mt-1">
-                          {c.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* Baseline linked success banner */}
-      {linkedSuccessBanner && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#10B981]/10 border border-[#10B981]/20 text-xs text-[#10B981] font-medium mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] shrink-0" />
-          Baseline linked successfully
-        </div>
-      )}
-
-      {/* EA Cards Grid */}
-      {eaInstances.length === 0 ? (
-        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1E293B] flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <button
+              onClick={() => setSoundAlerts(!soundAlerts)}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                soundAlerts ? "text-[#F59E0B]" : "text-[#64748B] hover:text-[#A1A1AA]"
+              }`}
+              title={soundAlerts ? "Notifications on" : "Notifications off"}
+              aria-label={soundAlerts ? "Disable notifications" : "Enable notifications"}
+              aria-pressed={soundAlerts}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No live EAs running</h3>
-          <p className="text-sm text-[#94A3B8] max-w-md mx-auto mb-6">
-            Export an EA and connect it to MT5 to get started. Your live EAs will appear here with
-            real-time performance tracking.
-          </p>
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-md hover:bg-[#4338CA] transition-colors"
-          >
-            Go to Dashboard
-          </Link>
-        </div>
-      ) : (
-        <div className="rounded-lg bg-[#0A0118]/40 border border-[#1E293B]/40 p-4">
-          <p className="text-[9px] uppercase tracking-[0.15em] text-[#475569] font-medium mb-4">
-            Strategy Monitor
-          </p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {sortByPriority(
-              groupByAccount(
-                modeFilter === "ALL"
-                  ? eaInstances
-                  : eaInstances.filter((ea) => ea.mode === modeFilter)
-              )
-            ).map((account) => (
-              <div
-                key={account.key}
-                draggable
-                onDragStart={() => handleDragStart(account.key)}
-                onDragOver={(e) => handleDragOver(e, account.key)}
-                onDragEnd={handleDragEnd}
-                onDrop={() => handleDrop(account.key)}
-                className={`transition-all ${draggedAccountKey === account.key ? "opacity-40" : ""} ${dragOverAccountKey === account.key ? "ring-2 ring-[#4F46E5] rounded-xl" : ""}`}
-                style={{ cursor: "grab" }}
-              >
-                <AccountCard
-                  account={account}
-                  changedIds={changedIds}
-                  onTogglePause={handleTogglePause}
-                  onDelete={handleDelete}
-                  onLinkBaseline={setLinkBaselineInstanceId}
-                  onUnlinkBaseline={handleUnlinkBaseline}
-                  forceExpandId={scrollExpandId}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {soundAlerts ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75a.75.75 0 01-.75-.75V6a.75.75 0 011.5 0v12a.75.75 0 01-.75.75zM8 15H5a1 1 0 01-1-1v-4a1 1 0 011-1h3l4-4v14l-4-4z"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+                  />
+                )}
+              </svg>
+            </button>
 
-      {/* Settings — drawdown alert (secondary, below accounts) */}
-      {eaInstances.length > 0 && (
-        <div className="bg-[#0A0118]/40 border border-[#1E293B]/40 rounded-lg p-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <svg
-                className="w-4 h-4 text-[#F59E0B] shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
+            <div className="ml-auto flex items-center gap-2">
+              {connectionStatus === "fallback-polling" && (
+                <span className="flex items-center gap-1.5 text-[10px] text-[#F59E0B]">
+                  <span className="w-1 h-1 rounded-full bg-[#F59E0B] animate-pulse" />
+                  Delayed updates
+                </span>
+              )}
+              {accountGroups.length >= 2 && (
+                <Link
+                  href="/app/compare"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-[#FAFAFA] hover:text-white border border-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.25)] rounded-md transition-colors"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+                    />
+                  </svg>
+                  Compare Accounts
+                </Link>
+              )}
+              <RegisterEADialog onSuccess={fetchUpdate} triggerRef={registerDialogRef} />
+            </div>
+          </div>
+
+          {/* Success Banner */}
+          {linkedSuccessBanner && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981] text-xs font-medium">
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
                 />
               </svg>
-              <p className="text-xs text-[#CBD5E1]">
-                Floating drawdown alert (current balance-equity gap, all EAs)
-              </p>
+              Baseline linked successfully — monitoring will resume automatically.
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[#7C8DB0]">Alert at</span>
-              <input
-                type="number"
-                value={globalDrawdownThreshold}
-                onChange={(e) => setGlobalDrawdownThreshold(e.target.value)}
-                min="0.1"
-                max="100"
-                step="0.1"
-                className="w-20 rounded-md bg-[#0A0118] border border-[#1E293B] text-[#CBD5E1] px-2 py-1 text-xs text-center focus:outline-none focus:border-[#334155]"
-              />
-              <span className="text-xs text-[#7C8DB0]">% floating DD</span>
-              <button
-                onClick={handleSaveGlobalDrawdown}
-                className="px-3 py-1 rounded-md text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#4338CA] transition-colors"
+          )}
+
+          {/* ── Account Cards ── */}
+          {eaInstances.length > 0 ? (
+            <div className="space-y-3">
+              <div
+                role="list"
+                aria-label="Trading accounts — Alt+Arrow Up/Down to reorder"
+                className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
               >
-                Save
-              </button>
+                {accountGroups.map((account) => (
+                  <div
+                    key={account.key}
+                    draggable
+                    tabIndex={0}
+                    role="listitem"
+                    aria-label={`${account.primary.eaName ?? account.broker ?? "Account"} — Alt+Arrow to reorder`}
+                    onDragStart={() => handleDragStart(account.key)}
+                    onDragOver={(e) => handleDragOver(e, account.key)}
+                    onDragEnd={handleDragEnd}
+                    onDrop={() => handleDrop(account.key)}
+                    onKeyDown={(e) => handleKeyboardReorder(e, account.key)}
+                    className={`transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[#818CF8] focus-visible:rounded-lg ${
+                      draggedAccountKey === account.key ? "opacity-40" : ""
+                    } ${dragOverAccountKey === account.key ? "ring-2 ring-[#6366F1] rounded-lg" : ""}`}
+                  >
+                    <AccountTile
+                      account={account}
+                      isSelected={selectedAccountKey === account.key}
+                      onClick={() =>
+                        setSelectedAccountKey((prev) => (prev === account.key ? null : account.key))
+                      }
+                      changedIds={changedIds}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Detail panel — below grid when account selected */}
+              {selectedAccountKey &&
+                (() => {
+                  const sel = accountGroups.find((a) => a.key === selectedAccountKey);
+                  if (!sel) return null;
+                  return (
+                    <AccountCard
+                      account={sel}
+                      changedIds={changedIds}
+                      onTogglePause={handleTogglePause}
+                      onDelete={handleDelete}
+                      onLinkBaseline={(id) => setLinkBaselineInstanceId(id)}
+                      onUnlinkBaseline={handleUnlinkBaseline}
+                      forceExpandId={scrollExpandId}
+                    />
+                  );
+                })()}
             </div>
-          </div>
+          ) : (
+            /* ── Empty state — onboarding hero ── */
+            <div className="rounded-xl border border-[rgba(79,70,229,0.2)] bg-gradient-to-b from-[rgba(79,70,229,0.06)] to-[#111114] p-8 md:p-10">
+              <div className="max-w-lg mx-auto">
+                {/* Hero */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-[#6366F1]/15 border border-[#6366F1]/25 flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-[#818CF8]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Welcome to Algo Studio</h3>
+                    <p className="text-sm text-[#7C8DB0]">Set up live monitoring in minutes</p>
+                  </div>
+                </div>
+
+                {/* What you get */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+                  <div className="rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#10B981]/10 flex items-center justify-center mb-2">
+                      <svg
+                        className="w-3.5 h-3.5 text-[#10B981]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xs font-medium text-white">Edge Monitoring</p>
+                    <p className="text-[11px] text-[#7C8DB0] mt-0.5">
+                      Detect when live performance drifts from your backtest
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center mb-2">
+                      <svg
+                        className="w-3.5 h-3.5 text-[#F59E0B]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xs font-medium text-white">Smart Alerts</p>
+                    <p className="text-[11px] text-[#7C8DB0] mt-0.5">
+                      Get notified when your strategy needs attention
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#818CF8]/10 flex items-center justify-center mb-2">
+                      <svg
+                        className="w-3.5 h-3.5 text-[#818CF8]"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-xs font-medium text-white">Verified Track Record</p>
+                    <p className="text-[11px] text-[#7C8DB0] mt-0.5">
+                      Build a tamper-proof history of your live results
+                    </p>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <Link
+                    href="/app/onboarding"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#6366F1] transition-colors"
+                  >
+                    Start Setup
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </Link>
+                  <span className="text-xs text-[#7C8DB0]">Takes about 5 minutes</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Activity feed — below accounts */}
+          {eaInstances.length > 0 && feedItems.length > 0 && (
+            <div className="rounded-lg bg-[#0D0D12]/40 border border-[#1E293B]/30 overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#1E293B]/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
+                    Recent Trades
+                  </span>
+                  {liveFeedItems.length > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                  )}
+                </div>
+              </div>
+              <ActivityFeed items={feedItems} />
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Restore onboarding guide */}
-      {eaInstances.length > 0 && showRestoreGuide && (
-        <button
-          onClick={() => {
-            try { localStorage.removeItem("algostudio:onboarding-dismissed"); } catch { /* private browsing */ }
-            window.location.reload();
-          }}
-          className="text-[10px] text-[#475569] hover:text-[#94A3B8] transition-colors"
-        >
-          Show setup guide again
-        </button>
-      )}
+        {/* ═══ SIDEBAR (desktop) ═══ */}
+        {eaInstances.length > 0 && (
+          <aside className="hidden lg:flex lg:flex-col w-72 xl:w-80 flex-shrink-0 self-start sticky top-4 max-h-[calc(100vh-6rem)]">
+            {sidebarContent}
+          </aside>
+        )}
+      </div>
 
-      {/* Alerts Modal */}
+      {/* ═══ SIDEBAR (mobile: stacked below) ═══ */}
+      {eaInstances.length > 0 && <div className="lg:hidden space-y-3 mt-3">{sidebarContent}</div>}
+
+      {/* ── Modals ── */}
       {showAlertsModal && (
         <AlertsModal instances={eaInstances} onClose={() => setShowAlertsModal(false)} />
       )}
 
-      {/* Link Baseline Dialog */}
       {linkBaselineInstanceId &&
         (() => {
           const inst = eaInstances.find((ea) => ea.id === linkBaselineInstanceId);
@@ -4092,15 +945,14 @@ export function LiveDashboardClient({
               instanceName={inst?.eaName ?? ""}
               isRelink={inst?.relinkRequired}
               deploymentContext={ctx}
-              onLinkingStarted={() => setLinkingInstanceId(linkBaselineInstanceId)}
+              onLinkingStarted={() => {}}
               isActivating={activatingInstanceId === linkBaselineInstanceId}
               onClose={() => {
                 setLinkBaselineInstanceId(null);
-                setLinkingInstanceId(null);
+
                 setActivatingInstanceId(null);
               }}
               onLinked={async (instanceId, baseline) => {
-                // Check if this is an auto-discovered DRAFT instance — activate after linking
                 const inst = eaInstances.find((ea) => ea.id === instanceId);
                 if (inst?.isAutoDiscovered) {
                   setActivatingInstanceId(instanceId);
@@ -4125,7 +977,6 @@ export function LiveDashboardClient({
                         )
                       );
                     } else {
-                      // Activation failed — baseline is linked, lifecycle stays in DRAFT
                       setEaInstances((prev) =>
                         prev.map((ea) =>
                           ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
@@ -4137,7 +988,6 @@ export function LiveDashboardClient({
                       );
                     }
                   } catch {
-                    // Network error — baseline is linked, activation request was not delivered
                     setEaInstances((prev) =>
                       prev.map((ea) =>
                         ea.id === instanceId ? { ...ea, baseline, relinkRequired: false } : ea
@@ -4157,10 +1007,14 @@ export function LiveDashboardClient({
                     )
                   );
                 }
-                setLinkingInstanceId(null);
+
                 setLinkedSuccessBanner(true);
-                if (linkedSuccessBannerTimerRef.current) clearTimeout(linkedSuccessBannerTimerRef.current);
-                linkedSuccessBannerTimerRef.current = setTimeout(() => setLinkedSuccessBanner(false), 3000);
+                if (linkedSuccessBannerTimerRef.current)
+                  clearTimeout(linkedSuccessBannerTimerRef.current);
+                linkedSuccessBannerTimerRef.current = setTimeout(
+                  () => setLinkedSuccessBanner(false),
+                  5000
+                );
                 setLinkBaselineInstanceId(null);
               }}
             />

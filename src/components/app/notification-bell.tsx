@@ -305,6 +305,14 @@ export function NotificationBell() {
               })
             )}
           </div>
+
+          {/* Footer — link to full history */}
+          <a
+            href="/app/alerts"
+            className="block px-4 py-2.5 text-center text-[11px] font-medium text-[#818CF8] hover:bg-[rgba(255,255,255,0.02)] border-t border-[rgba(255,255,255,0.06)] transition-colors"
+          >
+            View all alerts
+          </a>
         </div>
       )}
     </div>

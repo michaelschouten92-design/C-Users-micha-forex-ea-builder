@@ -18,7 +18,7 @@ interface SkeletonCardProps {
 export function SkeletonCard({ lines = 3, className = "" }: SkeletonCardProps): React.ReactNode {
   return (
     <div
-      className={`bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6 space-y-4 ${className}`}
+      className={`bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6 space-y-4 ${className}`}
     >
       <div className="h-5 w-3/4 bg-[#1E293B] rounded animate-pulse" />
       {Array.from({ length: lines }, (_, i) => (
@@ -37,7 +37,9 @@ interface SkeletonMetricProps {
 
 export function SkeletonMetric({ className = "" }: SkeletonMetricProps): React.ReactNode {
   return (
-    <div className={`bg-[#0A0118] border border-[rgba(79,70,229,0.2)] rounded-lg p-4 ${className}`}>
+    <div
+      className={`bg-[#0D0D12] border border-[rgba(255,255,255,0.06)] rounded-lg p-4 ${className}`}
+    >
       <div className="h-2 w-16 bg-[#1E293B] rounded animate-pulse mb-2" />
       <div className="h-5 w-20 bg-[#1E293B] rounded animate-pulse" />
     </div>
@@ -57,10 +59,10 @@ export function SkeletonTable({
 }: SkeletonTableProps): React.ReactNode {
   return (
     <div
-      className={`bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl overflow-hidden ${className}`}
+      className={`bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl overflow-hidden ${className}`}
     >
       {/* Header */}
-      <div className="flex gap-4 p-4 border-b border-[rgba(79,70,229,0.15)]">
+      <div className="flex gap-4 p-4 border-b border-[rgba(255,255,255,0.06)]">
         {Array.from({ length: columns }, (_, i) => (
           <div
             key={i}

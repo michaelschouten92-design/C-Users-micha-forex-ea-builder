@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio Verified Strategy Proof";
+export const alt = "Algo Studio Verified Strategy Proof";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -154,7 +154,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
           flexDirection: "column",
         }}
       >
-        {/* Top row: AlgoStudio badge + ladder level */}
+        {/* Top row: Algo Studio badge + ladder level */}
         <div
           style={{
             display: "flex",
@@ -187,7 +187,7 @@ export default async function Image({ params }: { params: Promise<{ strategyId: 
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            Verified by AlgoStudio
+            Verified by Algo Studio
           </div>
           <div
             style={{

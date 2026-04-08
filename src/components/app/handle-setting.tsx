@@ -51,16 +51,16 @@ export function HandleSetting() {
 
   if (loading) {
     return (
-      <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
-        <div className="h-6 bg-[#0A0118] rounded w-40 animate-pulse" />
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
+        <div className="h-6 bg-[#0D0D12] rounded w-40 animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
       <h2 className="text-lg font-semibold text-white mb-2">Public Handle</h2>
-      <p className="text-sm text-[#94A3B8] mb-4">
+      <p className="text-sm text-[#A1A1AA] mb-4">
         Your public handle is used for your trader profile URL and proof pages.
         {savedHandle && (
           <span className="block mt-1 text-xs text-[#7C8DB0]">
@@ -83,7 +83,7 @@ export function HandleSetting() {
         <button
           onClick={handleSave}
           disabled={saving || handle.trim().length < 3 || handle === savedHandle}
-          className="px-5 py-2.5 text-sm font-medium text-white bg-[#4F46E5] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          className="px-5 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {saving ? "Saving..." : savedHandle ? "Update" : "Claim"}
         </button>

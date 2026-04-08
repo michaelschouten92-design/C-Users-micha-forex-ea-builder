@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { createHash } from "crypto";
-import { logger } from "@/lib/logger";
+import { logger, getRequestId } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { authenticateTelemetry } from "@/lib/telemetry-auth";
 import { apiError, ErrorCode } from "@/lib/error-codes";
@@ -60,6 +60,9 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
 
   const baseInstanceId = auth.instanceId;
+  const requestId = getRequestId(request);
+
+  logger.debug({ requestId, instanceId: baseInstanceId }, "Track record ingest received");
 
   // Per-instance rate limiting (100 events/minute) — scoped to base instance
   // so one API key can't bypass limits by splitting across contexts
@@ -102,10 +105,9 @@ export async function POST(request: NextRequest) {
     : baseInstanceId;
 
   if (!effectiveInstanceId) {
-    return NextResponse.json(
-      apiError(ErrorCode.NOT_FOUND, "Context instance has been deleted"),
-      { status: 410 }
-    );
+    return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Context instance has been deleted"), {
+      status: 410,
+    });
   }
 
   // Per-event-type payload validation
@@ -266,7 +268,10 @@ export async function POST(request: NextRequest) {
           if (rawTicket == null || String(rawTicket).trim() === "") {
             return {
               status: 400 as const,
-              body: apiError(ErrorCode.VALIDATION_FAILED, "TRADE_CLOSE requires a non-empty ticket"),
+              body: apiError(
+                ErrorCode.VALIDATION_FAILED,
+                "TRADE_CLOSE requires a non-empty ticket"
+              ),
             };
           }
           const ticket = String(rawTicket).trim();
@@ -378,8 +383,10 @@ export async function POST(request: NextRequest) {
       { isolationLevel: "RepeatableRead" }
     );
 
-    // Fire-and-forget: evaluate health after trade closes (outside tx)
-    if (result.status === 200 && eventType === "TRADE_CLOSE") {
+    // Fire-and-forget: evaluate health after trade closes or snapshot events (outside tx).
+    // SNAPSHOT events ensure strategies with long-running positions (days/weeks open)
+    // still get health updates. The evaluator's 1-hour cooldown prevents excess load.
+    if (result.status === 200 && (eventType === "TRADE_CLOSE" || eventType === "SNAPSHOT")) {
       evaluateHealthIfDue(effectiveInstanceId)
         .then(() => {
           // After health snapshot is persisted, check if lifecycle trigger should fire
@@ -388,7 +395,7 @@ export async function POST(request: NextRequest) {
         .catch((err) => {
           logger.error(
             { err, instanceId: effectiveInstanceId },
-            "Health evaluation or lifecycle trigger failed after trade close"
+            "Health evaluation or lifecycle trigger failed after event"
           );
           Sentry.captureException(err, { extra: { instanceId: effectiveInstanceId, eventType } });
         });

@@ -37,10 +37,10 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
 
   if (loading) {
     return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+      <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
         <div className="animate-pulse space-y-3">
-          <div className="h-5 bg-[#1A0626] rounded w-32" />
-          <div className="h-20 bg-[#1A0626] rounded" />
+          <div className="h-5 bg-[#111114] rounded w-32" />
+          <div className="h-20 bg-[#111114] rounded" />
         </div>
       </div>
     );
@@ -48,7 +48,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
 
   if (!data) {
     return (
-      <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)]">
+      <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
         <p className="text-xs text-[#7C8DB0]">
           No proof page linked to this instance. Create a verified strategy page from your project
           settings.
@@ -63,7 +63,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
   }
 
   return (
-    <div className="mt-4 pt-4 border-t border-[rgba(79,70,229,0.15)] space-y-4">
+    <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)] space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider text-[#7C8DB0]">Proof Status</p>
         <span
@@ -79,19 +79,19 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
       </div>
 
       {/* Level description */}
-      <p className="text-xs text-[#94A3B8]">{data.ladderMeta.description}</p>
+      <p className="text-xs text-[#A1A1AA]">{data.ladderMeta.description}</p>
 
       {/* Quick stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-[#0A0118]/50 rounded-lg p-2 text-center">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2 text-center">
           <p className="text-sm font-medium text-white">{data.liveTrades}</p>
           <p className="text-[9px] text-[#7C8DB0]">Live Trades</p>
         </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2 text-center">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2 text-center">
           <p className="text-sm font-medium text-white">{data.liveDays ?? 0}d</p>
           <p className="text-[9px] text-[#7C8DB0]">Live Days</p>
         </div>
-        <div className="bg-[#0A0118]/50 rounded-lg p-2 text-center">
+        <div className="bg-[#0D0D12]/50 rounded-lg p-2 text-center">
           <p
             className={`text-sm font-medium ${data.chainIntegrity ? "text-[#10B981]" : "text-[#EF4444]"}`}
           >
@@ -124,7 +124,7 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
                 </svg>
               )}
             </span>
-            <span className={req.met ? "text-[#94A3B8]" : "text-[#CBD5E1]"}>{req.description}</span>
+            <span className={req.met ? "text-[#A1A1AA]" : "text-[#FAFAFA]"}>{req.description}</span>
           </div>
         ))}
       </div>
@@ -134,14 +134,14 @@ export function ProofPanel({ instanceId }: { instanceId: string }) {
         {data.isPublic && (
           <Link
             href={`/proof/${data.strategyId}`}
-            className="px-3 py-1.5 text-xs font-medium bg-[#4F46E5] text-white rounded-lg hover:bg-[#4338CA] transition-colors"
+            className="px-3 py-1.5 text-xs font-medium bg-[#6366F1] text-white rounded-lg hover:bg-[#4338CA] transition-colors"
           >
             View Proof Page
           </Link>
         )}
         <button
           onClick={copyProofUrl}
-          className="px-3 py-1.5 text-xs font-medium border border-[rgba(79,70,229,0.2)] text-[#7C8DB0] hover:text-white rounded-lg transition-colors"
+          className="px-3 py-1.5 text-xs font-medium border border-[rgba(255,255,255,0.06)] text-[#7C8DB0] hover:text-white rounded-lg transition-colors"
         >
           Copy URL
         </button>

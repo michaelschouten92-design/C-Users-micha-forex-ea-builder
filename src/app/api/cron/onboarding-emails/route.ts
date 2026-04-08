@@ -71,9 +71,9 @@ async function handleOnboardingEmails(request: NextRequest) {
             userId: user.id,
             channel: "EMAIL",
             destination: user.email,
-            subject: "Build your first strategy on AlgoStudio",
+            subject: "Build your first strategy on Algo Studio",
             payload: {
-              html: `<p>Welcome to AlgoStudio! Ready to build your first trading strategy?</p><p><a href="${appUrl}">Get started now</a></p>`,
+              html: `<p>Welcome to Algo Studio! Ready to build your first trading strategy?</p><p><a href="${appUrl}">Get started now</a></p>`,
             },
           });
         })
@@ -117,7 +117,7 @@ async function handleOnboardingEmails(request: NextRequest) {
             destination: user.email,
             subject: "Ready to export your strategy?",
             payload: {
-              html: `<p>You've been building on AlgoStudio — ready to take the next step?</p><p><a href="${pricingUrl}">See pricing &amp; export options</a></p>`,
+              html: `<p>You've been building on Algo Studio — ready to take the next step?</p><p><a href="${pricingUrl}">See pricing &amp; export options</a></p>`,
             },
           });
         })

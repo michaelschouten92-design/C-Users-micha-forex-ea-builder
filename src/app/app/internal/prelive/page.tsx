@@ -51,15 +51,15 @@ const VERDICT_STYLES: Record<string, string> = {
 };
 
 const inputClass =
-  "w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#4F46E5] transition-colors";
+  "w-full bg-[#0F0318] border border-[rgba(79,70,229,0.3)] rounded px-3 py-2 text-sm text-white placeholder-[#64748B] focus:outline-none focus:border-[#6366F1] transition-colors";
 
 const textareaClass =
-  "w-full px-3 py-2 text-xs font-mono bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#CBD5E1] placeholder-[#475569] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none resize-none";
+  "w-full px-3 py-2 text-xs font-mono bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-[#FAFAFA] placeholder-[#52525B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none resize-none";
 
 const labelClass = "block text-xs text-[#7C8DB0] mb-1";
 
 const sampleBtnClass =
-  "px-2 py-1 text-xs rounded border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 text-[#94A3B8] hover:text-white hover:border-[rgba(79,70,229,0.5)] transition-colors";
+  "px-2 py-1 text-xs rounded border border-[rgba(79,70,229,0.3)] bg-[#111114]/60 text-[#A1A1AA] hover:text-white hover:border-[rgba(79,70,229,0.5)] transition-colors";
 
 function makeTrades(count: number): string {
   const trades = Array.from({ length: count }, (_, i) => ({
@@ -340,7 +340,7 @@ function VerifyForm() {
         <button
           type="submit"
           disabled={submitting || !internalApiKey || !strategyId || !strategyVersion}
-          className="bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
+          className="bg-[#6366F1] hover:bg-[#4338CA] disabled:opacity-50 text-white text-sm px-4 py-2 rounded transition-colors"
         >
           {submitting ? "Verifying\u2026" : "Run Verification"}
         </button>
@@ -355,7 +355,7 @@ function VerifyForm() {
 
       {/* Result card */}
       {result && (
-        <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#1A0626]/60 space-y-4">
+        <div className="p-4 rounded-lg border border-[rgba(79,70,229,0.3)] bg-[#111114]/60 space-y-4">
           {/* Verdict */}
           <div>
             <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider mb-2">Verdict</h3>
@@ -365,7 +365,7 @@ function VerifyForm() {
               >
                 {result.verdictResult.verdict}
               </span>
-              <span className="text-xs text-[#94A3B8]">
+              <span className="text-xs text-[#A1A1AA]">
                 {result.verdictResult.reasonCodes.join(", ")}
               </span>
             </div>
@@ -381,7 +381,7 @@ function VerifyForm() {
             <h3 className="text-xs text-[#7C8DB0] uppercase tracking-wider mb-2">Lifecycle</h3>
             <div className="text-sm text-white">
               State: <span className="font-mono text-[#22D3EE]">{result.lifecycleState}</span>
-              <span className="mx-3 text-[#475569]">|</span>
+              <span className="mx-3 text-[#52525B]">|</span>
               Decision: <span className="font-mono text-[#22D3EE]">{result.decision.kind}</span>
               {result.decision.reason && (
                 <span className="ml-1 text-[#7C8DB0]">({result.decision.reason})</span>
@@ -471,7 +471,7 @@ function VerifyForm() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-[#475569]">Not evaluated (no MC data or seed)</p>
+                  <p className="text-xs text-[#52525B]">Not evaluated (no MC data or seed)</p>
                 )}
               </div>
             </div>
@@ -500,18 +500,18 @@ function VerifyForm() {
 export default function PreLiveRitualPage() {
   return (
     <div className="min-h-screen">
-      <nav className="bg-[#1A0626]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50">
+      <nav className="bg-[#111114]/80 backdrop-blur-sm border-b border-[rgba(79,70,229,0.2)] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white">AlgoStudio</h1>
+              <h1 className="text-xl font-bold text-white">Algo Studio</h1>
               <span className="text-xs text-[#A78BFA] font-medium tracking-wider uppercase hidden sm:inline">
                 Pre-Live Ritual
               </span>
             </div>
             <Link
               href="/app"
-              className="text-sm text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200"
+              className="text-sm text-[#A1A1AA] hover:text-[#22D3EE] transition-colors duration-200"
             >
               Back to Dashboard
             </Link>

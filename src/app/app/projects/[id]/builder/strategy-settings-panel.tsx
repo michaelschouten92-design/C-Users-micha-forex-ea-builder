@@ -79,7 +79,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
         }}
         onMouseDown={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="w-full flex items-center justify-between px-4 py-3 text-white font-semibold text-sm tracking-wide rounded-xl border transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-[#4F46E5] to-[#6366F1] shadow-[0_2px_8px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_16px_rgba(79,70,229,0.4)] border-[#6366F1]/30"
+        className="w-full flex items-center justify-between px-4 py-3 text-white font-semibold text-sm tracking-wide rounded-xl border transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-[#6366F1] to-[#6366F1] shadow-[0_2px_8px_rgba(79,70,229,0.3)] hover:shadow-[0_4px_16px_rgba(79,70,229,0.4)] border-[#6366F1]/30"
         aria-expanded={isExpanded}
       >
         <span className="whitespace-nowrap">Strategy Settings</span>
@@ -98,7 +98,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
         <div className="mt-2 pl-1 space-y-3 px-3 pb-2">
           {/* Prop Firm Preset */}
           <div>
-            <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+            <label className="block text-xs font-medium text-[#FAFAFA] mb-1.5">
               Prop firm presets
             </label>
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -131,7 +131,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                       setPendingPreset(null);
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="flex-1 px-2 py-1 text-xs text-[#CBD5E1] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
+                    className="flex-1 px-2 py-1 text-xs text-[#FAFAFA] hover:text-white bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded transition-colors"
                   >
                     Cancel
                   </button>
@@ -141,7 +141,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                       confirmPreset();
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    className="flex-1 px-2 py-1 text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] rounded transition-colors"
+                    className="flex-1 px-2 py-1 text-xs font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] rounded transition-colors"
                   >
                     Apply
                   </button>
@@ -211,9 +211,9 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                   update({ allowHedging: e.target.checked });
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+                className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1] focus:ring-offset-0"
               />
-              <span className="text-xs font-medium text-[#CBD5E1]">Allow Hedging</span>
+              <span className="text-xs font-medium text-[#FAFAFA]">Allow Hedging</span>
             </label>
             <p className="text-[10px] text-[#7C8DB0] mt-1 ml-6">
               Allow buy and sell positions open at the same time. Note: some brokers (especially US
@@ -271,7 +271,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                 setShowAdvanced(!showAdvanced);
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#94A3B8] uppercase tracking-wide hover:text-[#CBD5E1] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A1A1AA] uppercase tracking-wide hover:text-[#FAFAFA] transition-colors"
             >
               <svg
                 className={`w-3 h-3 transition-transform duration-200 ${showAdvanced ? "rotate-90" : ""}`}
@@ -289,7 +289,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
               <div className="mt-3 space-y-3">
                 {/* Trade Comment */}
                 <div>
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">
+                  <label className="block text-xs font-medium text-[#FAFAFA] mb-1">
                     Trade Comment
                   </label>
                   <input
@@ -375,7 +375,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                 setShowMultiPair(!showMultiPair);
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#94A3B8] uppercase tracking-wide hover:text-[#CBD5E1] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A1A1AA] uppercase tracking-wide hover:text-[#FAFAFA] transition-colors"
             >
               <svg
                 className={`w-3 h-3 transition-transform duration-200 ${showMultiPair ? "rotate-90" : ""}`}
@@ -410,9 +410,9 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                         updateMultiPair({ enabled: e.target.checked });
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+                      className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1] focus:ring-offset-0"
                     />
-                    <span className="text-xs font-medium text-[#CBD5E1]">
+                    <span className="text-xs font-medium text-[#FAFAFA]">
                       Enable Multi-Pair Trading
                     </span>
                   </label>
@@ -425,7 +425,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                   <div className="space-y-3 pl-1">
                     {/* Symbol picker */}
                     <div>
-                      <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+                      <label className="block text-xs font-medium text-[#FAFAFA] mb-1.5">
                         Trading Symbols ({mp.symbols.length}/10)
                       </label>
                       {/* Quick-add common pairs */}
@@ -440,7 +440,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                             }}
                             onPointerDown={(e) => e.stopPropagation()}
                             disabled={mp.symbols.length >= 10}
-                            className="px-1.5 py-0.5 text-[9px] font-medium rounded border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.05)] text-[#94A3B8] hover:bg-[rgba(79,70,229,0.15)] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="px-1.5 py-0.5 text-[9px] font-medium rounded border border-[rgba(79,70,229,0.2)] bg-[rgba(79,70,229,0.05)] text-[#A1A1AA] hover:bg-[rgba(79,70,229,0.15)] hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                           >
                             + {pair}
                           </button>
@@ -451,7 +451,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                         {mp.symbols.map((sym) => (
                           <span
                             key={sym}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-full bg-[#4F46E5]/20 text-[#A78BFA] border border-[#4F46E5]/40"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-full bg-[#6366F1]/20 text-[#A78BFA] border border-[#6366F1]/40"
                           >
                             {sym}
                             <button
@@ -499,7 +499,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                           onPointerDown={(e) => e.stopPropagation()}
                           placeholder="Custom symbol..."
                           maxLength={12}
-                          className="flex-1 px-2 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#475569] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
+                          className="flex-1 px-2 py-1.5 text-xs bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#52525B] focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent focus:outline-none transition-all duration-200"
                         />
                         <button
                           type="button"
@@ -510,7 +510,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                           }}
                           onPointerDown={(e) => e.stopPropagation()}
                           disabled={!newSymbol.trim() || mp.symbols.length >= 10}
-                          className="px-2.5 py-1.5 text-xs font-medium text-white bg-[#4F46E5] hover:bg-[#6366F1] rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-2.5 py-1.5 text-xs font-medium text-white bg-[#6366F1] hover:bg-[#6366F1] rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           Add
                         </button>
@@ -541,7 +541,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                     {/* Per-Symbol Overrides */}
                     {mp.symbols.length > 0 && (
                       <div>
-                        <label className="block text-xs font-medium text-[#CBD5E1] mb-1.5">
+                        <label className="block text-xs font-medium text-[#FAFAFA] mb-1.5">
                           Per-Symbol Overrides
                         </label>
                         <p className="text-[10px] text-[#7C8DB0] mb-2">
@@ -583,7 +583,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                                   >
                                     {sym}
                                   </span>
-                                  <span className="text-[#475569]">
+                                  <span className="text-[#52525B]">
                                     {isOverridden ? "Customized" : "Default"}
                                   </span>
                                 </button>
@@ -767,9 +767,9 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                             updateMultiPair({ correlationFilter: e.target.checked });
                           }}
                           onPointerDown={(e) => e.stopPropagation()}
-                          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+                          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1] focus:ring-offset-0"
                         />
-                        <span className="text-xs font-medium text-[#CBD5E1]">
+                        <span className="text-xs font-medium text-[#FAFAFA]">
                           Correlation Filter
                         </span>
                       </label>
@@ -794,7 +794,7 @@ export function StrategySettingsPanel({ settings, onChange }: StrategySettingsPa
                               updateMultiPair({ correlationThreshold: parseFloat(e.target.value) });
                             }}
                             onPointerDown={(e) => e.stopPropagation()}
-                            className="w-full h-1.5 rounded-lg appearance-none bg-[#1E293B] accent-[#4F46E5]"
+                            className="w-full h-1.5 rounded-lg appearance-none bg-[#1E293B] accent-[#6366F1]"
                           />
                         </div>
                         <SettingsNumberField
@@ -852,9 +852,9 @@ function SettingsToggleNumberField({
             onChange(e.target.checked ? min : 0);
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#4F46E5] focus:ring-[#4F46E5] focus:ring-offset-0"
+          className="w-4 h-4 rounded border-[rgba(79,70,229,0.3)] bg-[#1E293B] text-[#6366F1] focus:ring-[#6366F1] focus:ring-offset-0"
         />
-        <span className={`text-xs font-medium ${isEnabled ? "text-[#CBD5E1]" : "text-[#7C8DB0]"}`}>
+        <span className={`text-xs font-medium ${isEnabled ? "text-[#FAFAFA]" : "text-[#7C8DB0]"}`}>
           {label}
         </span>
       </label>
@@ -872,7 +872,7 @@ function SettingsToggleNumberField({
       )}
       {hint && (
         <p
-          className={`text-[10px] mt-1 ${isEnabled ? "text-[#7C8DB0]" : "text-[#475569]"} ${isEnabled ? "" : "ml-6"}`}
+          className={`text-[10px] mt-1 ${isEnabled ? "text-[#7C8DB0]" : "text-[#52525B]"} ${isEnabled ? "" : "ml-6"}`}
         >
           {hint}
         </p>
@@ -918,7 +918,7 @@ function SettingsNumberField({
 
   return (
     <div>
-      {label && <label className="block text-xs font-medium text-[#CBD5E1] mb-1">{label}</label>}
+      {label && <label className="block text-xs font-medium text-[#FAFAFA] mb-1">{label}</label>}
       <input
         type="number"
         value={localValue}

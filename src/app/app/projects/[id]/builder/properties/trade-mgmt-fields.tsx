@@ -118,7 +118,7 @@ export function BreakevenStopFields({
         <FieldWarning message="Lock pips should be less than trigger pips for breakeven to work" />
       )}
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Moves stop loss to entry price + lock pips when profit target is reached.
@@ -217,7 +217,7 @@ export function TrailingStopFields({
         <OptimizableFieldCheckbox fieldName="startAfterPips" data={data} onChange={onChange} />
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Trailing stop follows price movement to lock in profits as the trade moves in your favor.
@@ -282,7 +282,7 @@ export function PartialCloseFields({
         </div>
       )}
       <div className="mt-3">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.moveSLToBreakeven}
@@ -297,7 +297,7 @@ export function PartialCloseFields({
         </label>
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg mt-3"
         role="note"
       >
         Closes a portion of the position at the profit target to secure partial profits.
@@ -366,7 +366,7 @@ export function LockProfitFields({
         <OptimizableFieldCheckbox fieldName="checkIntervalPips" data={data} onChange={onChange} />
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Automatically adjusts stop loss to lock in a portion of unrealized profit as the trade
@@ -387,7 +387,7 @@ export function MultiLevelTPFields({
 
   return (
     <>
-      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 1</p>
+      <p className="text-xs font-medium text-[#FAFAFA] -mb-2">TP Level 1</p>
       <div>
         <NumberField
           label="TP1 Distance (pips)"
@@ -411,7 +411,7 @@ export function MultiLevelTPFields({
         <OptimizableFieldCheckbox fieldName="tp1Percent" data={data} onChange={onChange} />
       </div>
 
-      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 2</p>
+      <p className="text-xs font-medium text-[#FAFAFA] -mb-2">TP Level 2</p>
       <div>
         <NumberField
           label="TP2 Distance (pips)"
@@ -435,7 +435,7 @@ export function MultiLevelTPFields({
         <OptimizableFieldCheckbox fieldName="tp2Percent" data={data} onChange={onChange} />
       </div>
 
-      <p className="text-xs font-medium text-[#CBD5E1] -mb-2">TP Level 3</p>
+      <p className="text-xs font-medium text-[#FAFAFA] -mb-2">TP Level 3</p>
       <div>
         <NumberField
           label="TP3 Distance (pips)"
@@ -476,7 +476,7 @@ export function MultiLevelTPFields({
       />
 
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Closes portions of your position at three different profit levels. Secures partial profits
@@ -577,7 +577,7 @@ export function StopLossFields({
         </div>
       )}
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Sets the maximum loss per trade. The stop loss is placed below (buy) or above (sell) your
@@ -662,7 +662,7 @@ export function TakeProfitFields({
         </>
       )}
       <div className="mt-3">
-        <label className="flex items-center gap-2 text-xs text-[#CBD5E1] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[#FAFAFA] cursor-pointer">
           <input
             type="checkbox"
             checked={data.multipleTPEnabled ?? false}
@@ -703,7 +703,7 @@ export function TakeProfitFields({
           {data.tpLevels.map((level: TPLevel, i: number) => (
             <div key={i} className="border border-[rgba(79,70,229,0.2)] rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-[#CBD5E1]">TP Level {i + 1}</p>
+                <p className="text-xs font-medium text-[#FAFAFA]">TP Level {i + 1}</p>
                 {data.tpLevels!.length > 1 && (
                   <button
                     onClick={() => {
@@ -829,7 +829,7 @@ export function TakeProfitFields({
         </>
       )}
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Sets the profit target for the trade. The take profit is placed above (buy) or below (sell)

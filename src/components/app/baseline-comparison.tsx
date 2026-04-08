@@ -57,7 +57,7 @@ function DeviationRow({
         </div>
       </div>
       {/* Deviation bar */}
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{
@@ -78,7 +78,7 @@ interface BaselineComparisonProps {
 export function BaselineComparison({ health }: BaselineComparisonProps) {
   if (!health || health.status === "INSUFFICIENT_DATA") {
     return (
-      <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-4">
+      <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-[#7C8DB0] mb-3">
           Baseline vs Live
         </p>
@@ -96,7 +96,7 @@ export function BaselineComparison({ health }: BaselineComparisonProps) {
     health.baselineTradesPerDay !== null;
 
   return (
-    <div className="rounded-xl bg-[#1A0626] border border-[rgba(79,70,229,0.15)] p-4">
+    <div className="rounded-xl bg-[#111114] border border-[rgba(255,255,255,0.06)] p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-[#7C8DB0] mb-3">
         Baseline vs Live
       </p>

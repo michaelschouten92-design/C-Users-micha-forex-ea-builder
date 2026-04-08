@@ -27,7 +27,7 @@ export function CollapsibleSidebar({ children, projectName }: CollapsibleSidebar
       {/* Toggle button with project name - top edge at 50% */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className={`absolute top-1/2 -left-10 z-10 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] border border-[rgba(124,58,237,0.5)] border-t-0 rounded-bl-xl flex items-center gap-2 text-white hover:from-[#6366F1] hover:to-[#8B5CF6] hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all duration-200 ${collapsed ? "px-3 py-4" : "px-2 py-3"}`}
+        className={`absolute top-1/2 -left-10 z-10 bg-gradient-to-r from-[#6366F1] to-[#7C3AED] border border-[rgba(124,58,237,0.5)] border-t-0 rounded-bl-xl flex items-center gap-2 text-white hover:from-[#6366F1] hover:to-[#8B5CF6] hover:shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all duration-200 ${collapsed ? "px-3 py-4" : "px-2 py-3"}`}
         title={collapsed ? "Show project info" : "Hide project info"}
       >
         {collapsed && (
@@ -54,7 +54,7 @@ export function CollapsibleSidebar({ children, projectName }: CollapsibleSidebar
 
       {/* Sidebar content */}
       {!collapsed && (
-        <div className="w-72 h-full bg-[#1A0626] border-l border-[rgba(79,70,229,0.2)] overflow-y-auto">
+        <div className="w-72 h-full bg-[#111114] border-l border-[rgba(79,70,229,0.2)] overflow-y-auto">
           <div className="p-4 space-y-4">{children}</div>
         </div>
       )}

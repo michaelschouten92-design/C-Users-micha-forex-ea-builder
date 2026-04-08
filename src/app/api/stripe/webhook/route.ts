@@ -329,18 +329,19 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   invalidateSubscriptionCache(userId);
 
-  // Send welcome/confirmation email (fire-and-forget)
+  // Send welcome/confirmation email (best-effort — must not fail the webhook)
   if (previousTier !== null) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    });
-    if (user?.email) {
-      const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-      sendPlanChangeEmail(user.email, previousTier, validatedPlan, true, settingsUrl).catch((err) =>
-        log.error({ err }, "Welcome email send failed after checkout")
-      );
-    }
+    prisma.user
+      .findUnique({ where: { id: userId }, select: { email: true } })
+      .then((user) => {
+        if (user?.email) {
+          const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+          sendPlanChangeEmail(user.email, previousTier, validatedPlan, true, settingsUrl).catch(
+            (err) => log.error({ err }, "Welcome email send failed after checkout")
+          );
+        }
+      })
+      .catch((err) => log.warn({ err }, "User lookup for checkout email failed"));
 
     // Audit log
     audit
@@ -452,17 +453,22 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         : audit.subscriptionDowngrade(result.userId, result.previousTier, tier)
       ).catch((err) => log.warn({ err }, "Audit log failed but subscription updated"));
 
-      // Send plan change confirmation email
-      const user = await prisma.user.findUnique({
-        where: { id: result.userId },
-        select: { email: true },
-      });
-      if (user?.email) {
-        const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-        sendPlanChangeEmail(user.email, result.previousTier, tier, isUpgrade, settingsUrl).catch(
-          (err) => log.error({ err }, "Plan change email send failed")
-        );
-      }
+      // Send plan change confirmation email (best-effort — must not fail the webhook)
+      prisma.user
+        .findUnique({ where: { id: result.userId }, select: { email: true } })
+        .then((user) => {
+          if (user?.email) {
+            const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+            sendPlanChangeEmail(
+              user.email,
+              result.previousTier,
+              tier,
+              isUpgrade,
+              settingsUrl
+            ).catch((err) => log.error({ err }, "Plan change email send failed"));
+          }
+        })
+        .catch((err) => log.warn({ err }, "User lookup for plan change email failed"));
 
       // Sync Discord role (fire-and-forget with retry)
       syncDiscordWithRetry(result.userId, tier);
@@ -574,6 +580,15 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     audit
       .paymentSuccess(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment recorded"));
+
+    // Referral commission (awaited — errors are caught, not thrown, so this
+    // won't block subscription activation. Idempotent via ledger unique index.)
+    try {
+      const { bookCommission } = await import("@/lib/referral/commission");
+      await bookCommission(invoice, userId);
+    } catch (err) {
+      log.error({ err, invoiceId: invoice.id }, "referral:commission-booking-failed");
+    }
   }
 }
 
@@ -608,17 +623,18 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   });
 
   if (userId) {
-    // Send payment failed email to user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true },
-    });
-    if (user?.email) {
-      const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-      sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
-        log.error({ err }, "Payment failed email send failed")
-      );
-    }
+    // Send payment failed email (best-effort — must not fail the webhook)
+    prisma.user
+      .findUnique({ where: { id: userId }, select: { email: true } })
+      .then((user) => {
+        if (user?.email) {
+          const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+          sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
+            log.error({ err }, "Payment failed email send failed")
+          );
+        }
+      })
+      .catch((err) => log.warn({ err }, "User lookup for payment failed email failed"));
 
     audit
       .paymentFailed(userId)
@@ -690,6 +706,14 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     },
     "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"
   );
+
+  // Referral commission reversal (awaited, errors caught)
+  try {
+    const { bookReversal } = await import("@/lib/referral/commission");
+    await bookReversal(charge);
+  } catch (err) {
+    log.error({ err, chargeId: charge.id }, "referral:reversal-booking-failed");
+  }
 }
 
 async function handleSubscriptionPaused(subscription: Stripe.Subscription) {

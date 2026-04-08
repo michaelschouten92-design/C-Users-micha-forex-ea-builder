@@ -8,10 +8,10 @@ const StrategyBuilder = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex-1 flex items-center justify-center h-full bg-[#0A0118]">
+      <div className="flex-1 flex items-center justify-center h-full bg-[#0D0D12]">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 mx-auto border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[#94A3B8] text-sm">Loading builder...</p>
+          <div className="w-12 h-12 mx-auto border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[#A1A1AA] text-sm">Loading builder...</p>
         </div>
       </div>
     ),

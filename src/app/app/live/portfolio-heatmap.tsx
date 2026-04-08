@@ -355,7 +355,7 @@ export function PortfolioHeatmap({ symbols, tradeDataBySymbol }: PortfolioHeatma
   }
 
   return (
-    <div className="bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
+    <div className="bg-[#111114] border border-[rgba(79,70,229,0.2)] rounded-xl p-6">
       <h3 className="text-lg font-semibold text-white mb-1">Portfolio Correlation</h3>
       {renderDataSourceMessage()}
 

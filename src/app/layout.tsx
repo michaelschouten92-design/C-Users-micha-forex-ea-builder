@@ -4,6 +4,9 @@ import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CookieConsent } from "@/components/cookie-consent";
+import { Analytics } from "@vercel/analytics/next";
+import { Suspense } from "react";
+import { ReferralClickTracker } from "@/components/referral/click-tracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,21 +29,29 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
   title: {
-    default: "AlgoStudio — The Proof Layer for Algorithmic Trading",
-    template: "%s | AlgoStudio",
+    default: "Algo Studio — The Proof Layer for Algorithmic Trading",
+    template: "%s | Algo Studio",
   },
   description:
-    "Verify your trading strategy with cryptographic proof. Upload a backtest for instant health scoring, validate with Monte Carlo analysis, and build a tamper-proof live track record anyone can audit.",
+    "Verify your trading strategy with cryptographic proof. Instant health scoring, Monte Carlo analysis, and tamper-proof track records.",
   openGraph: {
-    title: "AlgoStudio — Proof > Backtests",
+    title: "Algo Studio — Proof > Backtests",
     description:
-      "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification. The trust layer algo trading has been missing.",
+      "Verify your trading strategy with cryptographic proof. Validated backtests, tamper-proof live track records, and independent verification.",
     type: "website",
-    siteName: "AlgoStudio",
+    siteName: "Algo Studio",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Algo Studio — The Proof Layer for Algorithmic Trading",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AlgoStudio — The Proof Layer for Algorithmic Trading",
+    title: "Algo Studio — The Proof Layer for Algorithmic Trading",
     description:
       "Verify your trading strategy with cryptographic proof. Tamper-proof track records, Monte Carlo validation, and independent auditing. Free to start.",
   },
@@ -49,13 +60,13 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "AlgoStudio",
+  name: "Algo Studio",
   url: process.env.AUTH_URL || "https://algo-studio.com",
   logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
   description:
     "The proof layer for algorithmic trading. Verify strategies with cryptographic track records, Monte Carlo validation, and independent auditing.",
   foundingDate: "2025",
-  sameAs: [],
+  sameAs: ["https://x.com/AlgoStudio_"],
 };
 
 export default function RootLayout({
@@ -79,6 +90,10 @@ export default function RootLayout({
           Skip to main content
         </a>
         <Providers>{children}</Providers>
+        <Suspense fallback={null}>
+          <ReferralClickTracker />
+        </Suspense>
+        <Analytics />
         <CookieConsent />
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
           <Script

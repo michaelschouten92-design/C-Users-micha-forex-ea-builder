@@ -96,17 +96,27 @@ export async function suspendBaselineTrust(ctx: SuspensionContext): Promise<void
     const previousStrategyVersionId = snapshot?.strategyVersionId ?? null;
     const strategyId = snapshot?.strategyVersion?.strategyIdentity?.strategyId ?? null;
 
-    // Clear strategyVersionId at both instance and deployment level
-    await prisma.$transaction([
-      prisma.liveEAInstance.update({
-        where: { id: instanceId },
-        data: { strategyVersionId: null },
-      }),
-      prisma.terminalDeployment.update({
-        where: { id: terminalDeploymentId },
-        data: { strategyVersionId: null },
-      }),
-    ]);
+    // Clear strategyVersionId at both instance and deployment level (atomic)
+    await prisma.$transaction(
+      async (tx) => {
+        // Idempotency: only clear if still linked (prevents redundant proof events)
+        const current = await tx.liveEAInstance.findUnique({
+          where: { id: instanceId },
+          select: { strategyVersionId: true },
+        });
+        if (!current?.strategyVersionId) return; // already cleared
+
+        await tx.liveEAInstance.update({
+          where: { id: instanceId },
+          data: { strategyVersionId: null },
+        });
+        await tx.terminalDeployment.update({
+          where: { id: terminalDeploymentId },
+          data: { strategyVersionId: null },
+        });
+      },
+      { isolationLevel: "RepeatableRead" }
+    );
 
     log.warn(
       {

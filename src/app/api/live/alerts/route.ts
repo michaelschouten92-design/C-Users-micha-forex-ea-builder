@@ -76,6 +76,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
   }
+  if (session.user.suspended) {
+    return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+      status: 403,
+    });
+  }
 
   const body = await request.json().catch(() => null);
   if (!body) {
@@ -168,6 +173,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+  }
+  if (session.user.suspended) {
+    return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+      status: 403,
+    });
   }
 
   const body = await request.json().catch(() => null);
@@ -262,6 +272,11 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(apiError(ErrorCode.UNAUTHORIZED, "Unauthorized"), { status: 401 });
+  }
+  if (session.user.suspended) {
+    return NextResponse.json(apiError(ErrorCode.ACCOUNT_SUSPENDED, "Account suspended"), {
+      status: 403,
+    });
   }
 
   const body = await request.json().catch(() => null);

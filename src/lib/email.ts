@@ -86,7 +86,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Reset your AlgoStudio password",
+    subject: "Reset your Algo Studio password",
     html: `
       <!DOCTYPE html>
       <html>
@@ -98,7 +98,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Reset your password</h1>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
-              We received a request to reset your AlgoStudio password. Click the button below to choose a new password.
+              We received a request to reset your Algo Studio password. Click the button below to choose a new password.
             </p>
             <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Reset Password
@@ -136,7 +136,7 @@ export async function sendVerificationEmail(email: string, verifyUrl: string) {
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Verify your AlgoStudio email",
+    subject: "Verify your Algo Studio email",
     html: `
       <!DOCTYPE html>
       <html>
@@ -148,7 +148,7 @@ export async function sendVerificationEmail(email: string, verifyUrl: string) {
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Verify your email</h1>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
-              Please confirm your email address to complete your AlgoStudio registration.
+              Please confirm your email address to complete your Algo Studio registration.
             </p>
             <a href="${verifyUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
               Verify Email
@@ -199,7 +199,7 @@ export async function sendWelcomeEmail(email: string, loginUrl: string, verifyUr
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Welcome to AlgoStudio",
+    subject: "Welcome to Algo Studio",
     html: `
       <!DOCTYPE html>
       <html>
@@ -209,7 +209,7 @@ export async function sendWelcomeEmail(email: string, loginUrl: string, verifyUr
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0F0A1A; color: #ffffff; padding: 40px 20px;">
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
-            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Welcome to AlgoStudio</h1>
+            <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Welcome to Algo Studio</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               Your account has been created. You can now start building Expert Advisors with our visual strategy builder.
             </p>
@@ -217,7 +217,7 @@ export async function sendWelcomeEmail(email: string, loginUrl: string, verifyUr
               Get started by creating your first project or choosing from one of our strategy templates.
             </p>${verifySection}
             <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
-              Open AlgoStudio
+              Open Algo Studio
             </a>
           </div>
         </body>
@@ -340,7 +340,7 @@ export async function sendAccountDeletedEmail(email: string) {
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Your AlgoStudio account has been deleted",
+    subject: "Your Algo Studio account has been deleted",
     html: `
       <!DOCTYPE html>
       <html>
@@ -352,7 +352,7 @@ export async function sendAccountDeletedEmail(email: string) {
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Account deleted</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Your AlgoStudio account and all associated data have been permanently deleted as requested.
+              Your Algo Studio account and all associated data have been permanently deleted as requested.
             </p>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               This includes all projects, strategy versions, export history, and personal information.
@@ -478,8 +478,8 @@ export async function sendPlanChangeEmail(
   const features = PLAN_WELCOME_FEATURES[tierKey] ?? [];
 
   const subject = isUpgradeWithWelcome
-    ? `Welcome to AlgoStudio ${safeNewPlan}!`
-    : `Your AlgoStudio plan has been changed to ${safeNewPlan}`;
+    ? `Welcome to Algo Studio ${safeNewPlan}!`
+    : `Your Algo Studio plan has been changed to ${safeNewPlan}`;
 
   const featuresHtml = features
     .map(
@@ -498,7 +498,7 @@ export async function sendPlanChangeEmail(
               ${featuresHtml}
             </ul>
             <a href="${settingsUrl}" style="display: inline-block; background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; margin: 0 0 24px 0;">
-              Open AlgoStudio
+              Open Algo Studio
             </a>
             <p style="margin: 0; font-size: 14px; color: #CBD5E1;">
               Questions? Contact us at ${SUPPORT_EMAIL}.
@@ -565,7 +565,7 @@ export async function sendPaymentActionRequiredEmail(email: string, portalUrl: s
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Payment requires action</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Your bank requires additional verification (e.g. 3D Secure) to complete your AlgoStudio payment.
+              Your bank requires additional verification (e.g. 3D Secure) to complete your Algo Studio payment.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please complete the verification to activate your subscription.
@@ -622,7 +622,7 @@ export async function sendNewUserNotificationEmail(
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: adminEmail,
-    subject: `[AlgoStudio] New user signup: ${userEmail}`,
+    subject: `[Algo Studio] New user signup: ${userEmail}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -667,7 +667,7 @@ export async function sendTrialEndingEmail(email: string, tier: string, portalUr
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Your AlgoStudio trial ends in 3 days",
+    subject: "Your Algo Studio trial ends in 3 days",
     html: `
       <!DOCTYPE html>
       <html>
@@ -679,7 +679,7 @@ export async function sendTrialEndingEmail(email: string, tier: string, portalUr
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Your trial ends soon</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Your AlgoStudio ${safeTier} trial will end in 3 days. After that, your subscription will automatically begin and your payment method will be charged.
+              Your Algo Studio ${safeTier} trial will end in 3 days. After that, your subscription will automatically begin and your payment method will be charged.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               If you&apos;d like to continue, no action is needed — your ${safeTier} plan will activate automatically. If you&apos;d like to cancel, you can do so from your account settings before the trial ends.
@@ -722,7 +722,7 @@ export async function sendRenewalReminderEmail(
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: `Your AlgoStudio ${safeTier} subscription renews soon`,
+    subject: `Your Algo Studio ${safeTier} subscription renews soon`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -734,7 +734,7 @@ export async function sendRenewalReminderEmail(
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Subscription renewal</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Your AlgoStudio ${safeTier} subscription will renew soon. Your payment method will be charged <strong style="color: #ffffff;">$${formattedAmount}</strong>.
+              Your Algo Studio ${safeTier} subscription will renew soon. Your payment method will be charged <strong style="color: #ffffff;">$${formattedAmount}</strong>.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               No action is needed if you&apos;d like to continue. To update your payment method or cancel, visit your account settings.
@@ -789,7 +789,7 @@ export async function sendAdminDailyReportEmail(
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: adminEmail,
-    subject: `[AlgoStudio] Daily Report - ${date}`,
+    subject: `[Algo Studio] Daily Report - ${date}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -864,7 +864,7 @@ export async function sendAdminDailyReportEmail(
             </table>
 
             <p style="color: #64748B; font-size: 12px; margin: 0; text-align: center;">
-              Sent automatically by AlgoStudio at 08:00 UTC
+              Sent automatically by Algo Studio at 08:00 UTC
             </p>
           </div>
         </body>
@@ -915,7 +915,7 @@ export async function sendBulkAdminEmail(email: string, subject: string, htmlMes
             </div>
             <hr style="border: none; border-top: 1px solid rgba(79, 70, 229, 0.2); margin: 24px 0;" />
             <p style="margin: 0; font-size: 12px; color: #64748B; text-align: center;">
-              Sent by AlgoStudio
+              Sent by Algo Studio
             </p>
           </div>
         </body>
@@ -950,7 +950,7 @@ export async function sendPaymentFailedEmail(email: string, portalUrl: string) {
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Payment failed</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              We were unable to process your latest payment for your AlgoStudio subscription.
+              We were unable to process your latest payment for your Algo Studio subscription.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please update your payment method to keep your subscription active. If payment is not resolved, your account will be downgraded to the Free plan.
@@ -992,7 +992,7 @@ export async function sendDowngradeWarningEmail(
   const { error } = await sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: `Action required: Your AlgoStudio ${safeTier} plan will be downgraded`,
+    subject: `Action required: Your Algo Studio ${safeTier} plan will be downgraded`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -1004,7 +1004,7 @@ export async function sendDowngradeWarningEmail(
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Subscription downgrade warning</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Your AlgoStudio <strong style="color: #ffffff;">${safeTier}</strong> payment is past due. If not resolved within <strong style="color: #ffffff;">${daysUntilDowngrade} days</strong>, your account will be automatically downgraded to the Free plan.
+              Your Algo Studio <strong style="color: #ffffff;">${safeTier}</strong> payment is past due. If not resolved within <strong style="color: #ffffff;">${daysUntilDowngrade} days</strong>, your account will be automatically downgraded to the Free plan.
             </p>
             <p style="margin: 0 0 24px 0; line-height: 1.6; color: #ffffff;">
               Please update your payment method to keep your ${safeTier} features.
@@ -1056,7 +1056,7 @@ export async function sendOAuthLinkRejectedEmail(email: string, provider: string
           <div style="max-width: 480px; margin: 0 auto; background-color: #1A0626; border-radius: 12px; padding: 40px; border: 1px solid rgba(79, 70, 229, 0.2);">
             <h1 style="color: #ffffff; font-size: 24px; margin: 0 0 24px 0;">Login attempt blocked</h1>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
-              Someone tried to sign in to AlgoStudio using <strong style="color: #ffffff;">${safeProvider}</strong> with your email address. This was blocked because your email is already registered with a different login method.
+              Someone tried to sign in to Algo Studio using <strong style="color: #ffffff;">${safeProvider}</strong> with your email address. This was blocked because your email is already registered with a different login method.
             </p>
             <p style="margin: 0 0 16px 0; line-height: 1.6; color: #ffffff;">
               If this was you, please sign in using your original login method (email &amp; password or another OAuth provider).
@@ -1135,7 +1135,7 @@ export async function sendWeeklyEdgeReport(
   return sendWithRetry({
     from: FROM_EMAIL,
     to: email,
-    subject: "Your Weekly Edge Report — AlgoStudio",
+    subject: "Your Weekly Edge Report — Algo Studio",
     html: `
       <!DOCTYPE html>
       <html>

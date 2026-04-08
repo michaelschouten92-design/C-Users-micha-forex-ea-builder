@@ -57,7 +57,7 @@ function getBannerState(step: number, g: GuidedData): BannerState {
       }
       return {
         title: "Add a baseline backtest",
-        description: "Upload your MT5 backtest report so AlgoStudio can monitor your strategy.",
+        description: "Upload your MT5 backtest report so Algo Studio can monitor your strategy.",
         ctaLabel: g.hasBacktest ? "Continue setup" : "Upload backtest",
         ctaHref: g.hasBacktest ? "/app/onboarding" : "/app/evaluate",
       };

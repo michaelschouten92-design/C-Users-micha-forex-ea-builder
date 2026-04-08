@@ -23,161 +23,14 @@ export async function GET(request: Request): Promise<Response> {
   const userId = session.user.id;
   const encoder = new TextEncoder();
   let lastCheck = new Date();
-
-  // Pre-load instance IDs for the first poll cycle; refreshed on every subsequent tick
-  const userInstances = await prisma.liveEAInstance.findMany({
-    where: { userId, deletedAt: null },
-    select: { id: true },
-  });
-  let instanceIds = userInstances.map((i) => i.id);
+  let instanceIds: string[] = [];
 
   const stream = new ReadableStream({
     async start(controller) {
-      // Send initial full state
-      try {
-        const instances = await prisma.liveEAInstance.findMany({
-          where: { userId, deletedAt: null },
-          select: {
-            id: true,
-            eaName: true,
-            symbol: true,
-            timeframe: true,
-            broker: true,
-            accountNumber: true,
-            status: true,
-            mode: true,
-            tradingState: true,
-            lastHeartbeat: true,
-            lastError: true,
-            balance: true,
-            equity: true,
-            openTrades: true,
-            totalTrades: true,
-            totalProfit: true,
-            exportJobId: true,
-            lifecycleState: true,
-            operatorHold: true,
-            monitoringSuppressedUntil: true,
-            strategyStatus: true,
-            heartbeats: {
-              orderBy: { createdAt: "desc" },
-              take: 20,
-              select: { equity: true, createdAt: true },
-            },
-            trades: {
-              orderBy: { createdAt: "desc" },
-              take: 20,
-              select: { profit: true, closeTime: true },
-            },
-            strategyVersion: {
-              select: {
-                backtestBaseline: {
-                  select: {
-                    winRate: true,
-                    profitFactor: true,
-                    totalTrades: true,
-                    maxDrawdownPct: true,
-                    sharpeRatio: true,
-                  },
-                },
-              },
-            },
-            terminalDeployments: {
-              select: {
-                baselineStatus: true,
-                strategyVersion: {
-                  select: {
-                    backtestBaseline: {
-                      select: {
-                        winRate: true,
-                        profitFactor: true,
-                        totalTrades: true,
-                        maxDrawdownPct: true,
-                        sharpeRatio: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            incidents: {
-              where: { status: { in: ["OPEN", "ACKNOWLEDGED", "ESCALATED"] } },
-              orderBy: { openedAt: "desc" },
-              select: { reasonCodes: true },
-              take: 1,
-            },
-            healthSnapshots: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
-              select: { driftDetected: true, driftSeverity: true, status: true },
-            },
-          },
-        });
+      // Signal the client that the stream is ready (client already has data from server render)
+      controller.enqueue(encoder.encode(`event: init\ndata: []\n\n`));
 
-        const initData = instances.map((inst) => ({
-          id: inst.id,
-          eaName: inst.eaName,
-          symbol: inst.symbol,
-          timeframe: inst.timeframe,
-          broker: inst.broker,
-          accountNumber: inst.accountNumber,
-          status: inst.status,
-          mode: inst.mode,
-          tradingState: inst.tradingState,
-          lastHeartbeat: inst.lastHeartbeat?.toISOString() ?? null,
-          lastError: inst.lastError,
-          balance: inst.balance,
-          equity: inst.equity,
-          openTrades: inst.openTrades,
-          totalTrades: inst.totalTrades,
-          totalProfit: inst.totalProfit,
-          isExternal: inst.exportJobId === null,
-          lifecycleState: inst.lifecycleState,
-          operatorHold: inst.operatorHold,
-          monitoringSuppressedUntil: inst.monitoringSuppressedUntil?.toISOString() ?? null,
-          strategyStatus: inst.strategyStatus,
-          relinkRequired: inst.terminalDeployments.some((d) => d.baselineStatus === "RELINK_REQUIRED"),
-          monitoringReasons: inst.incidents[0] ? (inst.incidents[0].reasonCodes as string[]) : [],
-          healthSnapshots: (inst.healthSnapshots ?? []).map((hs) => ({
-            driftDetected: hs.driftDetected,
-            driftSeverity: hs.driftSeverity,
-            status: hs.status,
-          })),
-          baseline: (() => {
-            const depBaseline = inst.terminalDeployments?.find(
-              (d) => d.strategyVersion?.backtestBaseline
-            )?.strategyVersion?.backtestBaseline;
-            const bl = depBaseline ?? inst.strategyVersion?.backtestBaseline;
-            return bl
-              ? {
-                  winRate: bl.winRate,
-                  profitFactor: bl.profitFactor,
-                  totalTrades: bl.totalTrades,
-                  maxDrawdownPct: bl.maxDrawdownPct,
-                  sharpeRatio: bl.sharpeRatio,
-                }
-              : null;
-          })(),
-          heartbeats: inst.heartbeats.map((h) => ({
-            equity: h.equity,
-            createdAt: h.createdAt.toISOString(),
-          })),
-          trades: inst.trades.map((t) => ({
-            profit: t.profit,
-            closeTime: t.closeTime?.toISOString() ?? null,
-          })),
-        }));
-
-        controller.enqueue(encoder.encode(`event: init\ndata: ${JSON.stringify(initData)}\n\n`));
-      } catch {
-        controller.enqueue(
-          encoder.encode(`retry: 15000\nevent: stream_error\ndata: ${JSON.stringify({ reason: "init_failed" })}\n\n`)
-        );
-        controller.close();
-        return;
-      }
-
-      // Poll for deltas every 5 seconds
+      // Poll for deltas every 15 seconds
       const pollInterval = setInterval(async () => {
         try {
           // Backpressure check: if the stream is full or closed, stop enqueuing
@@ -186,7 +39,7 @@ export async function GET(request: Request): Promise<Response> {
           }
 
           const since = lastCheck;
-          lastCheck = new Date();
+          const pollStart = new Date();
 
           // Refresh instance list each tick to pick up instances registered mid-session
           const freshInstances = await prisma.liveEAInstance.findMany({
@@ -272,6 +125,9 @@ export async function GET(request: Request): Promise<Response> {
                   ticket: trade.ticket,
                   symbol: trade.symbol,
                   type: trade.type,
+                  openPrice: trade.openPrice,
+                  closePrice: trade.closePrice ?? null,
+                  lots: trade.lots,
                   profit: trade.profit,
                   closeTime: trade.closeTime?.toISOString() ?? null,
                 })}\n\n`
@@ -300,12 +156,16 @@ export async function GET(request: Request): Promise<Response> {
               )
             );
           }
+
+          // Update lastCheck only after all queries completed — prevents
+          // missing heartbeats that arrive while queries are in-flight
+          lastCheck = pollStart;
         } catch {
           // Stream likely closed — clean up intervals to stop leaked polling
           clearInterval(pollInterval);
           clearInterval(keepAlive);
         }
-      }, 15000);
+      }, 30000);
 
       // Keep-alive every 30s
       const keepAlive = setInterval(() => {

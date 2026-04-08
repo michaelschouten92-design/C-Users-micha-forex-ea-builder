@@ -466,7 +466,7 @@ export function generateMQL5Code(
     magicNumber:
       buildJson.settings?.magicNumber ??
       hashStringToMagic(projectId ? `${projectId}_${projectName}` : projectName),
-    comment: sanitizeMQL5String(buildJson.settings?.comment ?? "AlgoStudio EA"),
+    comment: sanitizeMQL5String(buildJson.settings?.comment ?? "Algo Studio EA"),
     maxOpenTrades: buildJson.settings?.maxOpenTrades ?? 1,
     allowHedging: buildJson.settings?.allowHedging ?? false,
     maxBuyPositions: buildJson.settings?.maxBuyPositions ?? buildJson.settings?.maxOpenTrades ?? 1,

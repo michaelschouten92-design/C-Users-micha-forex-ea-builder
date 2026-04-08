@@ -32,11 +32,11 @@ export const ConditionNode = memo(function ConditionNode({ id, data, selected }:
       >
         <div className="space-y-1">
           <div className="flex justify-between">
-            <span className="text-[#94A3B8]">Operator:</span>
+            <span className="text-[#A1A1AA]">Operator:</span>
             <span className="font-medium">{OPERATOR_LABELS[data.conditionType]}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#94A3B8]">Threshold:</span>
+            <span className="text-[#A1A1AA]">Threshold:</span>
             <span className="font-medium">{data.threshold}</span>
           </div>
         </div>

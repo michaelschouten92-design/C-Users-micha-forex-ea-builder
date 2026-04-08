@@ -21,7 +21,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
         <span className="text-[#7C8DB0]">{label}</span>
         <span className="text-white font-medium tabular-nums">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: barColor }}

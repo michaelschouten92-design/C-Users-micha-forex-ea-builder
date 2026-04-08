@@ -3,19 +3,22 @@ import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
-import { CTASection } from "@/components/marketing/cta-section";
+import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
+import { SectionHeading } from "@/components/marketing/section-heading";
+import { GlassCard } from "@/components/marketing/glass-card";
+import { GridBackground } from "@/components/marketing/grid-background";
 import { HealthScorePreview } from "@/components/marketing/health-score-preview";
 import { SampleEvaluationDemo } from "./sample-evaluation-demo";
 
 export const metadata: Metadata = {
-  title: "Sample Strategy Evaluation — See What You Get | AlgoStudio",
+  title: "MT5 Strategy Health Score — Free Backtest Evaluation | Algo Studio",
   description:
-    "See a real strategy evaluation with health scoring, Monte Carlo validation, verified track record, and edge monitoring. This is what AlgoStudio shows you before you risk real capital.",
+    "Upload your MT5 backtest for an instant health score, Monte Carlo simulation, and drift detection baseline. Free, no signup required.",
   alternates: { canonical: "/sample-evaluation" },
   openGraph: {
-    title: "Sample Strategy Evaluation — AlgoStudio",
+    title: "See What a Strategy Evaluation Looks Like — Algo Studio",
     description:
-      "See a real strategy evaluation: health score, drift detection, risk metrics, and verified track record.",
+      "Health scoring, drift detection, Monte Carlo risk simulation — all from a single backtest upload. Try it free.",
   },
 };
 
@@ -26,35 +29,40 @@ const breadcrumbs = [
 
 export default function SampleEvaluationPage() {
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden bg-[#09090B]">
+    <div className="min-h-screen flex flex-col overflow-x-hidden bg-[#08080A]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
       />
 
       <SiteNav />
 
-      <main className="pt-24 pb-20 px-6">
+      <main className="pt-24 pb-0 px-6">
         <div className="max-w-4xl mx-auto">
           <Breadcrumbs items={breadcrumbs} />
 
-          <section className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-[#FAFAFA] leading-tight mb-6">
-              This is what a strategy evaluation looks like
+          {/* ── HERO ── */}
+          <GridBackground glow className="text-center mb-12 py-4">
+            <h1 className="text-[28px] md:text-[42px] font-extrabold tracking-tight leading-[1.15] text-[#FAFAFA]">
+              What does your strategy&apos;s
+              <br />
+              health score look like?
             </h1>
-            <p className="text-lg text-[#A1A1AA] max-w-2xl mx-auto">
-              Below is a real evaluation from AlgoStudio. Health scoring, drift detection, risk
-              metrics, verification status, and lifecycle tracking — all generated automatically
-              from a single backtest upload.
+            <p className="mt-6 text-base text-[#A1A1AA] max-w-xl mx-auto leading-relaxed">
+              Below is a real evaluation from Algo Studio — health scoring, drift detection, risk
+              metrics, and verification status. All generated from a single backtest upload.
             </p>
-          </section>
+          </GridBackground>
 
-          {/* Sample badge */}
-          <div className="flex justify-center mb-8">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(99,102,241,0.10)] border border-[rgba(99,102,241,0.20)] text-sm text-[#818CF8]">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Sample data notice */}
+          <div className="mb-8 mx-auto max-w-xl rounded-lg border border-[#F59E0B]/20 bg-[#F59E0B]/5 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <svg
+                className="w-5 h-5 text-[#F59E0B] shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -62,88 +70,103 @@ export default function SampleEvaluationPage() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Sample data — this strategy is for demonstration only
-            </span>
+              <div>
+                <p className="text-sm font-medium text-[#F59E0B]">
+                  Sample data — for demonstration only
+                </p>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  This evaluation uses example data. Upload your own backtest below to see real
+                  results.
+                </p>
+              </div>
+            </div>
           </div>
 
           <SampleEvaluationDemo />
+        </div>
 
-          {/* Progressive registration preview */}
-          <section className="mt-16 mb-12">
-            <h2 className="text-2xl font-bold text-[#FAFAFA] mb-4 text-center">
-              Upload your backtest — see results instantly
-            </h2>
-            <p className="text-[#A1A1AA] text-center max-w-xl mx-auto mb-8">
-              When you upload a backtest, you see top-level results immediately. Sign up free to
-              unlock the full breakdown, drift detection, and verified track record.
-            </p>
-            <div className="max-w-md mx-auto">
+        {/* ── UPLOAD YOUR OWN ── */}
+        <section className="bg-[#0C0C10] py-20 -mx-6 px-6 mt-16">
+          <div className="max-w-4xl mx-auto">
+            <AnimateOnScroll>
+              <SectionHeading
+                eyebrow="Try it yourself"
+                description="Upload your MT5 Strategy Tester report and see top-level results immediately. Sign up free to unlock drift detection and verified track records."
+              >
+                Upload your backtest — get scored instantly
+              </SectionHeading>
+            </AnimateOnScroll>
+            <div className="max-w-md mx-auto mt-10">
               <HealthScorePreview />
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* What you are seeing */}
-          <section className="mt-16 mb-12">
-            <h2 className="text-2xl font-bold text-[#FAFAFA] mb-8 text-center">
-              What you are seeing above
-            </h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Strategy Health Score</h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  A composite 0–100% score comparing live performance against backtest baseline.
-                  Five weighted metrics — return, drawdown, win rate, volatility, and trade
-                  frequency — each scored independently.
-                </p>
-              </div>
-              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Edge Drift Detection</h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  CUSUM statistical test monitoring for persistent shifts in strategy expectancy.
-                  When your edge starts to fade, AlgoStudio detects it before the drawdown hits your
-                  account.
-                </p>
-              </div>
-              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Verified Track Record</h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Every trade is recorded in a cryptographic hash chain. The chain cannot be edited
-                  after the fact — L1 verification confirms integrity, L2 adds broker corroboration.
-                </p>
-              </div>
-              <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">Strategy Lifecycle</h3>
-                <p className="text-sm text-[#A1A1AA] leading-relaxed">
-                  Strategies progress through phases: New, Proving, Proven, Retired. Each phase has
-                  clear criteria. You always know where your strategy stands.
-                </p>
-              </div>
+        {/* ── WHAT YOU GET ── */}
+        <section className="py-20 px-0">
+          <div className="max-w-4xl mx-auto">
+            <AnimateOnScroll>
+              <SectionHeading>What Algo Studio evaluates</SectionHeading>
+            </AnimateOnScroll>
+
+            <div className="grid md:grid-cols-2 gap-5 mt-12">
+              {[
+                {
+                  title: "Strategy Health Score",
+                  desc: "A composite 0-100% score comparing live performance against your backtest baseline. Five weighted metrics: return, drawdown, win rate, volatility, and trade frequency.",
+                },
+                {
+                  title: "CUSUM Drift Detection",
+                  desc: "Statistical monitoring for persistent shifts in strategy expectancy. Catches gradual degradation weeks before it shows as drawdown on your equity curve.",
+                },
+                {
+                  title: "Verified Track Record",
+                  desc: "Every trade recorded in a cryptographic hash chain. Tamper-evident, independently verifiable, and shareable with a public link.",
+                },
+                {
+                  title: "Strategy Lifecycle",
+                  desc: "Clear lifecycle states: RUN, PAUSE, STOP. Recommendations based on statistical evidence — so you always know where your strategy stands.",
+                },
+              ].map((item) => (
+                <AnimateOnScroll key={item.title}>
+                  <GlassCard>
+                    <h3 className="text-sm font-semibold text-[#FAFAFA] mb-2">{item.title}</h3>
+                    <p className="text-sm text-[#A1A1AA] leading-relaxed">{item.desc}</p>
+                  </GlassCard>
+                </AnimateOnScroll>
+              ))}
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* How to get yours */}
-          <section className="mb-12 text-center">
-            <h2 className="text-2xl font-bold text-[#FAFAFA] mb-4">
-              Get your own evaluation in under 2 minutes
-            </h2>
-            <p className="text-[#A1A1AA] mb-6 max-w-xl mx-auto">
-              Upload any MT5 backtest report and get your Strategy Health Score instantly. Free — no
-              credit card required.
-            </p>
-            <Link
-              href="/login?mode=register&redirect=/app/evaluate"
-              className="inline-block bg-[#6366F1] text-[#FAFAFA] px-8 py-3.5 rounded-lg font-medium hover:bg-[#818CF8] transition-colors"
-            >
-              Get Your Strategy Evaluated — Free
-            </Link>
-          </section>
-        </div>
+        {/* ── CTA ── */}
+        <section className="bg-[#0C0C10] py-20 -mx-6 px-6" aria-label="Get your evaluation">
+          <div className="max-w-2xl mx-auto text-center">
+            <AnimateOnScroll>
+              <h2 className="text-2xl md:text-[32px] font-bold text-[#FAFAFA] tracking-tight">
+                Get your own evaluation in under 2 minutes
+              </h2>
+              <p className="mt-4 text-sm text-[#A1A1AA] leading-relaxed">
+                Upload any MT5 backtest report. Free — no credit card required.
+              </p>
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  href="/register"
+                  className="px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-all text-sm btn-primary-cta"
+                >
+                  Evaluate your strategy free
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  className="text-sm text-[#A1A1AA] hover:text-[#FAFAFA] transition-colors"
+                >
+                  How it works &rarr;
+                </Link>
+              </div>
+            </AnimateOnScroll>
+          </div>
+        </section>
       </main>
-
-      <CTASection
-        title="Your strategy has a status"
-        description="Upload a backtest and find out what it is. Health scoring, Monte Carlo validation, and verified track record — all from a single upload."
-      />
 
       <Footer />
     </div>

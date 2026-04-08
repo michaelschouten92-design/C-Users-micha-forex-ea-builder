@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "AlgoStudio Verified Track Record";
+export const alt = "Algo Studio Verified Track Record";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -53,7 +53,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
           <div style={{ fontSize: 20, color: "#10B981", fontWeight: 700 }}>
-            Verified by AlgoStudio
+            Verified by Algo Studio
           </div>
         </div>
 

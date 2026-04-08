@@ -6,7 +6,7 @@ import { getTrustedPublicKeys } from "@/lib/track-record/manifest";
  *
  * Public endpoint — no authentication required.
  * Returns the current and previous signing public keys so that any third party
- * can verify an AlgoStudio report signature without contacting us.
+ * can verify an Algo Studio report signature without contacting us.
  *
  * Response is cached for 1 hour (revalidate on key rotation by redeploying).
  */

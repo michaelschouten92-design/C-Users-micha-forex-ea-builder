@@ -42,7 +42,7 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] p-4 sm:p-5"
+      className="rounded-xl bg-[#111114] p-4 sm:p-5"
       style={{
         border: `1px solid ${config.color}25`,
         borderLeft: `3px solid ${config.color}`,
@@ -77,7 +77,7 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
             {summary.avgHealthScore !== null && (
               <div className="text-center">
                 <p className="text-[10px] text-[#7C8DB0]">Avg Score</p>
-                <p className="text-xs font-medium text-[#CBD5E1]">{summary.avgHealthScore}%</p>
+                <p className="text-xs font-medium text-[#FAFAFA]">{summary.avgHealthScore}%</p>
               </div>
             )}
             {summary.driftCount > 0 && (
@@ -88,7 +88,7 @@ export function PortfolioHealthSummary({ summary }: PortfolioHealthSummaryProps)
             )}
             <div className="text-center">
               <p className="text-[10px] text-[#7C8DB0]">Online</p>
-              <p className="text-xs font-medium text-[#CBD5E1]">
+              <p className="text-xs font-medium text-[#FAFAFA]">
                 {summary.onlineCount}/{summary.totalInstances}
               </p>
             </div>

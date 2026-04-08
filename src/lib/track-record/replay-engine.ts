@@ -100,6 +100,8 @@ export function createReplayState(): ReplayState {
     totalCommission: 0,
     winCount: 0,
     lossCount: 0,
+    grossProfit: 0,
+    grossLoss: 0,
     openPositions: [],
     cumulativeCashflow: 0,
     maxDrawdownDurationSec: 0,

@@ -4,35 +4,37 @@ import { Footer } from "@/components/marketing/footer";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
-  title: "Contact | AlgoStudio",
+  title: "Contact — Support & Questions | Algo Studio",
   description:
-    "Get in touch with AlgoStudio. Contact us for support, questions, or feedback about our monitoring and governance platform.",
+    "Get in touch with Algo Studio. Questions about MT5 monitoring, strategy drift detection, or pricing? We respond within 24 hours.",
   alternates: { canonical: "/contact" },
   openGraph: {
-    title: "Contact | AlgoStudio",
-    description: "Get in touch with AlgoStudio. Contact us for support, questions, or feedback.",
+    title: "Contact | Algo Studio",
+    description: "Get in touch with Algo Studio. Contact us for support, questions, or feedback.",
   },
 };
 
 export default function ContactPage() {
   return (
-    <div id="main-content" className="min-h-screen flex flex-col bg-[#09090B]">
+    <div id="main-content" className="min-h-screen flex flex-col bg-[#08080A]">
       <SiteNav />
       <div className="max-w-2xl mx-auto pt-32 pb-16 px-4 flex-1">
-        <h1 className="text-4xl font-bold text-[#FAFAFA] mb-4">Contact</h1>
+        <h1 className="text-[28px] md:text-[36px] font-extrabold text-[#FAFAFA] tracking-tight mb-4">
+          Contact us
+        </h1>
         <p className="text-[#A1A1AA] mb-10">
           Have a question, found a bug, or need help? We&apos;re here to help.
         </p>
 
         <div className="space-y-6">
           {/* Contact Form */}
-          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
+          <div className="glass-card p-6">
             <h2 className="text-lg font-semibold text-[#FAFAFA] mb-4">Send us a message</h2>
             <ContactForm />
           </div>
 
           {/* Email */}
-          <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-6">
+          <div className="glass-card p-6">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-[rgba(99,102,241,0.10)] rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg

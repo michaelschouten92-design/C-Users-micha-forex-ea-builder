@@ -65,7 +65,7 @@ struct DiscoveryCandidate
 //+------------------------------------------------------------------+
 input string InpApiKey        = "";              // API Key (from AlgoStudio dashboard)
 input string InpBaseUrl       = "https://algo-studio.com"; // AlgoStudio Server URL
-input int    InpHeartbeatSec  = 30;              // Heartbeat interval (seconds)
+input int    InpHeartbeatSec  = 60;              // Heartbeat interval (seconds)
 input int    InpSnapshotSec   = 300;             // Track-record snapshot interval (seconds)
 
 // Monitoring scope
@@ -141,6 +141,7 @@ string g_instanceId    = "";
 
 // Timing
 datetime g_lastHeartbeat  = 0;
+datetime g_lastDealRebuild = 0;
 datetime g_lastSnapshot   = 0;
 datetime g_sessionStart   = 0;
 
@@ -237,8 +238,8 @@ int OnInit()
    if(GlobalVariableCheck(g_lockGV))
    {
       double lockTime = GlobalVariableGet(g_lockGV);
-      // If lock is fresh (within 2 minutes), another instance is running
-      if((double)TimeCurrent() - lockTime < 120)
+      // If lock is fresh (within 10 minutes), another instance is running
+      if((double)TimeCurrent() - lockTime < 600)
       {
          Print("AlgoStudio Monitor: Another instance with this API key is already running.");
          return INIT_FAILED;
@@ -403,6 +404,14 @@ void OnTimer()
       g_lastHeartbeat = now;
    }
 
+   // Periodic known deals rebuild — prevents unbounded array growth.
+   // Rebuilds from current history once per hour (resets to exact current state).
+   if(now - g_lastDealRebuild >= 3600)
+   {
+      BuildKnownDeals();
+      g_lastDealRebuild = now;
+   }
+
    // Flush offline queue after heartbeat (instanceId may now be known)
    if(g_queueCount > 0)
       FlushOfflineQueue();
@@ -420,10 +429,10 @@ void OnTimer()
                g_contextCount, " context(s) found.");
    }
 
-   // Incremental re-discovery: scan for NEW strategies even when manifest mode
-   // is already active. Runs every 60s. Does NOT reset existing contexts.
-   if(g_manifestMode && g_contextCount > 0 && g_contextCount < MAX_MANIFEST_CONTEXTS
-      && InpStrategyMagic <= 0 && now - g_lastIncrementalDiscovery >= 60)
+   // Incremental re-discovery: scan for NEW strategies and remove stale ones.
+   // Uses live state only (open positions + pending orders + 5-min deal grace).
+   // Runs every 60s.
+   if(g_manifestMode && InpStrategyMagic <= 0 && now - g_lastIncrementalDiscovery >= 60)
    {
       g_lastIncrementalDiscovery = now;
       IncrementalRediscovery();
@@ -692,10 +701,10 @@ void ParseManifest()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Canonical fingerprint: mode-independent, based on strategy identity only
+      // Canonical fingerprint: mode-independent, based on strategy identity (symbol + magic + timeframe)
       string fpSymbol = ctx.symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber) + ":" + ctx.timeframe;
       ctx.fingerprint = SHA256(canonical);
 
       // Guard: max context count
@@ -802,8 +811,8 @@ void BuildSelfIdentifiedContext()
    ctx.lastHash         = GENESIS_HASH;
    ctx.sessionStartSent = false;
 
-   // Canonical fingerprint: mode-independent, based on strategy identity only
-   string canonical = "ctx:v2:" + sym + ":" + IntegerToString(InpStrategyMagic);
+   // Canonical fingerprint: mode-independent, based on strategy identity (symbol + magic + timeframe)
+   string canonical = "ctx:v3:" + sym + ":" + IntegerToString(InpStrategyMagic) + ":" + tf;
    ctx.fingerprint = SHA256(canonical);
 
    ArrayResize(g_contexts, 1);
@@ -818,11 +827,10 @@ void BuildSelfIdentifiedContext()
 }
 
 //+------------------------------------------------------------------+
-//| Automatic zero-config context discovery.                         |
-//| Runs only when no manifest is provided.                          |
-//| Scans full account history + open positions, applies noise       |
-//| filter (tradeCount >= 2 OR hasOpenPosition), converts qualifying |
-//| candidates into StrategyContext entries, and sets g_manifestMode.|
+//| Automatic zero-config context discovery (LIVE STATE ONLY).       |
+//| Scans only open positions, pending orders, and deals closed in   |
+//| the last 5 minutes. Strategies appear when they first trade      |
+//| after the Monitor EA is loaded — not from old trade history.     |
 //+------------------------------------------------------------------+
 void AutoDiscoverContexts()
 {
@@ -832,11 +840,12 @@ void AutoDiscoverContexts()
 
    DiscoveryCandidate candidates[];
    int unattributed = 0;
-   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
+   int found = ScanLiveActivity(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
 
    if(found == 0)
    {
-      Print("AlgoStudio Monitor: Auto-discovery: no EA-attributed activity (magic > 0) found on this account.");
+      Print("AlgoStudio Monitor: Auto-discovery: no live activity. ",
+            "Strategies will appear when they place their first trade.");
       return;
    }
 
@@ -844,11 +853,6 @@ void AutoDiscoverContexts()
 
    for(int i = 0; i < found; i++)
    {
-      // Noise filter: suppress candidates with zero evidence
-      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
-         continue;
-
-      // Cap
       if(g_contextCount >= MAX_MANIFEST_CONTEXTS)
       {
          Print("AlgoStudio Monitor: Auto-discovery limit (", MAX_MANIFEST_CONTEXTS,
@@ -859,7 +863,7 @@ void AutoDiscoverContexts()
       StrategyContext ctx;
       ctx.magicNumber   = candidates[i].magicNumber;
       ctx.symbol        = candidates[i].symbol;
-      ctx.timeframe     = "";   // not recoverable from trade history
+      ctx.timeframe     = "";
       ctx.eaName        = StringLen(candidates[i].eaHint) > 0
                           ? candidates[i].eaHint
                           : "Magic " + IntegerToString((int)candidates[i].magicNumber);
@@ -871,32 +875,18 @@ void AutoDiscoverContexts()
       ctx.lastHash      = GENESIS_HASH;
       ctx.sessionStartSent = false;
 
-      // Canonical fingerprint: mode-independent, based on strategy identity only
       string fpSymbol = ctx.symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber);
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)ctx.magicNumber) + ":" + ctx.timeframe;
       ctx.fingerprint   = SHA256(canonical);
 
-      // Dedup by fingerprint (same guard as ParseManifest)
       bool duplicate = false;
       for(int j = 0; j < g_contextCount; j++)
-      {
-         if(g_contexts[j].fingerprint == ctx.fingerprint)
-         {
-            duplicate = true;
-            break;
-         }
-      }
-      if(duplicate)
-      {
-         Print("AlgoStudio Monitor: Auto-discovery: skipping duplicate fingerprint — ",
-               candidates[i].symbol, " magic=", candidates[i].magicNumber);
-         continue;
-      }
+         if(g_contexts[j].fingerprint == ctx.fingerprint) { duplicate = true; break; }
+      if(duplicate) continue;
 
       Print("AlgoStudio Monitor: Auto-discovered [", g_contextCount, "] ",
             ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName,
-            " trades=", candidates[i].tradeCount,
             " openPos=", candidates[i].hasOpenPosition ? "yes" : "no",
             " fp=", StringSubstr(ctx.fingerprint, 0, 16), "...");
 
@@ -908,49 +898,42 @@ void AutoDiscoverContexts()
    if(g_contextCount > 0)
    {
       g_manifestMode = true;
-      Print("AlgoStudio Monitor: Auto-discovery active. ", g_contextCount, " context(s) created.");
+      Print("AlgoStudio Monitor: Auto-discovery active. ", g_contextCount, " context(s) from live state.");
    }
    else
    {
-      Print("AlgoStudio Monitor: Auto-discovery: all candidates filtered by noise filter. "
-            "Falling back to single-strategy mode.");
+      Print("AlgoStudio Monitor: Auto-discovery: no qualifying candidates. ",
+            "Strategies will appear when they place their first trade.");
    }
 }
 
 //+------------------------------------------------------------------+
-//| Incremental re-discovery: find NEW strategies without resetting  |
-//| existing contexts. Only appends up to MAX_MANIFEST_CONTEXTS.     |
+//| Incremental re-discovery: detect NEW strategies and remove stale.|
+//| Scans live state only (positions + orders + 5-min deal grace).   |
+//| Runs every 60s from OnTimer.                                     |
 //+------------------------------------------------------------------+
 void IncrementalRediscovery()
 {
    DiscoveryCandidate candidates[];
    int unattributed = 0;
-   int found = ScanActivityCandidates(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
-   if(found == 0) return;
+   int found = ScanLiveActivity(candidates, MAX_DISCOVERED_DEPLOYMENTS, unattributed);
 
+   // ── Phase 1: Add NEW contexts ──
    int added = 0;
    for(int i = 0; i < found; i++)
    {
       if(g_contextCount >= MAX_MANIFEST_CONTEXTS) break;
 
-      // Noise filter (same as AutoDiscoverContexts)
-      if(candidates[i].tradeCount < 1 && !candidates[i].hasOpenPosition)
-         continue;
-
-      // Build fingerprint to check for duplicates against existing contexts
       string fpSymbol = candidates[i].symbol;
       StringToUpper(fpSymbol);
-      string canonical = "ctx:v2:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber);
+      string canonical = "ctx:v3:" + fpSymbol + ":" + IntegerToString((int)candidates[i].magicNumber) + ":";
       string fp = SHA256(canonical);
 
       bool duplicate = false;
       for(int j = 0; j < g_contextCount; j++)
-      {
          if(g_contexts[j].fingerprint == fp) { duplicate = true; break; }
-      }
       if(duplicate) continue;
 
-      // New context — append
       StrategyContext ctx;
       ctx.magicNumber   = candidates[i].magicNumber;
       ctx.symbol        = candidates[i].symbol;
@@ -971,14 +954,53 @@ void IncrementalRediscovery()
       g_contexts[g_contextCount++] = ctx;
       added++;
 
-      Print("AlgoStudio Monitor: Incremental discovery [", g_contextCount - 1, "] ",
-            ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName,
-            " fp=", StringSubstr(fp, 0, 16), "...");
+      Print("AlgoStudio Monitor: New strategy detected: ",
+            ctx.symbol, " magic=", ctx.magicNumber, " label=", ctx.eaName);
    }
 
-   if(added > 0)
-      Print("AlgoStudio Monitor: Incremental discovery added ", added,
-            " new context(s). Total: ", g_contextCount);
+   // ── Phase 2: Remove STALE contexts (no live activity) ──
+   int pruned = 0;
+   int writeIdx = 0;
+   for(int i = 0; i < g_contextCount; i++)
+   {
+      bool stillActive = false;
+      for(int j = 0; j < found; j++)
+      {
+         if(candidates[j].symbol == g_contexts[i].symbol
+            && candidates[j].magicNumber == g_contexts[i].magicNumber)
+         {
+            stillActive = true;
+            break;
+         }
+      }
+
+      if(stillActive)
+      {
+         if(writeIdx != i)
+            g_contexts[writeIdx] = g_contexts[i];
+         writeIdx++;
+      }
+      else
+      {
+         Print("AlgoStudio Monitor: Strategy gone: ",
+               g_contexts[i].symbol, " magic=", g_contexts[i].magicNumber,
+               " — no open positions, no pending orders, no recent deals");
+         pruned++;
+      }
+   }
+
+   if(pruned > 0)
+   {
+      g_contextCount = writeIdx;
+      ArrayResize(g_contexts, g_contextCount);
+      if(g_contextCount == 0) g_manifestMode = false;
+   }
+
+   if(added > 0 && !g_manifestMode) g_manifestMode = true;
+
+   if(added > 0 || pruned > 0)
+      Print("AlgoStudio Monitor: Discovery update: +", added, " -", pruned,
+            " = ", g_contextCount, " active context(s)");
 }
 
 //+------------------------------------------------------------------+
@@ -1007,20 +1029,159 @@ string GetWorstContextGovAction()
 //+------------------------------------------------------------------+
 int FindContextForDeal(string dealSymbol, long dealMagic)
 {
+   int fallback = -1;  // first magic-only match (empty symbol context)
    for(int i = 0; i < g_contextCount; i++)
    {
       if(g_contexts[i].magicNumber != dealMagic) continue;
-      if(StringLen(g_contexts[i].symbol) > 0 &&
-         g_contexts[i].symbol != dealSymbol) continue;
-      return i;
+      // Exact symbol match takes priority
+      if(StringLen(g_contexts[i].symbol) > 0 && g_contexts[i].symbol == dealSymbol)
+         return i;
+      // Empty-symbol context is a fallback (matches any symbol with this magic)
+      if(StringLen(g_contexts[i].symbol) == 0 && fallback < 0)
+         fallback = i;
    }
-   return -1;
+   return fallback;
 }
 
 //+------------------------------------------------------------------+
-//| Scan account activity into typed DiscoveryCandidate array.       |
-//| Used by both DiscoverDeploymentsFromActivity() (JSON) and        |
-//| AutoDiscoverContexts() (StrategyContext creation).               |
+//| Scan LIVE account state for context creation/pruning.            |
+//| Only looks at: open positions, pending orders, and closed deals  |
+//| from the last 5 minutes (grace period to avoid flickering).      |
+//| This is the SOLE source of truth for which strategies are active.|
+//+------------------------------------------------------------------+
+int ScanLiveActivity(DiscoveryCandidate &candidates[], int maxCount, int &unattributed)
+{
+   ArrayResize(candidates, maxCount);
+   int discoveredCount = 0;
+   unattributed = 0;
+
+   for(int k = 0; k < maxCount; k++)
+   {
+      candidates[k].symbol         = "";
+      candidates[k].magicNumber    = 0;
+      candidates[k].eaHint         = "";
+      candidates[k].tradeCount     = 0;
+      candidates[k].hasOpenPosition = false;
+   }
+
+   // ── 1. Open positions (strategy is trading RIGHT NOW) ──
+   for(int p = PositionsTotal() - 1; p >= 0; p--)
+   {
+      ulong posTicket = PositionGetTicket(p);
+      if(posTicket == 0) continue;
+      if(!PositionSelectByTicket(posTicket)) continue;
+
+      string sym   = PositionGetString(POSITION_SYMBOL);
+      long   magic = (long)PositionGetInteger(POSITION_MAGIC);
+      if(StringLen(sym) == 0) continue;
+      if(magic == 0) { unattributed++; continue; }
+
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
+
+      if(idx >= 0)
+      {
+         candidates[idx].tradeCount++;
+         candidates[idx].hasOpenPosition = true;
+      }
+      else if(discoveredCount < maxCount)
+      {
+         candidates[discoveredCount].symbol         = sym;
+         candidates[discoveredCount].magicNumber    = magic;
+         candidates[discoveredCount].tradeCount     = 1;
+         candidates[discoveredCount].hasOpenPosition = true;
+         string comment = PositionGetString(POSITION_COMMENT);
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
+         discoveredCount++;
+      }
+   }
+
+   // ── 2. Pending orders (strategy waiting to enter) ──
+   for(int o = OrdersTotal() - 1; o >= 0; o--)
+   {
+      ulong orderTicket = OrderGetTicket(o);
+      if(orderTicket == 0) continue;
+
+      string sym   = OrderGetString(ORDER_SYMBOL);
+      long   magic = (long)OrderGetInteger(ORDER_MAGIC);
+      if(StringLen(sym) == 0) continue;
+      if(magic == 0) continue;
+
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
+
+      if(idx < 0 && discoveredCount < maxCount)
+      {
+         candidates[discoveredCount].symbol         = sym;
+         candidates[discoveredCount].magicNumber    = magic;
+         candidates[discoveredCount].tradeCount     = 0;
+         candidates[discoveredCount].hasOpenPosition = false;
+         string comment = OrderGetString(ORDER_COMMENT);
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
+         discoveredCount++;
+      }
+   }
+
+   // ── 3. Very recent closed deals (5-min grace period) ──
+   // Prevents context from flickering off/on between trades.
+   datetime graceCutoff = TimeCurrent() - 5 * 60;
+   HistorySelect(graceCutoff, TimeCurrent());
+   int total = HistoryDealsTotal();
+   for(int i = total - 1; i >= 0; i--)
+   {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(ticket == 0) continue;
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      ENUM_DEAL_TYPE dtype = (ENUM_DEAL_TYPE)HistoryDealGetInteger(ticket, DEAL_TYPE);
+      if(dtype == DEAL_TYPE_BALANCE || dtype == DEAL_TYPE_CREDIT ||
+         dtype == DEAL_TYPE_CHARGE  || dtype == DEAL_TYPE_CORRECTION ||
+         dtype == DEAL_TYPE_BONUS)
+         continue;
+
+      long   magic = (long)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+      string sym   = HistoryDealGetString(ticket, DEAL_SYMBOL);
+      if(StringLen(sym) == 0) continue;
+      if(magic == 0) { unattributed++; continue; }
+
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
+
+      if(idx >= 0)
+      {
+         candidates[idx].tradeCount++;
+      }
+      else if(discoveredCount < maxCount)
+      {
+         candidates[discoveredCount].symbol      = sym;
+         candidates[discoveredCount].magicNumber = magic;
+         candidates[discoveredCount].tradeCount  = 1;
+         candidates[discoveredCount].hasOpenPosition = false;
+         string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
+         discoveredCount++;
+      }
+   }
+
+   ArrayResize(candidates, discoveredCount);
+   return discoveredCount;
+}
+
+//+------------------------------------------------------------------+
+//| Scan FULL account activity for server-side deployment reporting.  |
+//| Uses 14-day deal history — broader window because the server     |
+//| handles its own cleanup of stale deployments.                    |
+//| NOT used for context creation — only for discoveredDeployments   |
+//| JSON payload in heartbeat.                                       |
 //| Returns number of candidates found.                              |
 //+------------------------------------------------------------------+
 int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &unattributed)
@@ -1042,11 +1203,16 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
       candidates[k].hasOpenPosition = false;
    }
 
-   // ── Closed deals ──────────────────────────────────────────────
-   for(int i = 0; i < total; i++)
+   // ── Closed deals (last 14 days only — balances freshness vs low-frequency strategies) ──
+   datetime cutoff = TimeCurrent() - 14 * 24 * 3600;
+   for(int i = total - 1; i >= 0; i--)
    {
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
+
+      // Skip deals older than cutoff (deal order is NOT guaranteed chronological)
+      datetime dealTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+      if(dealTime < cutoff) continue;
 
       if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
 
@@ -1077,7 +1243,10 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
          candidates[discoveredCount].tradeCount  = 1;
          candidates[discoveredCount].hasOpenPosition = false;
          string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         // Strip broker-injected ticket hints (e.g., "[tp 12345]", "[sl]", "#12345")
+         // but preserve legitimate EA comments containing brackets
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
          candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
@@ -1112,7 +1281,44 @@ int ScanActivityCandidates(DiscoveryCandidate &candidates[], int maxCount, int &
          candidates[discoveredCount].tradeCount     = 1;
          candidates[discoveredCount].hasOpenPosition = true;
          string comment = PositionGetString(POSITION_COMMENT);
-         if(StringFind(comment, "[") >= 0 || StringFind(comment, "#") >= 0) comment = "";
+         // Strip broker-injected ticket hints (e.g., "[tp 12345]", "[sl]", "#12345")
+         // but preserve legitimate EA comments containing brackets
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
+         candidates[discoveredCount].eaHint = comment;
+         discoveredCount++;
+      }
+   }
+
+   // ── Pending orders (catches strategies that use limit/stop orders before any fill) ──
+   for(int o = OrdersTotal() - 1; o >= 0; o--)
+   {
+      ulong orderTicket = OrderGetTicket(o);
+      if(orderTicket == 0) continue;
+
+      string sym   = OrderGetString(ORDER_SYMBOL);
+      long   magic = (long)OrderGetInteger(ORDER_MAGIC);
+
+      if(StringLen(sym) == 0) continue;
+      if(magic == 0) continue;
+
+      int idx = -1;
+      for(int j = 0; j < discoveredCount; j++)
+         if(candidates[j].symbol == sym && candidates[j].magicNumber == magic) { idx = j; break; }
+
+      if(idx >= 0)
+      {
+         // Already known from deals or positions — just mark as having pending activity
+      }
+      else if(discoveredCount < maxCount)
+      {
+         candidates[discoveredCount].symbol         = sym;
+         candidates[discoveredCount].magicNumber    = magic;
+         candidates[discoveredCount].tradeCount     = 0;
+         candidates[discoveredCount].hasOpenPosition = false;
+         string comment = OrderGetString(ORDER_COMMENT);
+         if(StringFind(comment, "[tp") >= 0 || StringFind(comment, "[sl") >= 0 ||
+            StringFind(comment, "[#") >= 0 || StringFind(comment, "#") == 0) comment = "";
          candidates[discoveredCount].eaHint = comment;
          discoveredCount++;
       }
@@ -1263,16 +1469,34 @@ void BuildKnownDeals()
       g_knownDeals[g_knownDealCount++] = ticket;
    }
    ArrayResize(g_knownDeals, g_knownDealCount);
+   // Sort for binary search in IsKnownDeal/AddKnownDeal
+   ArraySort(g_knownDeals);
+}
+
+bool IsKnownDeal(ulong ticket)
+{
+   if(g_knownDealCount == 0) return false;
+   // Binary search on sorted array — O(log n) instead of O(n)
+   int lo = 0, hi = g_knownDealCount - 1;
+   while(lo <= hi)
+   {
+      int mid = (lo + hi) / 2;
+      if(g_knownDeals[mid] == ticket) return true;
+      if(g_knownDeals[mid] < ticket) lo = mid + 1;
+      else hi = mid - 1;
+   }
+   return false;
 }
 
 void AddKnownDeal(ulong ticket)
 {
-   for(int i = 0; i < g_knownDealCount; i++)
-      if(g_knownDeals[i] == ticket) return;
+   if(IsKnownDeal(ticket)) return;
 
    g_knownDealCount++;
    ArrayResize(g_knownDeals, g_knownDealCount);
    g_knownDeals[g_knownDealCount - 1] = ticket;
+   // Keep sorted for binary search
+   ArraySort(g_knownDeals);
 }
 
 //+------------------------------------------------------------------+
@@ -1289,13 +1513,8 @@ void PollTradeChanges()
       ulong ticket = HistoryDealGetTicket(i);
       if(ticket == 0) continue;
 
-      // Already known?
-      bool known = false;
-      for(int j = 0; j < g_knownDealCount; j++)
-      {
-         if(g_knownDeals[j] == ticket) { known = true; break; }
-      }
-      if(known) continue;
+      // Already known? (binary search)
+      if(IsKnownDeal(ticket)) continue;
 
       // Check filters
       if(!PassesFilter(ticket)) continue;
@@ -1643,7 +1862,7 @@ void SendContextSnapshot(int ctxIdx)
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Count positions matching this context
@@ -1753,7 +1972,7 @@ void SendSnapshot()
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Count filtered open positions
@@ -1794,8 +2013,8 @@ bool SendTradeOpen(ulong dealTicket)
    {
       g_dealSelectFailures++;
       Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_OPEN deal #",
-            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
-      return true; // can't select → don't retry (deal marked as known — event is lost)
+            dealTicket, " (total failures: ", g_dealSelectFailures, "). Will retry on next poll.");
+      return false; // can't select → retry on next poll cycle
    }
 
    string symbol   = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
@@ -1873,8 +2092,8 @@ bool SendTradeClose(ulong dealTicket)
    {
       g_dealSelectFailures++;
       Print("AlgoStudio Monitor: WARNING — HistoryDealSelect failed for TRADE_CLOSE deal #",
-            dealTicket, " (total failures: ", g_dealSelectFailures, ")");
-      return true; // can't select → don't retry (deal marked as known — event is lost)
+            dealTicket, " (total failures: ", g_dealSelectFailures, "). Will retry on next poll.");
+      return false; // can't select → retry on next poll cycle
    }
 
    string ticket    = IntegerToString(dealTicket);
@@ -1884,14 +2103,16 @@ bool SendTradeClose(ulong dealTicket)
    double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
    long   magic     = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
 
-   // Determine close reason from comment
+   // Determine close reason from comment (case-insensitive matching)
    string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
+   string commentLower = comment;
+   StringToLower(commentLower);
    string closeReason = "EA";
-   if(StringFind(comment, "tp") >= 0 || StringFind(comment, "TP") >= 0)
+   if(StringFind(commentLower, "tp") >= 0 || StringFind(commentLower, "takeprofit") >= 0 || StringFind(commentLower, "take profit") >= 0)
       closeReason = "TP";
-   else if(StringFind(comment, "sl") >= 0 || StringFind(comment, "SL") >= 0)
+   else if(StringFind(commentLower, "sl") >= 0 || StringFind(commentLower, "stoploss") >= 0 || StringFind(commentLower, "stop loss") >= 0)
       closeReason = "SL";
-   else if(StringFind(comment, "so") >= 0 || StringFind(comment, "SO") >= 0)
+   else if(StringFind(commentLower, "so") >= 0 || StringFind(commentLower, "stop out") >= 0 || StringFind(commentLower, "stopout") >= 0)
       closeReason = "SO"; // Stop-out
 
    // Find original open deal for the position ticket
@@ -1945,7 +2166,7 @@ void SendHeartbeat()
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    int spread = (int)SymbolInfoInteger(_Symbol, SYMBOL_SPREAD);
@@ -1963,7 +2184,7 @@ void SendHeartbeat()
       if(ticket == 0) continue;
       if(!PositionPassesFilter(ticket)) continue;
       myOpen++;
-      unrealizedPnL += PositionGetDouble(POSITION_PROFIT);
+      unrealizedPnL += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
    }
 
    HistorySelect(0, TimeCurrent());
@@ -1995,8 +2216,8 @@ void SendHeartbeat()
          + "}";
    }
 
-   // Automatic deployment discovery (ACCOUNT_WIDE mode only)
-   string discoveryJson = DiscoverDeploymentsFromActivity();
+   // Automatic deployment discovery (ACCOUNT_WIDE mode only — skip scan in SYMBOL_ONLY)
+   string discoveryJson = (InpMonitorMode == MODE_ACCOUNT_WIDE) ? DiscoverDeploymentsFromActivity() : "";
 
    string monitorModeStr = (InpMonitorMode == MODE_SYMBOL_ONLY) ? "SYMBOL_ONLY" : "ACCOUNT_WIDE";
 
@@ -2093,7 +2314,7 @@ void SendContextHeartbeat(StrategyContext &ctx)
 {
    double bal = AccountInfoDouble(ACCOUNT_BALANCE);
    double eq  = AccountInfoDouble(ACCOUNT_EQUITY);
-   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : 0;
+   double dd  = (bal > 0) ? ((bal - eq) / bal * 100.0) : (eq < 0.01 ? 100.0 : 0.0);
    if(dd < 0) dd = 0;
 
    // Use context symbol for spread lookup; fall back to chart symbol if empty
@@ -2913,6 +3134,8 @@ void LoadState()
                      if(SHA256(legacySelfId) == fp) { matchIdx = j; break; }
                      // Legacy auto-discovery: AUTO:v1:SYMBOL:MAGIC (broker-native, typically uppercase)
                      if(SHA256("AUTO:v1:" + upper + ":" + m) == fp) { matchIdx = j; break; }
+                     // Legacy ctx:v2: SYMBOL:MAGIC (without timeframe, used before v3)
+                     if(SHA256("ctx:v2:" + upper + ":" + m) == fp) { matchIdx = j; break; }
                   }
                }
                // Fallback 2: match by symbol + magicNumber fields (7-field state lines).

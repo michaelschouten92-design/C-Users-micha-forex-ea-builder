@@ -38,18 +38,33 @@ export function evaluateProfitFactorDegradation(
   }
 
   // No meaningful baseline to compare — pass
-  if (baselineProfitFactor <= 0) {
+  if (baselineProfitFactor <= 0 || baselineProfitFactor === Infinity) {
     return {
       ruleId: RULE_ID,
       status: "PASS",
       reasonCode: null,
       measured: liveProfitFactor,
       threshold: 0,
-      message: "Baseline profit factor ≤ 0 — no meaningful comparison",
+      message:
+        baselineProfitFactor === Infinity
+          ? "Baseline profit factor is Infinity (no losses in backtest) — no meaningful comparison"
+          : "Baseline profit factor ≤ 0 — no meaningful comparison",
     };
   }
 
-  // Invalid input guard
+  // Infinity profit factor = no losing trades — no degradation possible
+  if (liveProfitFactor === Infinity) {
+    return {
+      ruleId: RULE_ID,
+      status: "PASS",
+      reasonCode: null,
+      measured: liveProfitFactor,
+      threshold: baselineProfitFactor * profitFactorMinRatio,
+      message: "Live profit factor is Infinity (no losses) — no degradation",
+    };
+  }
+
+  // Invalid input guard (NaN, -Infinity, or non-finite baseline)
   if (!Number.isFinite(liveProfitFactor) || !Number.isFinite(baselineProfitFactor)) {
     return {
       ruleId: RULE_ID,
@@ -57,13 +72,13 @@ export function evaluateProfitFactorDegradation(
       reasonCode: "MONITORING_INVALID_INPUT",
       measured: liveProfitFactor,
       threshold: baselineProfitFactor * profitFactorMinRatio,
-      message: "Invalid input: NaN or Infinity detected in profit factor values",
+      message: "Invalid input: NaN or non-finite value detected in profit factor",
     };
   }
 
   const minAcceptable = baselineProfitFactor * profitFactorMinRatio;
 
-  if (liveProfitFactor <= minAcceptable) {
+  if (liveProfitFactor < minAcceptable) {
     return {
       ruleId: RULE_ID,
       status: "AT_RISK",

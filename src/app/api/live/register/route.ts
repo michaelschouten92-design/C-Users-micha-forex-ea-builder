@@ -68,28 +68,20 @@ export async function POST(request: NextRequest) {
   const { eaName } = validation.data;
 
   try {
-    // Guard: max external instances per user (external = exportJobId is null)
-    const externalCount = await prisma.liveEAInstance.count({
-      where: { userId: session.user.id, exportJobId: null, deletedAt: null },
-    });
-
-    if (externalCount >= MAX_EXTERNAL_INSTANCES) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.PLAN_REQUIRED,
-          "Instance limit reached",
-          `You can register up to ${MAX_EXTERNAL_INSTANCES} external EAs. Remove unused instances to add more.`
-        ),
-        { status: 403, headers: rateLimitHeaders }
-      );
-    }
-
     // Generate API key
     const apiKey = randomBytes(32).toString("hex");
     const apiKeyHash = createHash("sha256").update(apiKey).digest("hex");
 
-    // Create instance + track record state in a transaction
+    // Atomic: count + create in a single transaction to prevent race conditions
     const instance = await prisma.$transaction(async (tx) => {
+      const externalCount = await tx.liveEAInstance.count({
+        where: { userId: session.user.id, exportJobId: null, deletedAt: null },
+      });
+
+      if (externalCount >= MAX_EXTERNAL_INSTANCES) {
+        throw Object.assign(new Error("Instance limit reached"), { code: "LIMIT_EXCEEDED" });
+      }
+
       const liveEA = await tx.liveEAInstance.create({
         data: {
           exportJobId: null,
@@ -127,6 +119,16 @@ export async function POST(request: NextRequest) {
       { headers: rateLimitHeaders }
     );
   } catch (error) {
+    if (error instanceof Error && (error as Error & { code?: string }).code === "LIMIT_EXCEEDED") {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.PLAN_REQUIRED,
+          "Instance limit reached",
+          `You can register up to ${MAX_EXTERNAL_INSTANCES} external EAs. Remove unused instances to add more.`
+        ),
+        { status: 403, headers: rateLimitHeaders }
+      );
+    }
     log.error({ error: extractErrorDetails(error) }, "Failed to register external EA");
     return NextResponse.json(
       { error: "Failed to register external EA. Please try again." },

@@ -122,7 +122,7 @@ export function PlaceBuyFields({
 
       {/* Stop Loss */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <p className="text-xs font-medium text-[#CBD5E1] mb-2">Stop Loss</p>
+        <p className="text-xs font-medium text-[#FAFAFA] mb-2">Stop Loss</p>
         <SelectField
           label="SL Method"
           value={((data as Record<string, unknown>).slMethod as string) ?? "FIXED_PIPS"}
@@ -191,7 +191,7 @@ export function PlaceBuyFields({
         )}
         {(data as Record<string, unknown>).slMethod === "INDICATOR" && (
           <div
-            className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+            className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
             role="note"
           >
             Connect an indicator block to use its value as SL level.
@@ -199,7 +199,7 @@ export function PlaceBuyFields({
         )}
         {(data as Record<string, unknown>).slMethod === "RANGE_OPPOSITE" && (
           <div
-            className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+            className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
             role="note"
           >
             Stop loss placed at the opposite side of the range.
@@ -209,7 +209,7 @@ export function PlaceBuyFields({
 
       {/* Take Profit */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <p className="text-xs font-medium text-[#CBD5E1] mb-2">Take Profit</p>
+        <p className="text-xs font-medium text-[#FAFAFA] mb-2">Take Profit</p>
         <SelectField
           label="TP Method"
           value={((data as Record<string, unknown>).tpMethod as string) ?? "FIXED_PIPS"}
@@ -391,7 +391,7 @@ export function PlaceSellFields({
 
       {/* Stop Loss */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <p className="text-xs font-medium text-[#CBD5E1] mb-2">Stop Loss</p>
+        <p className="text-xs font-medium text-[#FAFAFA] mb-2">Stop Loss</p>
         <SelectField
           label="SL Method"
           value={((data as Record<string, unknown>).slMethod as string) ?? "FIXED_PIPS"}
@@ -460,7 +460,7 @@ export function PlaceSellFields({
         )}
         {(data as Record<string, unknown>).slMethod === "INDICATOR" && (
           <div
-            className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+            className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
             role="note"
           >
             Connect an indicator block to use its value as SL level.
@@ -468,7 +468,7 @@ export function PlaceSellFields({
         )}
         {(data as Record<string, unknown>).slMethod === "RANGE_OPPOSITE" && (
           <div
-            className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+            className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
             role="note"
           >
             Stop loss placed at the opposite side of the range.
@@ -478,7 +478,7 @@ export function PlaceSellFields({
 
       {/* Take Profit */}
       <div className="border-t border-[rgba(79,70,229,0.2)] pt-3 mt-3">
-        <p className="text-xs font-medium text-[#CBD5E1] mb-2">Take Profit</p>
+        <p className="text-xs font-medium text-[#FAFAFA] mb-2">Take Profit</p>
         <SelectField
           label="TP Method"
           value={((data as Record<string, unknown>).tpMethod as string) ?? "FIXED_PIPS"}
@@ -584,7 +584,7 @@ export function CloseConditionFields({
         onChange={(v) => onChange({ closeDirection: v as CloseDirection })}
       />
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Closes open positions when connected conditions are triggered. Connect indicator or price
@@ -623,7 +623,7 @@ export function TimeExitFields({
         <OptimizableFieldCheckbox fieldName="exitTimeframe" data={data} onChange={onChange} />
       </div>
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         Automatically closes positions after the specified number of bars on the selected timeframe.
@@ -699,7 +699,7 @@ export function GridPyramidFields({
         <FieldWarning message="Lot multiplier > 1.0 (martingale) increases risk exponentially with each level" />
       )}
       <div
-        className="text-xs text-[#94A3B8] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
+        className="text-xs text-[#A1A1AA] bg-[rgba(79,70,229,0.1)] border border-[rgba(79,70,229,0.2)] p-3 rounded-lg"
         role="note"
       >
         {data.gridMode === "GRID"

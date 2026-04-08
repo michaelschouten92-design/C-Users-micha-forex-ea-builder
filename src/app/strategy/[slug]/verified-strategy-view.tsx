@@ -491,7 +491,7 @@ export function VerifiedStrategyView({ slug }: { slug: string }) {
         {/* CTA */}
         <div className="text-center pt-6 border-t border-[rgba(79,70,229,0.1)]">
           <p className="text-sm text-[#7C8DB0] mb-3">
-            Powered by AlgoStudio — Build, Test, and Verify Trading Strategies
+            Powered by Algo Studio — Build, Test, and Verify Trading Strategies
           </p>
           <Link
             href="/"

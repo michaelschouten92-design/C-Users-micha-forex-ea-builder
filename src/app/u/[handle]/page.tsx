@@ -14,16 +14,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     select: { handle: true },
   });
 
-  if (!user) return { title: "Trader Not Found | AlgoStudio" };
+  if (!user) return { title: "Trader Not Found | Algo Studio" };
 
-  const title = `@${user.handle} — Trader Profile | AlgoStudio`;
-  const description = `View ${user.handle}'s verified trading strategies and performance proof on AlgoStudio.`;
+  const title = `@${user.handle} — Trader Profile | Algo Studio`;
+  const description = `View ${user.handle}'s verified trading strategies and performance proof on Algo Studio.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com"}/@${user.handle}`;
 
   return {
     title,
     description,
-    openGraph: { title, description, url, siteName: "AlgoStudio", type: "profile" },
+    openGraph: { title, description, url, siteName: "Algo Studio", type: "profile" },
     twitter: { card: "summary", title, description },
     alternates: { canonical: url },
   };

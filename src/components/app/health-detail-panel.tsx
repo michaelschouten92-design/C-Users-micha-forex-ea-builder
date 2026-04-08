@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { StrategyStatusBadge } from "@/components/app/strategy-status-badge";
-import { getStatusExplanation } from "@/lib/strategy-status/resolver";
+import { getStatusExplanation, getRecoveryGuidance } from "@/lib/strategy-status/resolver";
+import { formatDateMedium } from "@/lib/format-date";
 import type { StrategyStatus } from "@/lib/strategy-status/resolver";
 
 interface HealthSnapshotData {
@@ -118,7 +119,7 @@ function MetricTooltip({ metric }: { metric: string }) {
           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
-      <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[10px] leading-relaxed text-white bg-[#1A0626] border border-[rgba(79,70,229,0.2)] rounded-lg shadow-lg w-52 z-50 pointer-events-none">
+      <span className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-[10px] leading-relaxed text-white bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-lg shadow-lg w-52 z-50 pointer-events-none">
         {text}
       </span>
     </span>
@@ -138,7 +139,7 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
         </span>
         <span className="text-white font-medium">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: barColor }}
@@ -257,9 +258,9 @@ function LifecycleBadge({ lifecycle }: { lifecycle: LifecycleData }) {
   const config = LIFECYCLE_CONFIG[lifecycle.phase];
   const tooltip =
     lifecycle.phase === "PROVEN" && lifecycle.provenAt
-      ? `Proven since ${new Date(lifecycle.provenAt).toLocaleDateString()}`
+      ? `Proven since ${formatDateMedium(lifecycle.provenAt)}`
       : lifecycle.phase === "RETIRED" && lifecycle.retiredAt
-        ? `Retired on ${new Date(lifecycle.retiredAt).toLocaleDateString()}`
+        ? `Retired on ${formatDateMedium(lifecycle.retiredAt)}`
         : undefined;
 
   return (
@@ -320,11 +321,11 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
   if (loading) {
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)]">
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-[#1A0626] rounded w-32" />
-          <div className="h-2 bg-[#1A0626] rounded w-full" />
-          <div className="h-2 bg-[#1A0626] rounded w-3/4" />
+          <div className="h-4 bg-[#111114] rounded w-32" />
+          <div className="h-2 bg-[#111114] rounded w-full" />
+          <div className="h-2 bg-[#111114] rounded w-3/4" />
         </div>
       </div>
     );
@@ -332,7 +333,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
   if (!health) {
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)]">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)]">
         <p className="text-xs text-[#7C8DB0]">
           No health data available yet. Health assessment begins after trade activity.
         </p>
@@ -350,7 +351,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
     const dayPct = Math.round(dayProgress * 100);
 
     return (
-      <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-3">
+      <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] space-y-3">
         <div className="flex items-center gap-2">
           <span
             className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border"
@@ -374,7 +375,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
                 {health.tradesSampled} / {MIN_TRADES}
               </span>
             </div>
-            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -391,7 +392,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
                 {health.windowDays} / {MIN_DAYS} days
               </span>
             </div>
-            <div className="h-1.5 bg-[#0A0118] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[#0D0D12] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -411,7 +412,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
   const ciUpper = Math.round(health.confidenceUpper * 100);
 
   return (
-    <div className="mt-4 p-4 rounded-lg bg-[#0A0118]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
+    <div className="mt-4 p-4 rounded-lg bg-[#0D0D12]/50 border border-[rgba(79,70,229,0.1)] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -462,7 +463,7 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
       {/* Drift Warning */}
       {health.driftDetected && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20">
-          <span className="text-[10px] text-[#EF4444] font-medium flex items-center">
+          <span className="text-[11px] text-[#EF4444] font-medium flex items-center">
             Edge drift detected — strategy expectancy has persistently declined
             <MetricTooltip metric="CUSUM Drift" />
           </span>
@@ -470,12 +471,25 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
       )}
       {!health.driftDetected && health.driftSeverity > 0.5 && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#F59E0B]/10 border border-[#F59E0B]/20">
-          <span className="text-[10px] text-[#F59E0B] font-medium flex items-center">
+          <span className="text-[11px] text-[#F59E0B] font-medium flex items-center">
             Possible drift ({Math.round(health.driftSeverity * 100)}% toward threshold)
             <MetricTooltip metric="Drift Severity" />
           </span>
         </div>
       )}
+
+      {/* Recovery Guidance */}
+      {strategyStatus &&
+        (() => {
+          const guidance = getRecoveryGuidance(strategyStatus);
+          if (!guidance) return null;
+          return (
+            <div className="px-3 py-2 rounded-md bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <p className="text-[11px] font-medium text-[#A1A1AA] mb-0.5">Recommended action</p>
+              <p className="text-[11px] text-[#7C8DB0] leading-relaxed">{guidance}</p>
+            </div>
+          );
+        })()}
 
       {/* Primary Driver + Trend + Expectancy */}
       {(health.primaryDriver || health.scoreTrend || health.expectancy !== null) && (
@@ -542,6 +556,9 @@ export function HealthDetailPanel({ instanceId, strategyStatus }: HealthDetailPa
 
       <p className="text-[10px] text-[#7C8DB0]">
         Last assessed: {new Date(health.createdAt).toLocaleString()}
+        {Date.now() - new Date(health.createdAt).getTime() > 60 * 60 * 1000 && (
+          <span className="ml-1 text-[#F59E0B]">(stale — over 1 hour ago)</span>
+        )}
       </p>
     </div>
   );

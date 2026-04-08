@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { OnboardingStep } from "./OnboardingStep";
 
+/** Fire Plausible custom event (no-op if Plausible not loaded) */
+function trackEvent(name: string, props?: Record<string, string | number>) {
+  if (typeof window !== "undefined" && "plausible" in window) {
+    (
+      window as unknown as {
+        plausible: (name: string, opts?: { props: Record<string, string | number> }) => void;
+      }
+    ).plausible(name, props ? { props } : undefined);
+  }
+}
+
 interface OnboardingStatus {
   hasBacktest: boolean;
   monitorConnected: boolean;
@@ -26,20 +37,76 @@ export function ActivationPanel() {
   });
   const [panelDismissed, setPanelDismissed] = useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem("algostudio:onboarding-dismissed") === "1";
+    const dismissedAt = localStorage.getItem("algostudio:onboarding-dismissed-at");
+    if (!dismissedAt) return false;
+    // Re-show after 24 hours so users don't permanently lose guidance
+    return Date.now() - parseInt(dismissedAt, 10) < 24 * 60 * 60 * 1000;
   });
 
   useEffect(() => {
-    fetch("/api/onboarding/status")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data) setStatus(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    function fetchStatus() {
+      fetch("/api/onboarding/status")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            setStatus((prev) => {
+              // Track milestone events on first detection
+              if (!prev?.hasBacktest && data.hasBacktest)
+                trackEvent("onboarding_backtest_uploaded");
+              if (!prev?.monitorConnected && data.monitorConnected)
+                trackEvent("onboarding_terminal_connected");
+              if (!prev?.baselineLinked && data.baselineLinked)
+                trackEvent("onboarding_baseline_linked");
+              return data;
+            });
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+
+    fetchStatus();
+
+    // Refetch when user returns to this tab (e.g., after connecting terminal in another tab)
+    function onFocus() {
+      fetchStatus();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  if (loading || !status || panelDismissed) return null;
+  if (loading || !status) return null;
+
+  // Compact fallback banner when panel is temporarily dismissed
+  if (panelDismissed && !status.baselineLinked) {
+    const completedCount = [
+      status.hasBacktest,
+      status.monitorConnected,
+      status.baselineLinked,
+    ].filter(Boolean).length;
+    return (
+      <Link
+        href="/app/onboarding"
+        className="block rounded-lg border border-[rgba(79,70,229,0.15)] bg-[rgba(79,70,229,0.03)] px-4 py-2.5 mb-6 group hover:border-[rgba(79,70,229,0.3)] transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[#818CF8] font-medium group-hover:text-white transition-colors">
+            Continue setup — {completedCount}/3 steps completed
+          </span>
+          <svg
+            className="w-3.5 h-3.5 text-[#818CF8] group-hover:text-white transition-colors"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </Link>
+    );
+  }
+
+  if (panelDismissed) return null;
 
   // ── Success state: activation complete ──
   if (status.baselineLinked) {
@@ -69,7 +136,7 @@ export function ActivationPanel() {
             Your live deployment is now being verified against its baseline.
           </p>
           <p className="text-[11px] text-[#64748B] mt-1">
-            AlgoStudio will surface edge drift, governance status, and incidents here.
+            Algo Studio will surface edge drift, governance status, and incidents here.
           </p>
         </div>
         <button
@@ -106,18 +173,19 @@ export function ActivationPanel() {
         <div>
           <h3 className="text-sm font-semibold text-white">Start Monitoring Your Strategy</h3>
           <p className="text-xs text-[#7C8DB0] mt-0.5">
-            AlgoStudio verifies whether your live strategy still matches its historical edge.{" "}
+            Algo Studio verifies whether your live strategy still matches its historical edge.{" "}
             {completedCount}/3 steps completed.
           </p>
         </div>
         <button
           onClick={() => {
             setPanelDismissed(true);
-            localStorage.setItem("algostudio:onboarding-dismissed", "1");
+            localStorage.setItem("algostudio:onboarding-dismissed-at", String(Date.now()));
+            trackEvent("onboarding_panel_dismissed", { step: activeStep });
           }}
           className="flex-shrink-0 text-[#64748B] hover:text-white transition-colors p-1"
-          aria-label="Dismiss onboarding"
-          title="Dismiss"
+          aria-label="Remind me later"
+          title="Remind me later"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -141,7 +209,7 @@ export function ActivationPanel() {
         <OnboardingStep
           stepNumber={2}
           label="Connect Monitor EA"
-          description="Send live trade facts from your MT5 terminal to AlgoStudio."
+          description="Send live trade facts from your MT5 terminal to Algo Studio."
           completed={status.monitorConnected}
           active={activeStep === 2}
         />
@@ -155,23 +223,12 @@ export function ActivationPanel() {
       </div>
 
       <div className="mt-4 pt-3 border-t border-[rgba(79,70,229,0.12)]">
-        {activeStep === 1 && (
+        {(activeStep === 1 || activeStep === 2) && (
           <Link
-            href="/app/evaluate"
+            href="/app/onboarding"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
           >
-            Upload Backtest
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        )}
-        {activeStep === 2 && (
-          <Link
-            href="/app/settings"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#818CF8] hover:text-white transition-colors"
-          >
-            Setup Monitor EA
+            {activeStep === 1 ? "Start Setup" : "Setup Monitor EA"}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -195,8 +252,8 @@ export function ActivationPanel() {
           <div>
             <p className="text-xs text-[#94A3B8] mb-1">No live deployment available to link yet.</p>
             <p className="text-[11px] text-[#7C8DB0]">
-              A deployment appears automatically when the Monitor EA detects a running strategy on
-              your terminal.
+              Strategies appear automatically when they open a position or place an order. Make sure
+              your EAs are running and AutoTrading is enabled.
             </p>
           </div>
         )}

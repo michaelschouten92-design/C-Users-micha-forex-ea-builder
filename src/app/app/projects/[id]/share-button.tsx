@@ -89,7 +89,7 @@ export function ShareButton({ projectId }: ShareButtonProps) {
             handleGenerateLink();
           }
         }}
-        className="text-[#94A3B8] hover:text-[#22D3EE] transition-colors duration-200 p-1 rounded-lg hover:bg-[rgba(79,70,229,0.15)] flex items-center gap-1.5 text-sm"
+        className="text-[#A1A1AA] hover:text-[#22D3EE] transition-colors duration-200 p-1 rounded-lg hover:bg-[rgba(79,70,229,0.15)] flex items-center gap-1.5 text-sm"
         title="Share project"
         aria-label="Share project"
       >
@@ -110,14 +110,14 @@ export function ShareButton({ projectId }: ShareButtonProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-[#1A0626] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-[#111114] border border-[rgba(79,70,229,0.3)] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 p-4">
           <h3 className="text-sm font-semibold text-white mb-3">Share Project</h3>
           <p className="text-xs text-[#7C8DB0] mb-3">
             Anyone with this link can view a read-only version of your strategy.
           </p>
 
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-[#94A3B8]">
+            <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
               <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                 <circle
                   className="opacity-25"
@@ -142,11 +142,11 @@ export function ShareButton({ projectId }: ShareButtonProps) {
                   type="text"
                   readOnly
                   value={shareUrl}
-                  className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-xs text-[#CBD5E1] font-mono truncate"
+                  className="flex-1 px-3 py-2 bg-[#0F172A] border border-[rgba(79,70,229,0.3)] rounded-lg text-xs text-[#FAFAFA] font-mono truncate"
                 />
                 <button
                   onClick={handleCopy}
-                  className="px-3 py-2 bg-[#4F46E5] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors flex-shrink-0"
+                  className="px-3 py-2 bg-[#6366F1] text-white text-xs font-medium rounded-lg hover:bg-[#6366F1] transition-colors flex-shrink-0"
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
@@ -162,7 +162,7 @@ export function ShareButton({ projectId }: ShareButtonProps) {
           ) : (
             <button
               onClick={handleGenerateLink}
-              className="w-full px-3 py-2 bg-[#4F46E5] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
+              className="w-full px-3 py-2 bg-[#6366F1] text-white text-sm font-medium rounded-lg hover:bg-[#6366F1] transition-colors"
             >
               Generate Share Link
             </button>

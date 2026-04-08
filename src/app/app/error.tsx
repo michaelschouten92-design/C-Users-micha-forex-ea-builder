@@ -35,20 +35,17 @@ export default function DashboardError({
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Something Went Wrong</h2>
-        <p className="text-[#A1A1AA] mb-4">An error occurred while loading the dashboard.</p>
-        <div className="mb-6 p-3 bg-[#18181B] rounded-lg border border-[rgba(255,255,255,0.06)] text-left">
-          <p className="text-xs text-red-400 font-mono break-all">
-            {error.message || "No message"}
-          </p>
-          {error.digest && (
-            <p className="text-xs text-[#71717A] font-mono mt-1">digest: {error.digest}</p>
-          )}
-          {error.stack && (
-            <pre className="text-[10px] text-[#71717A] font-mono mt-2 whitespace-pre-wrap break-all max-h-32 overflow-auto">
-              {error.stack}
-            </pre>
-          )}
-        </div>
+        <p className="text-[#A1A1AA] mb-2">
+          An unexpected error occurred while loading this page. Your live EAs continue running
+          independently.
+        </p>
+        <p className="text-xs text-[#71717A] mb-6">
+          If this keeps happening, contact{" "}
+          <a href="mailto:support@algo-studio.com" className="text-[#6366F1] hover:underline">
+            support@algo-studio.com
+          </a>
+          {error.digest && <span> (ref: {error.digest})</span>}
+        </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}

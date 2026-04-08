@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { loadStrategyDetail } from "./load-strategy-detail";
 import { StrategyHeader } from "@/components/app/strategy-header";
+import { StrategyActions } from "@/components/app/strategy-actions";
 import { SystemRecommendation } from "@/components/app/system-recommendation";
 import { LivePerformanceGrid } from "@/components/app/live-performance-grid";
 import { BaselineComparison } from "@/components/app/baseline-comparison";
@@ -10,6 +11,8 @@ import { IncidentTimeline } from "@/components/app/incident-timeline";
 import { DiagnosticsPanel } from "@/components/app/diagnostics-panel";
 import { GovernanceContextPanel } from "@/components/app/governance-context-panel";
 import { HealthScoreBreakdown } from "@/components/app/health-score-breakdown";
+import { EdgeScorePanel } from "@/components/app/edge-score-panel";
+import { EdgeDecayPanel } from "@/components/app/edge-decay-panel";
 import { StrategyAggregateSummary } from "@/components/app/strategy-aggregate-summary";
 import { VersionLineagePanel } from "@/components/app/version-lineage-panel";
 import { GovernancePanel } from "@/components/app/governance-panel";
@@ -33,10 +36,32 @@ export default async function StrategyDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0118]">
+    <div className="min-h-screen bg-[#0D0D12]">
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
         {/* 1. Header — name, status, lifecycle, health, last eval */}
         <StrategyHeader data={data} />
+
+        {/* Action bar — Pause/Resume + Acknowledge Incidents */}
+        <StrategyActions
+          instanceId={data.id}
+          eaName={data.eaName}
+          tradingState={data.tradingState}
+          openIncidentIds={data.incidents
+            .filter((i) => i.status === "OPEN" || i.status === "ESCALATED")
+            .map((i) => i.id)}
+        />
+
+        {/* ── Edge Score ────────────────────────────────────── */}
+        {data.edgeScore && <EdgeScorePanel edgeScore={data.edgeScore} />}
+
+        {/* ── Edge Decay Projection (only shown when declining) ── */}
+        {data.edgeProjection && (
+          <EdgeDecayPanel
+            projection={data.edgeProjection}
+            eaName={data.eaName}
+            instanceId={data.id}
+          />
+        )}
 
         {/* ── Control Layer ─────────────────────────────────── */}
 

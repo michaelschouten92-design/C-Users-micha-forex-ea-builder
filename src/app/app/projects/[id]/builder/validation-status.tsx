@@ -105,7 +105,7 @@ export function ValidationStatus({ validation, onFocusNode }: ValidationStatusPr
       </button>
       {/* Issue count summary when collapsed */}
       {!showDetails && validation.issues.length > 0 && (
-        <p className="text-[10px] mt-1 text-[#94A3B8]">
+        <p className="text-[10px] mt-1 text-[#A1A1AA]">
           {[
             errorCount > 0 ? `${errorCount} error${errorCount > 1 ? "s" : ""}` : "",
             warningCount > 0 ? `${warningCount} warning${warningCount > 1 ? "s" : ""}` : "",
@@ -240,7 +240,7 @@ function CheckItem({
           />
         </svg>
       )}
-      <span className={checked ? "text-[#CBD5E1]" : required ? "text-[#FCA5A5]" : "text-[#7C8DB0]"}>
+      <span className={checked ? "text-[#FAFAFA]" : required ? "text-[#FCA5A5]" : "text-[#7C8DB0]"}>
         {label}
         {required && <span className="text-[#EF4444]">*</span>}
       </span>

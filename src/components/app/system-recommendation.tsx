@@ -30,6 +30,13 @@ const RECOMMENDATION_CONFIG: Record<
   STOP: { color: "#EF4444", icon: "\u25A0", label: "Stop Deployment" },
 };
 
+const ACTION_HINTS: Partial<Record<RecommendationLevel, string>> = {
+  STOP: "Use the Pause Strategy button above to halt trading immediately.",
+  INVESTIGATE: "Review the health breakdown below. Consider pausing if the trend continues.",
+  MONITOR_CLOSELY:
+    "Keep an eye on the health score. Set up Telegram alerts to get notified of changes.",
+};
+
 interface SystemRecommendationProps {
   level: RecommendationLevel;
   reason: string;
@@ -37,10 +44,11 @@ interface SystemRecommendationProps {
 
 export function SystemRecommendation({ level, reason }: SystemRecommendationProps) {
   const config = RECOMMENDATION_CONFIG[level];
+  const actionHint = ACTION_HINTS[level];
 
   return (
     <div
-      className="rounded-xl bg-[#1A0626] p-4 sm:p-5"
+      className="rounded-xl bg-[#111114] p-4 sm:p-5"
       style={{
         border: `1px solid ${config.color}25`,
         borderLeft: `3px solid ${config.color}`,
@@ -55,6 +63,9 @@ export function SystemRecommendation({ level, reason }: SystemRecommendationProp
             {config.label}
           </h3>
           <p className="text-xs text-[#E2E8F0] leading-relaxed">{reason}</p>
+          {actionHint && (
+            <p className="text-[11px] text-[#A1A1AA] leading-relaxed italic">{actionHint}</p>
+          )}
         </div>
       </div>
     </div>

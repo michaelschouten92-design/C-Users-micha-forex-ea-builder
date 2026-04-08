@@ -186,7 +186,7 @@ async function handleProcessOutbox(request: NextRequest) {
           case "EMAIL": {
             const result = await sendWithRetryForOutbox({
               to: entry.destination,
-              subject: entry.subject || "AlgoStudio Notification",
+              subject: entry.subject || "Algo Studio Notification",
               html: str(payload.html),
             });
             success = !result.error;
@@ -214,7 +214,7 @@ async function handleProcessOutbox(request: NextRequest) {
           }
           case "BROWSER_PUSH": {
             await sendPushNotification(entry.userId, {
-              title: str(payload.title) || "AlgoStudio",
+              title: str(payload.title) || "Algo Studio",
               body: str(payload.body),
               url: typeof payload.url === "string" ? payload.url : undefined,
               tag: typeof payload.tag === "string" ? payload.tag : undefined,
