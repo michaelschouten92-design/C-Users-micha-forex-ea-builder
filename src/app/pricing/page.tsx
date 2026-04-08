@@ -65,6 +65,7 @@ const COMPARISON_MATRIX: { category: string; rows: MatrixRow[] }[] = [
     category: "Alerts & Support",
     rows: [
       ["Telegram & push alerts", true, true, true, true],
+      ["Earn 20% referral commissions", false, true, true, true],
       ["Priority support", false, true, true, true],
       ["1-on-1 strategy review (1/month)", false, false, true, true],
       ["Direct developer channel", false, false, false, true],
@@ -77,6 +78,7 @@ const CARD_FEATURES: [string, boolean, boolean, boolean, boolean][] = [
   ["All monitoring features", true, true, true, true],
   ["Drift detection & auto-halt", true, true, true, true],
   ["Verified track records", true, true, true, true],
+  ["Earn 20% referral commissions", false, true, true, true],
   ["Priority support", false, true, true, true],
   ["Direct developer channel", false, false, false, true],
 ];
