@@ -467,24 +467,23 @@ export function LiveDashboardClient({
   const accountGroups = sortByPriority(groupByAccount(filteredInstances));
   const totalAccounts = accountGroups.length;
   const totalStrategies = filteredInstances.filter((ea) => ea.symbol !== null).length;
-  const totalOpenTrades = metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0);
-
   // ── Portfolio totals (split by mode) ──
   // Live: from containers (account-wide aggregates) which only include mode=LIVE
   const liveBalance = metricsSource.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
   const liveEquity = metricsSource.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
-  const totalFloatingPnl = liveEquity - liveBalance;
-  // Paper: from paper account primaries (not containers since isAccountContainer checks mode=LIVE)
+  const liveFloatingPnl = liveEquity - liveBalance;
+  // Paper: from paper account containers (mode-agnostic container = no parent + no symbol)
   const paperPrimaries = eaInstances.filter(
     (ea) => ea.mode === "PAPER" && !ea.parentInstanceId && !ea.symbol
   );
-  // Fallback: if no paper primaries, sum all paper instances without parents
-  const paperBalance =
-    paperPrimaries.length > 0
-      ? paperPrimaries.reduce((sum, ea) => sum + (ea.balance ?? 0), 0)
-      : eaInstances
-          .filter((ea) => ea.mode === "PAPER" && !ea.parentInstanceId)
-          .reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const paperBalance = paperPrimaries.reduce((sum, ea) => sum + (ea.balance ?? 0), 0);
+  const paperEquity = paperPrimaries.reduce((sum, ea) => sum + (ea.equity ?? 0), 0);
+  const paperFloatingPnl = paperEquity - paperBalance;
+  // Combined totals across all account modes
+  const totalFloatingPnl = liveFloatingPnl + paperFloatingPnl;
+  const totalOpenTrades =
+    metricsSource.reduce((sum, ea) => sum + ea.openTrades, 0) +
+    paperPrimaries.reduce((sum, ea) => sum + ea.openTrades, 0);
 
   // ── Activity feed: merge live SSE trades with recent historical trades ──
   const feedItems: FeedItem[] = (() => {
