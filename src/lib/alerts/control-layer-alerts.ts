@@ -165,9 +165,16 @@ async function deliverAlertAllChannels(
     reasons && reasons.length > 0 ? reasons.join(", ") : "See strategy detail for more info.";
 
   // ── Telegram (via outbox) ──
-  if (user.telegramBotToken && user.telegramChatId) {
-    const rawToken = user.telegramBotToken;
-    const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
+  if (user.telegramChatId) {
+    // Use central Algo Studio bot token; fall back to user's own bot (legacy)
+    const centralToken = process.env.ALGO_TELEGRAM_BOT_TOKEN;
+    const rawUserToken = user.telegramBotToken;
+    const userToken = rawUserToken
+      ? isEncrypted(rawUserToken)
+        ? decrypt(rawUserToken)
+        : rawUserToken
+      : null;
+    const botToken = centralToken || userToken;
     if (botToken) {
       const tgMessage =
         `<b>[${severity}] ${eaName}</b>${symbol ? ` (${symbol})` : ""}\n\n` +
