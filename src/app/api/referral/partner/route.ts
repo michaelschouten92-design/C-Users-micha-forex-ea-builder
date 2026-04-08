@@ -20,8 +20,6 @@ export async function GET(): Promise<NextResponse> {
       status: true,
       commissionBps: true,
       payoutEmail: true,
-      totalEarnedCents: true,
-      totalPaidCents: true,
       createdAt: true,
     },
   });
@@ -31,8 +29,30 @@ export async function GET(): Promise<NextResponse> {
     select: { referralCode: true },
   });
 
+  // Derive totals from ledger (source of truth), not cached columns
+  let totalEarnedCents = 0;
+  let totalPaidCents = 0;
+  if (partner) {
+    const [earned, reversed, paid] = await Promise.all([
+      prisma.referralLedger.aggregate({
+        where: { partnerId: partner.id, type: "COMMISSION_EARNED" },
+        _sum: { amountCents: true },
+      }),
+      prisma.referralLedger.aggregate({
+        where: { partnerId: partner.id, type: "COMMISSION_REVERSED" },
+        _sum: { amountCents: true },
+      }),
+      prisma.referralLedger.aggregate({
+        where: { partnerId: partner.id, type: "PAYOUT_SENT" },
+        _sum: { amountCents: true },
+      }),
+    ]);
+    totalEarnedCents = (earned._sum.amountCents ?? 0) + (reversed._sum.amountCents ?? 0); // reversed is negative
+    totalPaidCents = Math.abs(paid._sum.amountCents ?? 0);
+  }
+
   return NextResponse.json({
-    partner,
+    partner: partner ? { ...partner, totalEarnedCents, totalPaidCents } : null,
     referralCode: user?.referralCode ?? null,
   });
 }

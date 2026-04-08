@@ -217,9 +217,9 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
       "referral:commission-reversed"
     );
   } catch (err) {
-    // P2002 = unique constraint on [stripeInvoiceId, type] — reversal already recorded
-    // This can happen when two partial refund webhooks race. The cumulative math
-    // ensures correctness; the second attempt is safely skippable.
+    // P2002 safety net — belt-and-suspenders for any future unique constraint.
+    // The partial unique index only covers COMMISSION_EARNED, so this catch
+    // currently cannot fire for reversals. Kept as defensive guard.
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       log.info({ invoiceId, chargeId: charge.id }, "referral:reversal-already-booked");
       return;
