@@ -128,8 +128,10 @@ model User {
   referredBy      String?   // referralCode of the user who referred them
   lastLoginAt      DateTime?
   webhookUrl       String?  // User-defined webhook URL for trade notifications
-  telegramBotToken String?  // Encrypted Telegram Bot API token
+  telegramBotToken String?  // Encrypted Telegram Bot API token (legacy: user's own bot)
   telegramChatId   String?  // Telegram chat ID for alerts
+  telegramLinkToken     String?   // One-time token for linking Telegram account
+  telegramLinkExpiresAt DateTime? // Expiry for the linking token
   slackWebhookUrl  String?  // Slack Incoming Webhook URL for alerts
   onboardingDay1SentAt DateTime?
   onboardingDay3SentAt DateTime?

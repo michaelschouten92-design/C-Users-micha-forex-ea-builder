@@ -75,10 +75,17 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
         },
       });
     } else if (channel === "TELEGRAM") {
-      const rawToken = config.user.telegramBotToken;
       const chatId = config.user.telegramChatId;
-      if (rawToken && chatId) {
-        const botToken = isEncrypted(rawToken) ? decrypt(rawToken) : rawToken;
+      if (chatId) {
+        // Use central Algo Studio bot token; fall back to user's own bot (legacy)
+        const centralToken = process.env.ALGO_TELEGRAM_BOT_TOKEN;
+        const rawUserToken = config.user.telegramBotToken;
+        const userToken = rawUserToken
+          ? isEncrypted(rawUserToken)
+            ? decrypt(rawUserToken)
+            : rawUserToken
+          : null;
+        const botToken = centralToken || userToken;
         if (botToken) {
           const telegramMessage = `<b>Algo Studio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
           await enqueueNotification({

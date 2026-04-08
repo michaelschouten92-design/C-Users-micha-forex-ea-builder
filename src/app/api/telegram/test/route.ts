@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { decrypt, isEncrypted } from "@/lib/crypto";
-import { validateTelegramConfig } from "@/lib/telegram";
+import { sendTelegramAlert } from "@/lib/telegram";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
@@ -12,33 +12,46 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const { botToken: rawBotToken, chatId } = body;
+    const { chatId: providedChatId } = body;
 
-    let botToken = rawBotToken as string | undefined;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { telegramBotToken: true, telegramChatId: true },
+    });
 
-    // If no bot token provided in request, use the stored one
+    const chatId = providedChatId ?? user?.telegramChatId;
+    if (!chatId) {
+      return NextResponse.json(
+        { error: "Telegram is not connected. Connect it first." },
+        { status: 400 }
+      );
+    }
+
+    // Use central bot token; fall back to user's own bot (legacy)
+    const centralToken = process.env.ALGO_TELEGRAM_BOT_TOKEN;
+    const rawUserToken = user?.telegramBotToken;
+    const userToken = rawUserToken
+      ? isEncrypted(rawUserToken)
+        ? (decrypt(rawUserToken) ?? null)
+        : rawUserToken
+      : null;
+    const botToken = centralToken || userToken;
+
     if (!botToken) {
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { telegramBotToken: true },
-      });
-      if (!user?.telegramBotToken) {
-        return NextResponse.json(
-          { error: "No bot token configured. Save your Telegram settings first." },
-          { status: 400 }
-        );
-      }
-      const stored = user.telegramBotToken;
-      botToken = isEncrypted(stored) ? (decrypt(stored) ?? undefined) : stored;
+      return NextResponse.json({ error: "No bot token configured." }, { status: 500 });
     }
 
-    if (!botToken || !chatId) {
-      return NextResponse.json({ error: "Bot token and chat ID are required" }, { status: 400 });
-    }
+    const sent = await sendTelegramAlert(
+      botToken,
+      chatId,
+      "Algo Studio test message — your alerts are working!"
+    );
 
-    const error = await validateTelegramConfig(botToken, chatId);
-    if (error) {
-      return NextResponse.json({ error }, { status: 400 });
+    if (!sent) {
+      return NextResponse.json(
+        { error: "Could not deliver the message. The chat may no longer be active." },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({

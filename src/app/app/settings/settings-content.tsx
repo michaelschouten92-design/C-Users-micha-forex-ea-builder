@@ -479,23 +479,21 @@ function DeleteAccountSection() {
 }
 
 function TelegramSection() {
-  const [botToken, setBotToken] = useState("");
-  const [chatId, setChatId] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [chatId, setChatId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
   const [testMessage, setTestMessage] = useState("");
-  const [showToken, setShowToken] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
 
-  const fetchConfig = useCallback(async () => {
+  const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/account/webhook");
+      const res = await fetch("/api/telegram/link");
       if (res.ok) {
         const data = await res.json();
-        setChatId(data.telegramChatId ?? "");
-        // Bot token is encrypted server-side, we only know if it's set
-        if (data.telegramChatId) setBotToken("••••••••••");
+        setConnected(data.connected);
+        setChatId(data.chatId);
       }
     } catch {
       // Silently fail
@@ -505,61 +503,89 @@ function TelegramSection() {
   }, []);
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    fetchStatus();
+  }, [fetchStatus]);
 
-  async function handleSave() {
+  // Poll for link completion while linking is in progress
+  useEffect(() => {
+    if (!linking) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/telegram/link");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setConnected(true);
+            setChatId(data.chatId);
+            setLinking(false);
+            showSuccess("Telegram connected!");
+          }
+        }
+      } catch {
+        // Keep polling
+      }
+    }, 2000);
+    // Stop polling after 10 minutes
+    const timeout = setTimeout(() => setLinking(false), 10 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [linking]);
+
+  async function handleConnect() {
     setLoading(true);
     try {
-      const payload: Record<string, string | null> = {
-        telegramChatId: chatId || null,
-      };
-      // Only send bot token if user entered a new one (not the masked placeholder)
-      if (botToken && !botToken.startsWith("•")) {
-        payload.telegramBotToken = botToken;
-      }
-      // If both are cleared, explicitly null out the token
-      if (!chatId && !botToken) {
-        payload.telegramBotToken = null;
-        payload.telegramChatId = null;
-      }
-
-      const res = await fetch("/api/account/webhook", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify(payload),
+      const res = await fetch("/api/telegram/link", {
+        method: "POST",
+        headers: getCsrfHeaders(),
       });
       const data = await res.json();
-      if (res.ok) {
-        showSuccess(chatId ? "Telegram connected" : "Telegram disconnected");
+      if (res.ok && data.deepLink) {
+        window.open(data.deepLink, "_blank");
+        setLinking(true);
       } else {
-        showError(data.error ?? "Failed to save Telegram configuration");
+        showError(data.error ?? "Failed to generate link");
       }
     } catch {
-      showError("Failed to save Telegram configuration");
+      showError("Failed to connect Telegram");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDisconnect() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/telegram/link", {
+        method: "DELETE",
+        headers: getCsrfHeaders(),
+      });
+      if (res.ok) {
+        setConnected(false);
+        setChatId(null);
+        showSuccess("Telegram disconnected");
+      }
+    } catch {
+      showError("Failed to disconnect");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleTest() {
-    if (!botToken || !chatId) return;
     setTestStatus("testing");
     setTestMessage("");
     try {
-      const payload: Record<string, string> = { chatId };
-      if (!botToken.startsWith("•")) {
-        payload.botToken = botToken;
-      }
       const res = await fetch("/api/telegram/test", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ chatId }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setTestStatus("success");
-        setTestMessage(data.message ?? "Test message sent successfully.");
+        setTestMessage(data.message ?? "Test message sent.");
       } else {
         setTestStatus("error");
         setTestMessage(data.error ?? "Failed to send test message.");
@@ -572,8 +598,6 @@ function TelegramSection() {
 
   if (!loaded) return null;
 
-  const isConnected = chatId && botToken;
-
   return (
     <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
       <div className="flex items-center gap-3 mb-2">
@@ -581,7 +605,7 @@ function TelegramSection() {
           <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.012-1.252-.242-1.865-.44-.751-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
         </svg>
         <h2 className="text-lg font-semibold text-white">Telegram Alerts</h2>
-        {isConnected && (
+        {connected && (
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] font-medium">
             Connected
           </span>
@@ -591,127 +615,103 @@ function TelegramSection() {
         Receive real-time alerts in Telegram when your strategy needs attention.
       </p>
 
-      {/* Setup instructions (collapsible) */}
-      <button
-        onClick={() => setShowSetup(!showSetup)}
-        className="text-xs text-[#818CF8] hover:text-white transition-colors mb-4 flex items-center gap-1"
-      >
-        {showSetup ? "Hide" : "Show"} setup instructions
-        <svg
-          className={`w-3 h-3 transition-transform ${showSetup ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {showSetup && (
-        <div className="rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] p-4 mb-4 space-y-3 text-sm text-[#A1A1AA]">
-          <ol className="space-y-2 list-decimal list-inside">
-            <li>
-              Open Telegram and search for <strong className="text-white">@BotFather</strong>
-            </li>
-            <li>
-              Send{" "}
-              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
-                /newbot
-              </code>{" "}
-              and follow the prompts to create a bot
-            </li>
-            <li>
-              Copy the <strong className="text-white">Bot Token</strong> BotFather gives you
-            </li>
-            <li>Open your new bot in Telegram and send it any message (e.g. &quot;hello&quot;)</li>
-            <li>
-              To find your Chat ID, open{" "}
-              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE] break-all">
-                https://api.telegram.org/bot&lt;YOUR_TOKEN&gt;/getUpdates
-              </code>{" "}
-              in your browser and look for{" "}
-              <code className="text-xs bg-[#0D0D12] px-1.5 py-0.5 rounded text-[#22D3EE]">
-                &quot;chat&quot;:{`{`}&quot;id&quot;:123456789{`}`}
-              </code>
-            </li>
-          </ol>
-        </div>
-      )}
-
-      {/* Bot Token */}
-      <div className="space-y-3">
-        <div>
-          <label className="block text-sm font-medium text-[#FAFAFA] mb-1">Bot Token</label>
-          <div className="relative">
-            <input
-              type={showToken ? "text" : "password"}
-              value={botToken}
-              onChange={(e) => setBotToken(e.target.value)}
-              placeholder="123456789:ABCDefGhIjKlMnOpQrStUvWxYz"
-              className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 text-sm pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowToken(!showToken)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] hover:text-white transition-colors"
+      {connected ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-lg bg-[rgba(16,185,129,0.06)] border border-[rgba(16,185,129,0.15)] px-4 py-3">
+            <svg
+              className="w-5 h-5 text-[#10B981] flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {showToken ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                )}
-              </svg>
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white">Telegram is connected</p>
+              {chatId && <p className="text-xs text-[#64748B]">Chat ID: {chatId}</p>}
+            </div>
           </div>
-        </div>
-
-        {/* Chat ID */}
-        <div>
-          <label className="block text-sm font-medium text-[#FAFAFA] mb-1">Chat ID</label>
-          <input
-            type="text"
-            value={chatId}
-            onChange={(e) => setChatId(e.target.value)}
-            placeholder="123456789"
-            className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200 text-sm"
-          />
-        </div>
-
-        {/* Save + Test */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-white bg-[#6366F1] rounded-lg hover:bg-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            {loading ? "Saving..." : "Save"}
-          </button>
-          {botToken && chatId && (
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={handleTest}
               disabled={testStatus === "testing"}
-              className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-[#818CF8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 transition-all duration-200"
+              className="px-5 py-2 text-sm font-medium text-[#818CF8] border border-[rgba(79,70,229,0.3)] rounded-lg hover:bg-[rgba(79,70,229,0.1)] disabled:opacity-50 transition-all duration-200"
             >
               {testStatus === "testing" ? "Sending..." : "Send Test Message"}
             </button>
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="px-5 py-2 text-sm font-medium text-[#71717A] border border-[rgba(255,255,255,0.06)] rounded-lg hover:text-[#EF4444] hover:border-[rgba(239,68,68,0.3)] disabled:opacity-50 transition-all duration-200"
+            >
+              Disconnect
+            </button>
+          </div>
+          {testStatus === "success" && <p className="text-[11px] text-[#10B981]">{testMessage}</p>}
+          {testStatus === "error" && <p className="text-[11px] text-[#EF4444]">{testMessage}</p>}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {linking ? (
+            <div className="flex items-center gap-3 rounded-lg bg-[rgba(99,102,241,0.06)] border border-[rgba(99,102,241,0.15)] px-4 py-3">
+              <svg
+                className="w-4 h-4 text-[#818CF8] animate-spin flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              <div>
+                <p className="text-sm text-white">
+                  Waiting for you to press <strong>Start</strong> in Telegram...
+                </p>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  Didn&apos;t open?{" "}
+                  <button
+                    onClick={handleConnect}
+                    className="text-[#818CF8] hover:text-white transition-colors"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-[#64748B]">
+                Click the button below to open Telegram and connect your account in one step.
+              </p>
+              <button
+                onClick={handleConnect}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#29A9EB] rounded-lg hover:bg-[#1D9BD9] disabled:opacity-50 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.012-1.252-.242-1.865-.44-.751-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                {loading ? "Opening..." : "Connect Telegram"}
+              </button>
+            </>
           )}
         </div>
-
-        {/* Test result */}
-        {testStatus === "success" && <p className="text-[11px] text-[#10B981]">{testMessage}</p>}
-        {testStatus === "error" && <p className="text-[11px] text-[#EF4444]">{testMessage}</p>}
-      </div>
+      )}
     </div>
   );
 }
