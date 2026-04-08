@@ -317,7 +317,7 @@ export default function EvaluatePage() {
               </svg>
               <p className="text-white font-medium mb-1">Drop your backtest report here</p>
               <p className="text-sm text-[#71717A]">
-                or click to browse — accepts MT4 and MT5 Strategy Tester .html files
+                or click to browse — accepts MT5 Strategy Tester .html files
               </p>
             </>
           )}
