@@ -292,7 +292,12 @@ export async function POST(request: NextRequest) {
     // Side effects: webhook, alerts, strategy status recomputation.
     // Alert checks are DB-heavy (4-5 queries each) — only run on status change
     // to avoid connection pool saturation on routine heartbeats.
-    if (previousState) {
+    //
+    // For INVALIDATED instances we deliberately suppress the "recovery" path:
+    // a user-facing "EA is back online" notification is misleading when the
+    // strategy's trading authority has already been revoked. The dashboard
+    // still shows connectivity via the DB update above.
+    if (previousState && previousState.lifecycleState !== "INVALIDATED") {
       const statusChanged = previousState.status !== "ONLINE";
 
       processHeartbeatSideEffects(

@@ -17,7 +17,13 @@ function toDate(value: string | number): Date {
 
 const tradeSchema = z.object({
   ticket: z.union([z.string(), z.number()]).transform(String),
-  symbol: z.string().max(32),
+  // Normalize to uppercase at the ingest boundary so the ledger stays consistent
+  // with LiveEAInstance.symbol and terminal deployment keys, both of which also
+  // uppercase. Prevents attribution misses when a broker reports mixed case.
+  symbol: z
+    .string()
+    .max(32)
+    .transform((s) => s.toUpperCase()),
   type: z.string().max(16),
   openPrice: z.number().finite().min(0).max(1e8),
   closePrice: z.number().finite().min(0).max(1e8).nullable().optional(),
@@ -64,6 +70,39 @@ export async function POST(request: NextRequest) {
     // Security: auth.instanceId is derived from the API key (one key = one instance).
     // The request body has no instanceId field, preventing a leaked key from affecting other instances.
 
+    // Fetch instance once: used for the governance gate below AND for webhook/
+    // alert fan-out after the upsert.
+    const instance = await prisma.liveEAInstance.findUnique({
+      where: { id: auth.instanceId, deletedAt: null },
+      select: {
+        lifecycleState: true,
+        eaName: true,
+        user: { select: { webhookUrl: true } },
+      },
+    });
+
+    if (!instance) {
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Instance not found"), {
+        status: 404,
+      });
+    }
+
+    // Governance gate: reject trades from invalidated instances. The proof layer
+    // and the EATrade ledger must be sealed at the moment of invalidation —
+    // post-invalidation events would corrupt the audit trail and skew dashboard
+    // metrics. Non-compliant EAs that ignore the heartbeat STOP action cannot
+    // sneak trades in through this endpoint.
+    if (instance.lifecycleState === "INVALIDATED") {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.FORBIDDEN,
+          "Strategy is invalidated — trading authority revoked",
+          "STRATEGY_INVALIDATED"
+        ),
+        { status: 403 }
+      );
+    }
+
     // Resolve deployment attribution (write-once at ingestion time)
     const attribution = await resolveTradeDeploymentAttribution(
       auth.instanceId,
@@ -102,14 +141,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Fetch instance once for both webhook and alerts (avoids N+1)
-    const instance = await prisma.liveEAInstance.findUnique({
-      where: { id: auth.instanceId },
-      select: { eaName: true, user: { select: { webhookUrl: true } } },
-    });
-
-    if (instance) {
-      // Fire webhook notification (fire-and-forget)
+    // Fire webhook notification + alert checks (fire-and-forget). Reuses the
+    // `instance` fetched above for the governance gate.
+    {
       if (instance.user.webhookUrl) {
         fireWebhook(instance.user.webhookUrl, {
           event: "trade",

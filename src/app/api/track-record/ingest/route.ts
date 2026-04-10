@@ -140,6 +140,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Governance gate: seal the proof chain at invalidation. Once an instance
+  // is INVALIDATED, no more EA-sourced events may be appended — otherwise a
+  // non-compliant EA could corrupt the audit trail by continuing to publish
+  // trades after its trading authority was revoked. STRATEGY_INVALIDATED
+  // itself is written internally by the monitoring pipeline, not through
+  // this endpoint, so blocking all event types here is safe.
+  const governanceState = await prisma.liveEAInstance.findUnique({
+    where: { id: effectiveInstanceId, deletedAt: null },
+    select: { lifecycleState: true },
+  });
+  if (governanceState?.lifecycleState === "INVALIDATED") {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.FORBIDDEN,
+        "Strategy is invalidated — proof chain sealed",
+        "STRATEGY_INVALIDATED"
+      ),
+      { status: 403 }
+    );
+  }
+
   try {
     // All state reads + writes inside one interactive transaction to prevent races.
     // RepeatableRead + FOR UPDATE provides per-instance locking without cross-instance conflicts.
