@@ -103,11 +103,6 @@ export class CircuitOpenError extends Error {
 }
 
 // Pre-configured circuit breakers for external services
-export const anthropicCircuit = new CircuitBreaker("anthropic", {
-  failureThreshold: 5,
-  cooldownMs: 30_000,
-});
-
 export const openaiCircuit = new CircuitBreaker("openai", {
   failureThreshold: 5,
   cooldownMs: 30_000,

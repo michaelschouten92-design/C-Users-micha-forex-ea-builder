@@ -116,9 +116,6 @@ const envSchema = z.object({
   // Internal webhook ingest HMAC secret (for trade import pipelines)
   INGEST_WEBHOOK_SECRET: z.string().min(32).optional(),
 
-  // Anthropic API key (alternative AI provider, optional)
-  ANTHROPIC_API_KEY: z.string().optional(),
-
   // Previous encryption salt for key rotation (optional — decrypts legacy ciphertext)
   ENCRYPTION_SALT_PREVIOUS: z.string().min(16).optional(),
 });
@@ -399,7 +396,6 @@ function validateEnv() {
       ALGO_TELEGRAM_BOT_USERNAME: undefined,
       TELEGRAM_WEBHOOK_SECRET: undefined,
       INGEST_WEBHOOK_SECRET: undefined,
-      ANTHROPIC_API_KEY: undefined,
       ENCRYPTION_SALT_PREVIOUS: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
@@ -481,7 +477,6 @@ function validateEnv() {
         ALGO_TELEGRAM_BOT_USERNAME: process.env.ALGO_TELEGRAM_BOT_USERNAME,
         TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
         INGEST_WEBHOOK_SECRET: process.env.INGEST_WEBHOOK_SECRET,
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         ENCRYPTION_SALT_PREVIOUS: process.env.ENCRYPTION_SALT_PREVIOUS,
       } as z.infer<typeof refinedEnvSchema>;
     }

@@ -171,7 +171,7 @@ Set these ONLY if you're enabling the corresponding feature:
 
 **AI Strategy Doctor**:
 
-- `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`)
+- `OPENAI_API_KEY`
 
 **Telegram alert channel**:
 
