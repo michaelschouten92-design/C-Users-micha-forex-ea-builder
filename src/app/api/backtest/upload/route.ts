@@ -34,22 +34,6 @@ function getUploadRateLimiterForTier(tier: string) {
   }
 }
 
-/** Strip script tags, event handlers, and other XSS vectors from HTML before storage */
-function sanitizeHtmlForStorage(html: string): string {
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<iframe\b[^>]*>.*?<\/iframe>/gi, "")
-    .replace(/<object\b[^>]*>.*?<\/object>/gi, "")
-    .replace(/<embed\b[^>]*\/?>/gi, "")
-    .replace(/<form\b[^>]*>.*?<\/form>/gi, "")
-    .replace(/<base\b[^>]*\/?>/gi, "")
-    .replace(/<link\b[^>]*\/?>/gi, "")
-    .replace(/<meta\b[^>]*\/?>/gi, "")
-    .replace(/\bon\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/javascript\s*:/gi, "removed:")
-    .replace(/data\s*:\s*text\/html/gi, "removed:");
-}
-
 /** Sanitize a client-provided filename */
 function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.\-\s()]/g, "_").slice(0, 255);
@@ -222,8 +206,7 @@ export async function POST(request: Request) {
     // 12. Compute health score
     const healthResult = computeHealthScore(parsed.metrics, parsed.metadata.initialDeposit);
 
-    // 13. Sanitize HTML before storage and sanitize filename
-    const sanitizedHtml = sanitizeHtmlForStorage(html);
+    // 13. Sanitize filename
     const safeName = sanitizeFileName(file.name);
 
     // 14. Store in transaction (extended timeout for slow remote DB connections)
@@ -234,7 +217,6 @@ export async function POST(request: Request) {
             userId: session.user.id,
             projectId: projectId || null,
             contentHash,
-            originalHtml: sanitizedHtml,
             fileName: safeName,
             fileSize: file.size,
           },

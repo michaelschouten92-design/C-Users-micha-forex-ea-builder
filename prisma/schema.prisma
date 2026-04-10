@@ -978,7 +978,6 @@ model BacktestUpload {
   userId        String
   projectId     String?
   contentHash   String                 // SHA-256 dedup (unique per user)
-  originalHtml  String   @db.Text      // Full HTML for re-parsing
   fileName      String
   fileSize      Int
   createdAt     DateTime @default(now())
