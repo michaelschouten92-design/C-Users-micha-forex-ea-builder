@@ -42,7 +42,7 @@ export function AccountCard({
     (forceExpandId === primary.id || instances.some((ea) => ea.id === forceExpandId));
   const hasRiskyStrategy = instances.some((ea) => {
     const h = deriveStrategyHealth(ea);
-    return h === "Edge at Risk" || h === "Elevated";
+    return h === "Invalidated" || h === "Edge at Risk" || h === "Elevated";
   });
   const [manualExpanded, setExpanded] = useState(hasRiskyStrategy);
   const expanded = manualExpanded || shouldForceExpand;
@@ -266,6 +266,7 @@ export function AccountCard({
       Healthy: 0,
       Elevated: 0,
       "Edge at Risk": 0,
+      Invalidated: 0,
       Pending: 0,
     };
     for (const ea of instances) {
@@ -274,8 +275,9 @@ export function AccountCard({
     }
     return counts;
   })();
+  // Order: worst first so the summary pills lead with the most urgent signal.
   const healthSummaryParts = (
-    ["Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
+    ["Invalidated", "Edge at Risk", "Elevated", "Healthy", "Pending"] as StrategyHealthLabel[]
   ).filter((label) => healthCounts[label] > 0);
 
   const lastHeartbeat = instances
@@ -284,15 +286,18 @@ export function AccountCard({
     .sort()
     .pop();
 
-  // Derive worst health across all instances for accent bar
+  // Derive worst health across all instances for accent bar.
+  // Invalidated ranks above Edge at Risk (terminal vs recoverable).
   const accentColor = (() => {
     let worst: StrategyHealthLabel = "Pending";
     for (const ea of instances) {
       const h = deriveStrategyHealth(ea);
-      if (h === "Edge at Risk") return "#EF4444";
-      if (h === "Elevated") worst = "Elevated";
+      if (h === "Invalidated") return "#991B1B";
+      if (h === "Edge at Risk") worst = "Edge at Risk";
+      else if (h === "Elevated" && worst !== "Edge at Risk") worst = "Elevated";
       else if (h === "Healthy" && worst === "Pending") worst = "Healthy";
     }
+    if (worst === "Edge at Risk") return "#EF4444";
     if (worst === "Elevated") return "#F59E0B";
     if (worst === "Healthy") return "#10B981";
     return "#A78BFA";
@@ -308,7 +313,7 @@ export function AccountCard({
     <div
       id={`account-card-${primary.id}`}
       className={`relative overflow-hidden bg-[#0C0714] border rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.3)] transition-all duration-300 ${
-        healthCounts["Edge at Risk"] > 0
+        healthCounts["Invalidated"] > 0 || healthCounts["Edge at Risk"] > 0
           ? "border-[#1E293B]"
           : statusChanged
             ? "border-[#52525B] shadow-[0_0_12px_rgba(100,116,139,0.15)]"

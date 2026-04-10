@@ -68,7 +68,12 @@ export interface AccountGroup {
   primary: EAInstanceData;
 }
 
-export type StrategyHealthLabel = "Healthy" | "Elevated" | "Edge at Risk" | "Pending";
+export type StrategyHealthLabel =
+  | "Healthy"
+  | "Elevated"
+  | "Edge at Risk"
+  | "Invalidated"
+  | "Pending";
 
 export const ALERT_TYPE_LABELS: Record<string, string> = {
   DRAWDOWN: "Floating Drawdown",

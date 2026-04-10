@@ -213,16 +213,21 @@ export function groupByAccount(instances: EAInstanceData[]): AccountGroup[] {
  * Compute a numeric priority for an instance. Lower = more urgent.
  *
  * Priority buckets:
- *   0 — EDGE_AT_RISK lifecycle
+ *   0 — INVALIDATED lifecycle (terminal, needs visible acknowledgement)
+ *   0 — EDGE_AT_RISK lifecycle (recoverable risk signal)
  *   1 — DEGRADED health (product label: "Edge at Risk")
  *   2 — WARNING health
  *   3 — Discovered / Draft / needs activation
  *   4 — Active healthy strategies (LIVE_MONITORING + HEALTHY)
  *   5 — Inactive / paused / no signal
+ *
+ * INVALIDATED and EDGE_AT_RISK share bucket 0 because both must surface at the
+ * top of the list. The visual distinction (Invalidated vs Edge at Risk label
+ * + darker red pill) tells the user which kind of attention they need.
  */
 export function instancePriority(ea: EAInstanceData): number {
-  // Bucket 0: lifecycle EDGE_AT_RISK
-  if (ea.lifecycleState === "EDGE_AT_RISK") return 0;
+  // Bucket 0: terminal or at-risk lifecycle states
+  if (ea.lifecycleState === "INVALIDATED" || ea.lifecycleState === "EDGE_AT_RISK") return 0;
 
   // Bucket 1: health DEGRADED
   const healthStatus = ea.healthSnapshots?.[0]?.status ?? ea.healthStatus ?? null;
@@ -311,8 +316,13 @@ export function sortByPriority(groups: AccountGroup[]): AccountGroup[] {
 export function deriveStrategyHealth(instance: EAInstanceData | undefined): StrategyHealthLabel {
   if (!instance) return "Pending";
 
-  // Lifecycle state is the strongest signal
-  if (instance.lifecycleState === "EDGE_AT_RISK" || instance.lifecycleState === "INVALIDATED") {
+  // Lifecycle state is the strongest signal. INVALIDATED is terminal
+  // (trading authority revoked, proof chain sealed) so it ranks above
+  // EDGE_AT_RISK, which is still recoverable.
+  if (instance.lifecycleState === "INVALIDATED") {
+    return "Invalidated";
+  }
+  if (instance.lifecycleState === "EDGE_AT_RISK") {
     return "Edge at Risk";
   }
 
@@ -337,6 +347,9 @@ export const HEALTH_STYLES: Record<StrategyHealthLabel, { bg: string; text: stri
     Healthy: { bg: "bg-[#10B981]/10", text: "text-[#10B981]", dot: "bg-[#10B981]" },
     Elevated: { bg: "bg-[#F59E0B]/10", text: "text-[#F59E0B]", dot: "bg-[#F59E0B]" },
     "Edge at Risk": { bg: "bg-[#EF4444]/10", text: "text-[#EF4444]", dot: "bg-[#EF4444]" },
+    // Invalidated uses a darker, more saturated red to signal terminal state
+    // — distinct from Edge at Risk's recoverable warning.
+    Invalidated: { bg: "bg-[#991B1B]/20", text: "text-[#DC2626]", dot: "bg-[#991B1B]" },
     Pending: { bg: "bg-[#64748B]/10", text: "text-[#64748B]", dot: "bg-[#64748B]" },
   };
 
@@ -360,6 +373,8 @@ export function deriveSignalSummary(
         : `Snapshot status: ${snap.status}`;
     case "Edge at Risk":
       return `Snapshot status: ${snap.status} — drift detected: ${snap.driftDetected ? "yes" : "no"} — manual review required`;
+    case "Invalidated":
+      return "Trading authority revoked — proof chain sealed";
     case "Pending":
       return "No health snapshot available";
   }
