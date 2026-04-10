@@ -139,6 +139,15 @@ export default function PrivacyPolicyPage() {
                 chat ID is stored so we can deliver notifications you requested. Disconnect at any
                 time.
               </li>
+              <li>
+                <strong>PostHog</strong> — optional product analytics for understanding how the
+                platform is used (pageviews, feature interaction). Loaded{" "}
+                <strong>only after</strong> you accept analytics cookies via the consent banner — if
+                you choose &quot;Essential Only&quot;, PostHog is never loaded. User profiles are
+                only created for authenticated users (&quot;identified_only&quot;); anonymous
+                visitors are not profiled. Region: PostHog EU Cloud (Frankfurt, Germany). You can
+                withdraw consent at any time by clearing your cookie preferences in your browser.
+              </li>
             </ul>
             <p className="mt-4">
               We never sell your data to third parties. You can request copies of our DPAs by
@@ -314,21 +323,44 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">10. Cookies</h2>
-            <p>We use the following cookies:</p>
-            <ul className="list-disc pl-6 space-y-2 mt-2">
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">10. Cookies & Analytics</h2>
+            <p>We use the following cookies and storage mechanisms:</p>
+            <h3 className="text-base font-semibold text-[#FAFAFA] mt-4 mb-2">
+              Essential (always active)
+            </h3>
+            <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>Session cookie</strong> (essential) - for authentication
+                <strong>Session cookie</strong> — for authentication (required to stay logged in)
               </li>
               <li>
-                <strong>CSRF token</strong> (essential) - for protection against cross-site request
-                forgery
+                <strong>CSRF token</strong> — for protection against cross-site request forgery
               </li>
               <li>
-                <strong>Cookie preference</strong> (essential) - to remember your cookie choice
+                <strong>Cookie preference</strong> — to remember your cookie choice
+              </li>
+              <li>
+                <strong>Referral attribution cookie</strong> — if you arrive via a partner&apos;s
+                referral link, we set a 60-day cookie to credit the referral on signup
               </li>
             </ul>
-            <p className="mt-2">We do not use tracking or advertising cookies.</p>
+            <h3 className="text-base font-semibold text-[#FAFAFA] mt-4 mb-2">
+              Analytics (only if you accept)
+            </h3>
+            <p className="mb-2">
+              If you click &quot;Accept All&quot; in the cookie banner, we also load PostHog
+              analytics to understand how the platform is used. PostHog captures pageviews, feature
+              interactions, and button clicks — but does <strong>not</strong> record sessions or
+              capture keystrokes. Profiles are only created for authenticated users.
+            </p>
+            <p>
+              If you click &quot;Essential Only&quot;, PostHog is never loaded and no analytics data
+              leaves your browser. You can change your choice at any time by clearing your
+              browser&apos;s local storage for this site.
+            </p>
+            <p className="mt-3">
+              We do not use advertising cookies, retargeting pixels, or cross-site tracking of any
+              kind.
+            </p>
           </section>
 
           <section>
