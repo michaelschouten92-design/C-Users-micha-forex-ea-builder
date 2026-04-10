@@ -10,6 +10,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 const mockFindUnique = vi.fn();
+const mockPartnerFindUnique = vi.fn().mockResolvedValue(null);
 const mockDeleteMany = vi.fn().mockResolvedValue({});
 const mockUpdateMany = vi.fn().mockResolvedValue({});
 const mockUserDelete = vi.fn().mockResolvedValue({});
@@ -18,6 +19,9 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: { findUnique: (...args: unknown[]) => mockFindUnique(...args) },
     subscription: { findUnique: vi.fn().mockResolvedValue(null) },
+    referralPartner: {
+      findUnique: (...args: unknown[]) => mockPartnerFindUnique(...args),
+    },
     $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
       fn({
         passwordResetToken: { deleteMany: mockDeleteMany },
@@ -81,6 +85,8 @@ describe("DELETE /api/account/delete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+    // Default: user is not a referral partner — individual tests override
+    mockPartnerFindUnique.mockResolvedValue(null);
   });
 
   it("succeeds with correct password and DELETE confirmation", async () => {
@@ -154,5 +160,69 @@ describe("DELETE /api/account/delete", () => {
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toContain("Password is required");
+  });
+
+  // ─── Referral ledger guard (GDPR delete protection) ────────────────
+  //
+  // Prevents cascade delete from destroying append-only financial records.
+  // The user must be anonymized via support instead.
+
+  it("returns 409 when user is a referral partner with earnings", async () => {
+    mockFindUnique.mockResolvedValue({
+      email: "partner@example.com",
+      passwordHash: null,
+    });
+    mockPartnerFindUnique.mockResolvedValue({
+      totalEarnedCents: 5000,
+      ledger: [],
+    });
+
+    const { DELETE } = await import("./route");
+    const res = await DELETE(makeRequest({ confirm: "DELETE" }));
+
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toContain("commission records");
+    expect(json.error).toContain("support@algo-studio.com");
+    // Critical: must NOT proceed to actual delete
+    expect(mockUserDelete).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when user is a partner with ledger entries but zero earnings", async () => {
+    // Edge case: partner has ledger rows (e.g., only COMMISSION_REVERSED entries)
+    // totalEarnedCents could be 0 but the ledger still holds audit history.
+    mockFindUnique.mockResolvedValue({
+      email: "partner@example.com",
+      passwordHash: null,
+    });
+    mockPartnerFindUnique.mockResolvedValue({
+      totalEarnedCents: 0,
+      ledger: [{ id: "ledger-1" }],
+    });
+
+    const { DELETE } = await import("./route");
+    const res = await DELETE(makeRequest({ confirm: "DELETE" }));
+
+    expect(res.status).toBe(409);
+    expect(mockUserDelete).not.toHaveBeenCalled();
+  });
+
+  it("proceeds with delete when user is a partner with empty ledger and zero earnings", async () => {
+    // A partner row with no financial history (e.g., activated but never earned)
+    // is safe to cascade — no audit records to protect.
+    mockFindUnique.mockResolvedValue({
+      email: "partner@example.com",
+      passwordHash: null,
+    });
+    mockPartnerFindUnique.mockResolvedValue({
+      totalEarnedCents: 0,
+      ledger: [],
+    });
+
+    const { DELETE } = await import("./route");
+    const res = await DELETE(makeRequest({ confirm: "DELETE" }));
+
+    expect(res.status).toBe(200);
+    expect(mockUserDelete).toHaveBeenCalled();
   });
 });
