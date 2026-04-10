@@ -5,6 +5,8 @@ import { isPrivateUrl } from "@/app/api/account/webhook/route";
 import { NextRequest, NextResponse } from "next/server";
 import { transitionAlertState } from "@/lib/ea/trading-state";
 import type { EAAlertState } from "@/lib/ea/trading-state";
+import { getCachedTier } from "@/lib/plan-limits";
+import { isAlertChannelAllowed, getTierDisplayName } from "@/lib/plans";
 import { z } from "zod";
 
 const ALERT_TYPES = [
@@ -102,6 +104,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const { alertType, threshold, channel, webhookUrl, alertState, instanceId } = parsed.data;
+
+  // Tier gate: reject channels that are above the user's tier at creation
+  // time rather than silently dropping them at trigger time (the delivery
+  // pipeline still filters as defense-in-depth, but surfacing the error
+  // here prevents dead configs and confusing "why no notifications" UX).
+  const tier = await getCachedTier(session.user.id);
+  if (!isAlertChannelAllowed(tier, channel)) {
+    return NextResponse.json(
+      apiError(
+        ErrorCode.FORBIDDEN,
+        `The ${channel} alert channel is not available on your ${getTierDisplayName(tier)} plan. Upgrade to enable it.`
+      ),
+      { status: 403 }
+    );
+  }
 
   // Validate webhook URL is provided when channel is WEBHOOK
   if (channel === "WEBHOOK" && !webhookUrl) {
@@ -209,6 +226,23 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Alert config not found"), {
       status: 404,
     });
+  }
+
+  // Tier gate: if the user is switching to a different channel, enforce tier
+  // eligibility on the new channel. Keeping the existing channel is allowed
+  // without re-checking (downgraded users can still edit threshold/state on
+  // stale configs without triggering the upgrade prompt).
+  if (updates.channel !== undefined && updates.channel !== existing.channel) {
+    const tier = await getCachedTier(session.user.id);
+    if (!isAlertChannelAllowed(tier, updates.channel)) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.FORBIDDEN,
+          `The ${updates.channel} alert channel is not available on your ${getTierDisplayName(tier)} plan. Upgrade to enable it.`
+        ),
+        { status: 403 }
+      );
+    }
   }
 
   // Validate threshold when alert type requires it (considering both new and existing values)
