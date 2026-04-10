@@ -81,6 +81,7 @@ export default function ForgotPasswordPage() {
                 name="email"
                 type="email"
                 required
+                aria-required="true"
                 autoFocus
                 autoComplete="email"
                 value={email}

@@ -278,6 +278,7 @@ function LoginFormInner({
               name="email"
               type="email"
               required
+              aria-required="true"
               autoFocus
               autoComplete="email"
               value={email}
@@ -314,6 +315,7 @@ function LoginFormInner({
                 name="password"
                 type={showPassword ? "text" : "password"}
                 required
+                aria-required="true"
                 autoComplete={isRegistration ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => {
@@ -381,6 +383,7 @@ function LoginFormInner({
                 name="confirmPassword"
                 type={showPassword ? "text" : "password"}
                 required
+                aria-required="true"
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => {

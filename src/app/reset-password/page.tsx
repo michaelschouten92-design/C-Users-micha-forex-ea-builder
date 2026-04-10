@@ -126,6 +126,7 @@ function ResetPasswordForm() {
           name="password"
           type="password"
           required
+          aria-required="true"
           autoFocus
           autoComplete="new-password"
           value={password}
@@ -147,6 +148,7 @@ function ResetPasswordForm() {
           name="confirmPassword"
           type="password"
           required
+          aria-required="true"
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}

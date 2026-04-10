@@ -195,6 +195,7 @@ function ChangePasswordSection() {
             id="currentPassword"
             type={showPasswords ? "text" : "password"}
             required
+            aria-required="true"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
@@ -208,6 +209,7 @@ function ChangePasswordSection() {
             id="newPassword"
             type={showPasswords ? "text" : "password"}
             required
+            aria-required="true"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
@@ -244,6 +246,7 @@ function ChangePasswordSection() {
             id="confirmNewPassword"
             type={showPasswords ? "text" : "password"}
             required
+            aria-required="true"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full px-4 py-3 bg-[#1E293B] border border-[rgba(79,70,229,0.3)] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#6366F1] focus:border-transparent transition-all duration-200"
