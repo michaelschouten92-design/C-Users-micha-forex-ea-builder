@@ -1,4 +1,5 @@
 import pino from "pino";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Structured logger using Pino.
@@ -6,14 +7,81 @@ import pino from "pino";
  * In development: Pretty-printed, colorful output
  * In production: JSON format for log aggregation (e.g., Datadog, Logtail)
  *
+ * Sentry bridge: `logger.error()` and `logger.fatal()` calls are automatically
+ * forwarded to Sentry via the `logMethod` hook. Sentry itself is a no-op in
+ * development (see sentry.server.config.ts), so this only sends in production.
+ *
  * Usage:
  *   import { logger } from "@/lib/logger";
  *
  *   logger.info({ userId, projectId }, "Project created");
- *   logger.error({ error: err.message, stack: err.stack }, "Export failed");
+ *   logger.error({ err, projectId }, "Export failed");
  */
 
 const isDevelopment = process.env.NODE_ENV === "development";
+
+// Pino level numbers: trace=10, debug=20, info=30, warn=40, error=50, fatal=60
+const PINO_LEVEL_ERROR = 50;
+const PINO_LEVEL_FATAL = 60;
+
+/**
+ * Forward an error/fatal log call to Sentry.
+ *
+ * Extracts Error instances from common context keys (`err`, `error`, `e`) so
+ * Sentry gets a proper stack trace. Falls back to captureMessage when no Error
+ * is available. Wrapped in try/catch so Sentry failures never break logging.
+ */
+function forwardToSentry(inputArgs: unknown[], level: number): void {
+  try {
+    const first = inputArgs[0];
+    const second = inputArgs[1];
+
+    let message: string;
+    let context: Record<string, unknown> = {};
+    let error: Error | undefined;
+
+    if (typeof first === "string") {
+      message = first;
+    } else if (first && typeof first === "object") {
+      context = { ...(first as Record<string, unknown>) };
+      message = typeof second === "string" ? second : "logger.error";
+
+      // Look for Error instance in common context keys
+      const ctx = first as Record<string, unknown>;
+      if (ctx.err instanceof Error) error = ctx.err;
+      else if (ctx.error instanceof Error) error = ctx.error;
+      else if (ctx.e instanceof Error) error = ctx.e;
+
+      // Strip the Error object from context so Sentry doesn't double-serialize
+      if (error) {
+        delete context.err;
+        delete context.error;
+        delete context.e;
+      }
+    } else {
+      message = String(first);
+    }
+
+    const severity = level >= PINO_LEVEL_FATAL ? "fatal" : "error";
+
+    Sentry.withScope((scope) => {
+      scope.setLevel(severity);
+      if (Object.keys(context).length > 0) {
+        scope.setContext("logger", context);
+      }
+      if (error) {
+        // Use the log message as the fingerprint hint so different call sites
+        // with the same underlying error stay grouped per-site.
+        scope.setTag("log.message", message);
+        Sentry.captureException(error);
+      } else {
+        Sentry.captureMessage(message, severity);
+      }
+    });
+  } catch {
+    // Never break logging — Sentry failures are swallowed.
+  }
+}
 
 // Base logger configuration
 const baseConfig: pino.LoggerOptions = {
@@ -42,6 +110,16 @@ const baseConfig: pino.LoggerOptions = {
       "*.secret",
     ],
     censor: "[REDACTED]",
+  },
+  // Bridge error/fatal logs to Sentry. Runs synchronously before the log is
+  // emitted; Sentry itself is async + no-op in dev so dev path is zero-cost.
+  hooks: {
+    logMethod(inputArgs, method, level) {
+      if (level >= PINO_LEVEL_ERROR) {
+        forwardToSentry(inputArgs, level);
+      }
+      return method.apply(this, inputArgs as Parameters<typeof method>);
+    },
   },
 };
 

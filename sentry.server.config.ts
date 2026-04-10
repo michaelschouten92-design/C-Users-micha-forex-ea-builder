@@ -105,3 +105,47 @@ export function setSentryUserContext(userId: string, tier?: string) {
     Sentry.setContext("subscription", { tier });
   }
 }
+
+/**
+ * Global safety net for background task failures.
+ *
+ * Next.js `onRequestError` only covers errors in the request lifecycle.
+ * Promise rejections from fire-and-forget tasks (outbox delivery, webhook
+ * fan-out, telemetry ingest side effects) would otherwise go to stderr and
+ * never reach Sentry. These handlers close that gap.
+ *
+ * Guarded by `__algoStudioGlobalHandlersRegistered` to prevent double
+ * registration during Next.js hot reloads in dev.
+ */
+type GlobalWithHandlerFlag = typeof globalThis & {
+  __algoStudioGlobalHandlersRegistered?: boolean;
+};
+
+const globalWithFlag = globalThis as GlobalWithHandlerFlag;
+
+if (typeof process !== "undefined" && !globalWithFlag.__algoStudioGlobalHandlersRegistered) {
+  globalWithFlag.__algoStudioGlobalHandlersRegistered = true;
+
+  process.on("unhandledRejection", (reason: unknown) => {
+    const error =
+      reason instanceof Error ? reason : new Error(`Unhandled rejection: ${String(reason)}`);
+    Sentry.captureException(error, {
+      tags: { source: "unhandledRejection" },
+      level: "error",
+    });
+    // Match Node default behavior: log to stderr so logs still show it.
+
+    console.error("[unhandledRejection]", reason);
+  });
+
+  process.on("uncaughtException", (error: Error) => {
+    Sentry.captureException(error, {
+      tags: { source: "uncaughtException" },
+      level: "fatal",
+    });
+
+    console.error("[uncaughtException]", error);
+    // Do NOT exit the process here — let Node's default handler decide.
+    // On Vercel, the function container is recycled per invocation anyway.
+  });
+}
