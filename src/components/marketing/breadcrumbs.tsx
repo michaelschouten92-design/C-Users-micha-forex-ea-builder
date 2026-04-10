@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { env } from "@/lib/env";
 
 interface BreadcrumbItem {
   name: string;
@@ -31,7 +32,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
 }
 
 export function breadcrumbJsonLd(items: BreadcrumbItem[]) {
-  const baseUrl = process.env.AUTH_URL || "https://algo-studio.com";
+  const baseUrl = env.AUTH_URL;
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

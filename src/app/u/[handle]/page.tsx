@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { TraderProfileView } from "./trader-profile-view";
 import { TradingDisclaimerBanner } from "@/components/marketing/trading-disclaimer-banner";
+import { env } from "@/lib/env";
 
 interface Props {
   params: Promise<{ handle: string }>;
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `@${user.handle} — Trader Profile | Algo Studio`;
   const description = `View ${user.handle}'s verified trading strategies and performance proof on Algo Studio.`;
-  const url = `${process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com"}/@${user.handle}`;
+  const url = `${env.NEXT_PUBLIC_APP_URL || env.AUTH_URL}/@${user.handle}`;
 
   return {
     title,

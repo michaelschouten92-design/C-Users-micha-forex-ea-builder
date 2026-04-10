@@ -342,7 +342,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       .findUnique({ where: { id: userId }, select: { email: true } })
       .then((user) => {
         if (user?.email) {
-          const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+          const settingsUrl = `${env.AUTH_URL}/app`;
           sendPlanChangeEmail(user.email, previousTier, validatedPlan, true, settingsUrl).catch(
             (err) => log.error({ err }, "Welcome email send failed after checkout")
           );
@@ -475,7 +475,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         .findUnique({ where: { id: result.userId }, select: { email: true } })
         .then((user) => {
           if (user?.email) {
-            const settingsUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+            const settingsUrl = `${env.AUTH_URL}/app`;
             sendPlanChangeEmail(
               user.email,
               result.previousTier,
@@ -698,7 +698,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       .findUnique({ where: { id: userId }, select: { email: true } })
       .then((user) => {
         if (user?.email) {
-          const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+          const portalUrl = `${env.AUTH_URL}/app`;
           sendPaymentFailedEmail(user.email, portalUrl).catch((err) =>
             log.error({ err }, "Payment failed email send failed")
           );
@@ -737,7 +737,7 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
 
   if (!userEmail) return;
 
-  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+  const portalUrl = `${env.AUTH_URL}/app`;
   sendPaymentActionRequiredEmail(userEmail, portalUrl).catch((err) =>
     log.error({ err }, "Payment action required email send failed")
   );
@@ -758,7 +758,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
 
   if (!sub?.user?.email) return;
 
-  const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
+  const portalUrl = `${env.AUTH_URL}/app`;
   sendTrialEndingEmail(sub.user.email, sub.tier, portalUrl).catch((err) =>
     log.error({ err }, "Trial ending email send failed")
   );

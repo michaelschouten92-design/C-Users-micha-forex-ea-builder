@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import { ReferralClickTracker } from "@/components/referral/click-tracker";
 import { PostHogProvider } from "@/components/posthog-provider";
+import { env } from "@/lib/env";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.AUTH_URL || "https://algo-studio.com"),
+  metadataBase: new URL(env.AUTH_URL),
   title: {
     default: "Algo Studio — The Proof Layer for Algorithmic Trading",
     template: "%s | Algo Studio",
@@ -62,8 +63,8 @@ const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "Algo Studio",
-  url: process.env.AUTH_URL || "https://algo-studio.com",
-  logo: `${process.env.AUTH_URL || "https://algo-studio.com"}/opengraph-image`,
+  url: env.AUTH_URL,
+  logo: `${env.AUTH_URL}/opengraph-image`,
   description:
     "The proof layer for algorithmic trading. Verify strategies with cryptographic track records, Monte Carlo validation, and independent auditing.",
   foundingDate: "2025",

@@ -104,6 +104,23 @@ const envSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
+
+  // Database direct connection (required by `prisma migrate deploy` — Neon non-pooled URL)
+  DIRECT_DATABASE_URL: z.string().url().optional(),
+
+  // Telegram bot integration (optional — for alert channel)
+  ALGO_TELEGRAM_BOT_TOKEN: z.string().optional(),
+  ALGO_TELEGRAM_BOT_USERNAME: z.string().optional(),
+  TELEGRAM_WEBHOOK_SECRET: z.string().min(16).optional(),
+
+  // Internal webhook ingest HMAC secret (for trade import pipelines)
+  INGEST_WEBHOOK_SECRET: z.string().min(32).optional(),
+
+  // Anthropic API key (alternative AI provider, optional)
+  ANTHROPIC_API_KEY: z.string().optional(),
+
+  // Previous encryption salt for key rotation (optional — decrypts legacy ciphertext)
+  ENCRYPTION_SALT_PREVIOUS: z.string().min(16).optional(),
 });
 
 // Refinements for conditional requirements
@@ -254,6 +271,61 @@ const refinedEnvSchema = envSchema
         "TRACK_RECORD_SECRET is required in production for checkpoint HMAC — generate with: openssl rand -hex 32",
       path: ["TRACK_RECORD_SECRET"],
     }
+  )
+  .refine(
+    (data) => {
+      // AUTH_URL must be a real production domain in production, not the localhost default
+      if (data.NODE_ENV === "production") {
+        if (!data.AUTH_URL || data.AUTH_URL.includes("localhost")) return false;
+      }
+      return true;
+    },
+    {
+      message: "AUTH_URL must be set to the production domain in production (cannot be localhost)",
+      path: ["AUTH_URL"],
+    }
+  )
+  .refine(
+    (data) => {
+      // AUTH_TRUST_HOST must be true in production (Vercel edge/proxy) for NextAuth to work
+      if (data.NODE_ENV === "production" && data.AUTH_TRUST_HOST !== true) return false;
+      return true;
+    },
+    {
+      message:
+        "AUTH_TRUST_HOST must be set to 'true' in production (required for Vercel edge/proxy)",
+      path: ["AUTH_TRUST_HOST"],
+    }
+  )
+  .refine(
+    (data) => {
+      // NEXT_PUBLIC_APP_URL must be set in production for exported EAs + emails
+      if (data.NODE_ENV === "production") {
+        if (!data.NEXT_PUBLIC_APP_URL || data.NEXT_PUBLIC_APP_URL.includes("localhost")) {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message:
+        "NEXT_PUBLIC_APP_URL must be set to the production domain in production (used for emails and exported EA telemetry URLs)",
+      path: ["NEXT_PUBLIC_APP_URL"],
+    }
+  )
+  .refine(
+    (data) => {
+      // EMAIL_FROM must not be the Resend sandbox domain in production
+      if (data.NODE_ENV === "production" && data.EMAIL_FROM.includes("resend.dev")) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "EMAIL_FROM must use a verified production domain, not the Resend sandbox (onboarding@resend.dev). Configure a custom domain in Resend dashboard and add SPF/DKIM DNS records.",
+      path: ["EMAIL_FROM"],
+    }
   );
 
 // Client-safe schema (only NEXT_PUBLIC_* variables)
@@ -322,6 +394,13 @@ function validateEnv() {
       VAPID_PUBLIC_KEY: undefined,
       VAPID_PRIVATE_KEY: undefined,
       VAPID_SUBJECT: undefined,
+      DIRECT_DATABASE_URL: undefined,
+      ALGO_TELEGRAM_BOT_TOKEN: undefined,
+      ALGO_TELEGRAM_BOT_USERNAME: undefined,
+      TELEGRAM_WEBHOOK_SECRET: undefined,
+      INGEST_WEBHOOK_SECRET: undefined,
+      ANTHROPIC_API_KEY: undefined,
+      ENCRYPTION_SALT_PREVIOUS: undefined,
     } as z.infer<typeof refinedEnvSchema>;
   }
 
@@ -397,6 +476,13 @@ function validateEnv() {
         VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
         VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
         VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+        DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
+        ALGO_TELEGRAM_BOT_TOKEN: process.env.ALGO_TELEGRAM_BOT_TOKEN,
+        ALGO_TELEGRAM_BOT_USERNAME: process.env.ALGO_TELEGRAM_BOT_USERNAME,
+        TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+        INGEST_WEBHOOK_SECRET: process.env.INGEST_WEBHOOK_SECRET,
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+        ENCRYPTION_SALT_PREVIOUS: process.env.ENCRYPTION_SALT_PREVIOUS,
       } as z.infer<typeof refinedEnvSchema>;
     }
 

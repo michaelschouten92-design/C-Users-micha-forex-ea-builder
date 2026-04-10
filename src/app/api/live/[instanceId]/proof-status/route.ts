@@ -8,6 +8,7 @@ import {
   type Thresholds,
 } from "@/lib/proof/ladder";
 import { verifyChain } from "@/lib/track-record/chain-verifier";
+import { env } from "@/lib/env";
 
 /**
  * GET /api/live/:instanceId/proof-status
@@ -114,10 +115,7 @@ export async function GET(
       },
     });
     if (chainEvents.length > 0) {
-      const chainResult = verifyChain(
-        chainEvents as Parameters<typeof verifyChain>[0],
-        instanceId
-      );
+      const chainResult = verifyChain(chainEvents as Parameters<typeof verifyChain>[0], instanceId);
       chainIntegrity = chainResult.valid && chainResult.chainLength === trackRecordState.lastSeqNo;
     }
   }
@@ -157,7 +155,7 @@ export async function GET(
   // Build requirements for next level
   const requirements = buildRequirements(ladderInput, thresholds);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
+  const appUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL;
 
   return NextResponse.json({
     strategyId: identity.strategyId,

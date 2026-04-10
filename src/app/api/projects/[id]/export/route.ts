@@ -213,7 +213,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     const telemetryApiKeyHash = createHash("sha256").update(telemetryApiKey).digest("hex");
 
     // Generate MQL5 code (pass telemetry API key)
-    const telemetryBaseUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL || "https://algo-studio.com";
+    const telemetryBaseUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL;
     const generatedCode = generateMQL5Code(
       buildJson,
       project.name,
@@ -460,8 +460,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           where: { id: liveEA.id },
           data: { apiKeyHash: newApiKeyHash },
         });
-        const telemetryBaseUrl =
-          env.NEXT_PUBLIC_APP_URL || env.AUTH_URL || "https://algo-studio.com";
+        const telemetryBaseUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL;
         telemetryConfig = { apiKey: newApiKey, baseUrl: `${telemetryBaseUrl}/api/telemetry` };
       }
 

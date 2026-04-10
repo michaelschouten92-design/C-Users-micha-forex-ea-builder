@@ -18,6 +18,7 @@ import { prisma as defaultPrisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { enqueueNotification } from "@/lib/outbox";
 import { decrypt, isEncrypted } from "@/lib/crypto";
+import { env } from "@/lib/env";
 
 const log = logger.child({ service: "control-layer-alerts" });
 
@@ -155,7 +156,7 @@ async function deliverAlertAllChannels(
   const symbol = instance?.symbol ?? "";
   const summary = ALERT_SUMMARIES[alertType];
   const severity = ALERT_SEVERITY[alertType];
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
+  const appUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL;
   const investigateUrl = `${appUrl}/app/strategy/${instanceId}`;
 
   // Skip outbound notifications for low-priority alert types

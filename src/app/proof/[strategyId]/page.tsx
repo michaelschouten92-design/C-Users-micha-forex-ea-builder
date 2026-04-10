@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ProofPageView } from "./proof-page-view";
 import { LADDER_META } from "@/lib/proof/ladder";
 import type { LadderLevel } from "@prisma/client";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -85,7 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     mcSurvivalPct,
   });
 
-  const url = `${process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com"}/proof/${sid}`;
+  const url = `${env.NEXT_PUBLIC_APP_URL || env.AUTH_URL}/proof/${sid}`;
 
   return {
     title,

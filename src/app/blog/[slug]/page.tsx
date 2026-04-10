@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getPostBySlug, getAllPosts, getRelatedPosts } from "@/lib/blog/posts";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { env } from "@/lib/env";
 
 /** Strip script tags and event handlers from HTML before rendering */
 function sanitizeBlogHtml(html: string): string {
@@ -58,7 +59,7 @@ export default async function BlogPostPage({ params }: Props) {
     notFound();
   }
 
-  const baseUrl = process.env.AUTH_URL || "https://algo-studio.com";
+  const baseUrl = env.AUTH_URL;
 
   const jsonLd = [
     {

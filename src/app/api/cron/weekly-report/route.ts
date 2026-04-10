@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
 import { sendWeeklyEdgeReport } from "@/lib/email";
+import { env } from "@/lib/env";
 
 const log = logger.child({ route: "/api/cron/weekly-report" });
 
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Send email
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://algo-studio.com";
+      const appUrl = env.NEXT_PUBLIC_APP_URL || env.AUTH_URL;
       const result = await sendWeeklyEdgeReport(user.email, {
         healthChanges,
         statusChanges,

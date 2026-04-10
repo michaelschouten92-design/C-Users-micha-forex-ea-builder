@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAdmin } from "@/lib/admin";
+import { env } from "@/lib/env";
 
 /**
  * GET: List all referral invites with claim status.
@@ -28,7 +29,7 @@ export async function GET(): Promise<NextResponse> {
       : [];
   const userMap = new Map(users.map((u) => [u.id, u.email]));
 
-  const baseUrl = process.env.AUTH_URL || "https://algo-studio.com";
+  const baseUrl = env.AUTH_URL;
 
   return NextResponse.json({
     data: invites.map((i) => ({

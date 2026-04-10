@@ -4,6 +4,7 @@ import { checkAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
+import { env } from "@/lib/env";
 
 const INVITE_TTL_DAYS = 30;
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    const baseUrl = process.env.AUTH_URL || "https://algo-studio.com";
+    const baseUrl = env.AUTH_URL;
     const inviteUrl = `${baseUrl}/app/referrals?invite=${token}`;
 
     return NextResponse.json({ inviteUrl, token, expiresInDays: INVITE_TTL_DAYS });
