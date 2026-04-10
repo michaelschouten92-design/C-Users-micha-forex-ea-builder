@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { TraderProfileView } from "./trader-profile-view";
+import { TradingDisclaimerBanner } from "@/components/marketing/trading-disclaimer-banner";
 
 interface Props {
   params: Promise<{ handle: string }>;
@@ -36,5 +37,10 @@ export default async function TraderProfilePage({ params }: Props) {
     select: { id: true },
   });
   if (!user) notFound();
-  return <TraderProfileView handle={handle.toLowerCase()} />;
+  return (
+    <>
+      <TradingDisclaimerBanner />
+      <TraderProfileView handle={handle.toLowerCase()} />
+    </>
+  );
 }

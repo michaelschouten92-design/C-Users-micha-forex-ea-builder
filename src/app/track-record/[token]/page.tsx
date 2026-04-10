@@ -5,6 +5,7 @@ import { loadTrackRecord, type TrackRecordData } from "./load-track-record";
 import { EquityChart } from "./equity-chart";
 import { ShareActions } from "./share-actions";
 import { TrackRecordClient } from "./track-record-client";
+import { TradingDisclaimerBanner } from "@/components/marketing/trading-disclaimer-banner";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -107,6 +108,7 @@ export default async function TrackRecordPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#0B0E11]">
+      <TradingDisclaimerBanner />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ── Header ── */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">

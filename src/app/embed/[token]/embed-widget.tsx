@@ -35,7 +35,7 @@ export function EmbedWidget({ token }: { token: string }) {
       <div
         style={{
           width: 320,
-          height: 200,
+          height: 220,
           background: "#1A0626",
           borderRadius: 12,
           border: "1px solid #4F46E5",
@@ -57,7 +57,7 @@ export function EmbedWidget({ token }: { token: string }) {
       <div
         style={{
           width: 320,
-          height: 200,
+          height: 220,
           background: "#1A0626",
           borderRadius: 12,
           border: "1px solid #4F46E5",
@@ -92,11 +92,11 @@ export function EmbedWidget({ token }: { token: string }) {
       style={{
         display: "block",
         width: 320,
-        height: 200,
+        height: 220,
         background: "#1A0626",
         borderRadius: 12,
         border: "1px solid #4F46E5",
-        padding: "16px 20px",
+        padding: "16px 20px 8px 20px",
         fontFamily: "system-ui, -apple-system, sans-serif",
         textDecoration: "none",
         color: "inherit",
@@ -196,6 +196,21 @@ export function EmbedWidget({ token }: { token: string }) {
           {data.sharpeRatio !== null && data.period ? " | " : ""}
           {data.period ?? ""}
         </span>
+      </div>
+
+      {/* Risk disclaimer — legally required on publicly embeddable trading data */}
+      <div
+        style={{
+          marginTop: 6,
+          paddingTop: 6,
+          borderTop: "1px solid rgba(124, 141, 176, 0.15)",
+          fontSize: 9,
+          color: "#64748B",
+          textAlign: "center",
+          lineHeight: 1.3,
+        }}
+      >
+        Past performance does not guarantee future results. Not financial advice.
       </div>
     </a>
   );
