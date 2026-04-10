@@ -5,7 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { verifyChain, type StoredEvent } from "./chain-verifier";
 import { stateFromDb } from "./state-manager";
-import { computeMetrics } from "./metrics";
+import { computeMetrics, PROFIT_FACTOR_MAX } from "./metrics";
 import type { VerifiedTrackRecord } from "./types";
 
 export async function generateVerifiedExport(instanceId: string): Promise<VerifiedTrackRecord> {
@@ -126,7 +126,10 @@ export async function generateVerifiedExport(instanceId: string): Promise<Verifi
 
   const grossProfit = tradeResults.filter((r) => r > 0).reduce((a, b) => a + b, 0);
   const grossLoss = Math.abs(tradeResults.filter((r) => r < 0).reduce((a, b) => a + b, 0));
-  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+  // Cap at PROFIT_FACTOR_MAX when there are no losing trades. Raw Infinity
+  // silently serializes to JSON null and breaks the exported report.
+  const profitFactor =
+    grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? PROFIT_FACTOR_MAX : 0;
 
   return {
     version: "1.0",

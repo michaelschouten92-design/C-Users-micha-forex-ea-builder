@@ -37,6 +37,7 @@ import {
   lotsStr,
   priceStr,
 } from "./decimal";
+import { PROFIT_FACTOR_MAX } from "./metrics";
 
 /**
  * Generate a deterministic investor-proof report for an instance.
@@ -226,9 +227,13 @@ function computeStatistics(
   const losses = netProfits.filter((p) => p < 0);
   const grossProfit = wins.reduce((a, b) => moneyAdd(a, b), 0);
   const grossLoss = Math.abs(losses.reduce((a, b) => moneyAdd(a, b), 0));
+  // Note: profitFactor declared below uses PROFIT_FACTOR_MAX when grossLoss=0
+  // to match the other report surfaces (metrics.ts, export.ts) and avoid the
+  // misleading "0" that the old implementation returned for all-winning sets.
 
   const winRate = n > 0 ? pctCalc(state.winCount, n) : 0;
-  const profitFactor = grossLoss > 0 ? ratioCalc(grossProfit, grossLoss) : 0;
+  const profitFactor =
+    grossLoss > 0 ? ratioCalc(grossProfit, grossLoss) : grossProfit > 0 ? PROFIT_FACTOR_MAX : 0;
 
   const avgWin = wins.length > 0 ? wins.reduce((a, b) => a + b, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? losses.reduce((a, b) => a + b, 0) / losses.length : 0;
@@ -275,12 +280,16 @@ function computeStatistics(
     sortino = downsideDev > 0 ? ratioCalc(mean, downsideDev) : 0;
   }
 
-  // Calmar ratio (total return / max drawdown %)
-  const totalNetProfit = moneySub(state.balance, state.cumulativeCashflow);
-  const calmar = state.maxDrawdownPct > 0 ? ratioCalc(totalNetProfit, state.maxDrawdown) : 0;
-
-  // Find initial balance from first equity point
+  // Find initial balance from first equity point (also used for Calmar).
   const initialBalance = state.equityCurve.length > 0 ? parseFloat(state.equityCurve[0].b) : 0;
+
+  // Calmar ratio: total return % / max drawdown %. Dimensionally consistent
+  // and matches industry convention. Previously divided absolute dollars by
+  // absolute dollar drawdown (a different metric that users would confuse
+  // with standard Calmar when comparing against MyFxBook / MetaTrader).
+  const totalNetProfit = moneySub(state.balance, state.cumulativeCashflow);
+  const totalReturnPct = initialBalance > 0 ? (totalNetProfit / initialBalance) * 100 : 0;
+  const calmar = state.maxDrawdownPct > 0 ? ratioCalc(totalReturnPct, state.maxDrawdownPct) : 0;
 
   return {
     totalTrades: state.totalTrades,

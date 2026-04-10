@@ -4,6 +4,15 @@
  * Computes Sharpe, Sortino, Calmar, and profit factor from trade results.
  */
 
+/**
+ * Cap for profit factor when there are no losing trades. Raw JavaScript
+ * Infinity silently serializes to JSON null (per ECMA-404), which breaks
+ * frontend display and downstream filtering. A finite cap preserves the
+ * "practically infinite" signal while staying JSON-safe. Rounded down from
+ * 1000 so it's visually distinct from legitimate real-world values (~0-10).
+ */
+export const PROFIT_FACTOR_MAX = 999.99;
+
 export interface TrackRecordMetrics {
   sharpeRatio: number;
   sortinoRatio: number;
@@ -56,8 +65,9 @@ export function computeMetrics(
   // Sortino ratio
   const sortinoRatio = downsideStdDev > 0 ? Math.round((mean / downsideStdDev) * 100) / 100 : 0;
 
-  // Calmar ratio: annualized return / max drawdown
-  // Use equity curve to find max drawdown percentage
+  // Calmar ratio: total return % / max drawdown % (dimensionally consistent,
+  // matches industry convention). Previously divided dollars by a decimal
+  // which gave nonsense values ($500 / 0.10 = 5000).
   let maxDrawdownPct = 0;
   for (const point of equityCurve) {
     if (point.dd > maxDrawdownPct) {
@@ -65,18 +75,21 @@ export function computeMetrics(
     }
   }
 
-  const totalReturn = tradeResults.reduce((a, b) => a + b, 0);
+  const totalReturnDollars = tradeResults.reduce((a, b) => a + b, 0);
+  const initialBalance = equityCurve[0]?.b ?? 0;
+  const totalReturnPct = initialBalance > 0 ? (totalReturnDollars / initialBalance) * 100 : 0;
   const calmarRatio =
-    maxDrawdownPct > 0 ? Math.round((totalReturn / (maxDrawdownPct / 100)) * 100) / 100 : 0;
+    maxDrawdownPct > 0 ? Math.round((totalReturnPct / maxDrawdownPct) * 100) / 100 : 0;
 
-  // Profit factor
+  // Profit factor — capped at PROFIT_FACTOR_MAX instead of Infinity so it
+  // survives JSON serialization (JSON.stringify(Infinity) -> null).
   const grossProfit = tradeResults.filter((r) => r > 0).reduce((a, b) => a + b, 0);
   const grossLoss = Math.abs(tradeResults.filter((r) => r < 0).reduce((a, b) => a + b, 0));
   const profitFactor =
     grossLoss > 0
       ? Math.round((grossProfit / grossLoss) * 100) / 100
       : grossProfit > 0
-        ? Infinity
+        ? PROFIT_FACTOR_MAX
         : 0;
 
   return { sharpeRatio, sortinoRatio, calmarRatio, profitFactor };
