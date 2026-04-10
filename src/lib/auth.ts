@@ -660,15 +660,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const data = updateData as Record<string, unknown>;
 
         // Start impersonation (capped at 1 hour)
+        //
+        // SECURITY: the corresponding `/api/admin/users/impersonate` endpoint
+        // performs `checkAdmin()` but it runs out-of-band from this callback.
+        // Without a server-side gate HERE, any authenticated user could POST
+        // `{ impersonate: { userId, email } }` directly to `/api/auth/session`
+        // and hijack an arbitrary session. We re-verify the CURRENT token's
+        // user is an admin against the database before accepting the switch.
         if (data.impersonate && typeof data.impersonate === "object") {
-          const imp = data.impersonate as { userId: string; email: string };
-          token.impersonatorId = token.id as string;
-          token.impersonatingEmail = imp.email;
-          token.impersonationStartedAt = Math.floor(Date.now() / 1000);
-          token.id = imp.userId;
+          const currentUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, email: true },
+          });
+          const isCurrentUserAdmin =
+            currentUser?.role === "ADMIN" ||
+            (env.ADMIN_EMAIL != null &&
+              currentUser?.email?.toLowerCase() === env.ADMIN_EMAIL.toLowerCase());
+
+          if (!isCurrentUserAdmin) {
+            authLog.warn(
+              {
+                attemptedBy: token.id,
+                targetUserId: (data.impersonate as { userId?: string }).userId,
+              },
+              "Rejected impersonation attempt from non-admin token"
+            );
+            // Silently drop the impersonation data and continue — do not
+            // reveal that the code path exists.
+          } else {
+            const imp = data.impersonate as { userId: string; email: string };
+            token.impersonatorId = token.id as string;
+            token.impersonatingEmail = imp.email;
+            token.impersonationStartedAt = Math.floor(Date.now() / 1000);
+            token.id = imp.userId;
+          }
         }
 
-        // Stop impersonation
+        // Stop impersonation — gated by `token.impersonatorId` already being
+        // set, which can only happen via the admin-gated start path above.
         if (data.stopImpersonation && token.impersonatorId) {
           token.id = token.impersonatorId;
           delete token.impersonatorId;

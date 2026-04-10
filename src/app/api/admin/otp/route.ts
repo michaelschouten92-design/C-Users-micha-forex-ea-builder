@@ -11,6 +11,7 @@ import {
 import { logger } from "@/lib/logger";
 import { Resend } from "resend";
 import { env, features } from "@/lib/env";
+import { isUserAdmin } from "@/lib/admin";
 import {
   adminRateLimiter,
   adminOtpRateLimiter,
@@ -54,15 +55,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Verify admin role
+  // Verify admin role (pre-OTP — cannot use checkAdmin() here because this
+  // route is what produces the OTP verification that checkAdmin() requires)
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { role: true, email: true },
   });
 
-  const isAdmin = user?.role === "ADMIN" || (env.ADMIN_EMAIL && user?.email === env.ADMIN_EMAIL);
-
-  if (!isAdmin) {
+  if (!isUserAdmin(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -124,15 +124,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
       }
 
-      // Re-verify admin role before granting OTP cookie (prevents privilege escalation)
+      // Re-verify admin role before granting OTP cookie (prevents privilege
+      // escalation if the user's role was revoked between request and verify)
       const currentUser = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: { role: true, email: true },
       });
-      const stillAdmin =
-        currentUser?.role === "ADMIN" ||
-        (env.ADMIN_EMAIL && currentUser?.email === env.ADMIN_EMAIL);
-      if (!stillAdmin) {
+      if (!isUserAdmin(currentUser)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 

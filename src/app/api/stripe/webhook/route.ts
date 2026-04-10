@@ -779,11 +779,11 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   // Log the refund but do NOT auto-downgrade the subscription.
   // Stripe sends customer.subscription.deleted when a subscription is actually cancelled.
   // A refund on a single charge (e.g. customer service goodwill) should not kill the subscription.
+  // Amount intentionally excluded — lookup in Stripe dashboard via chargeId if needed.
   log.info(
     {
       chargeId: charge.id,
       customerId,
-      amount: charge.amount_refunded,
       fullRefund: charge.refunded,
     },
     "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"

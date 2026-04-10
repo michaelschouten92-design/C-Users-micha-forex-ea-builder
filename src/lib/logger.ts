@@ -25,6 +25,77 @@ const PINO_LEVEL_ERROR = 50;
 const PINO_LEVEL_FATAL = 60;
 
 /**
+ * Credentials and secret keys — always redacted from BOTH Pino logs and
+ * Sentry events. These never belong in any log surface.
+ */
+const SENSITIVE_KEYS = [
+  // Credentials
+  "password",
+  "passwordHash",
+  "token",
+  "secret",
+  "authorization",
+  "cookie",
+  // Auth tokens
+  "apiKey",
+  "accessToken",
+  "refreshToken",
+  "bearerToken",
+  "sessionToken",
+  "verificationToken",
+  "resetToken",
+  // Integration secrets
+  "telegramBotToken",
+  "telegramChatId",
+] as const;
+
+/**
+ * PII keys — redacted from Sentry events ONLY, preserved in Pino logs.
+ *
+ * Rationale: auth flows legitimately need to log email addresses for
+ * operational troubleshooting (e.g., "failed to send verification email to X")
+ * because at early auth stages no userId exists yet. GDPR allows this under
+ * legitimate interest for service operation, as long as logs are:
+ *   - not shipped to an external log aggregator without a DPA
+ *   - access-controlled
+ *   - not retained longer than necessary
+ *
+ * Sentry is a third-party processor (disclosed in the privacy policy), so we
+ * DO scrub PII before it reaches Sentry events.
+ */
+const PII_KEYS = ["email", "ipAddress", "ip"] as const;
+
+const SENTRY_REDACT_KEYS = [...SENSITIVE_KEYS, ...PII_KEYS] as const;
+
+const REDACTED_PLACEHOLDER = "[REDACTED]";
+
+/**
+ * Recursively scrub sensitive keys from a context object before sending to
+ * Sentry. Returns a new object — does not mutate the input.
+ *
+ * Depth-limited to prevent infinite recursion on circular references.
+ */
+function scrubSensitive(value: unknown, depth = 0): unknown {
+  if (depth > 6) return "[depth-limit]";
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "object") return value;
+  if (value instanceof Error) return value; // handled separately by Sentry
+  if (Array.isArray(value)) {
+    return value.map((v) => scrubSensitive(v, depth + 1));
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    if (SENTRY_REDACT_KEYS.includes(key as (typeof SENTRY_REDACT_KEYS)[number])) {
+      out[key] = REDACTED_PLACEHOLDER;
+    } else {
+      out[key] = scrubSensitive(val, depth + 1);
+    }
+  }
+  return out;
+}
+
+/**
  * Forward an error/fatal log call to Sentry.
  *
  * Extracts Error instances from common context keys (`err`, `error`, `e`) so
@@ -43,14 +114,18 @@ function forwardToSentry(inputArgs: unknown[], level: number): void {
     if (typeof first === "string") {
       message = first;
     } else if (first && typeof first === "object") {
-      context = { ...(first as Record<string, unknown>) };
+      const raw = first as Record<string, unknown>;
       message = typeof second === "string" ? second : "logger.error";
 
       // Look for Error instance in common context keys
-      const ctx = first as Record<string, unknown>;
-      if (ctx.err instanceof Error) error = ctx.err;
-      else if (ctx.error instanceof Error) error = ctx.error;
-      else if (ctx.e instanceof Error) error = ctx.e;
+      if (raw.err instanceof Error) error = raw.err;
+      else if (raw.error instanceof Error) error = raw.error;
+      else if (raw.e instanceof Error) error = raw.e;
+
+      // Scrub sensitive keys BEFORE sending to Sentry. Pino's built-in redact
+      // runs after this hook, so we must replicate it manually here.
+      const scrubbed = scrubSensitive(raw) as Record<string, unknown>;
+      context = { ...scrubbed };
 
       // Strip the Error object from context so Sentry doesn't double-serialize
       if (error) {
@@ -93,23 +168,17 @@ const baseConfig: pino.LoggerOptions = {
     env: process.env.NODE_ENV,
     service: "forex-ea-builder",
   },
-  // Redact sensitive fields
+  // Redact sensitive fields. Kept in sync with SENSITIVE_KEYS above —
+  // Pino handles the on-disk/stdout log redaction, the Sentry bridge below
+  // handles the in-memory Sentry context redaction using the same list.
   redact: {
     paths: [
-      "password",
-      "passwordHash",
-      "token",
-      "secret",
-      "authorization",
-      "cookie",
+      ...SENSITIVE_KEYS,
+      ...SENSITIVE_KEYS.map((k) => `*.${k}`),
       "req.headers.authorization",
       "req.headers.cookie",
-      "*.password",
-      "*.passwordHash",
-      "*.token",
-      "*.secret",
     ],
-    censor: "[REDACTED]",
+    censor: REDACTED_PLACEHOLDER,
   },
   // Bridge error/fatal logs to Sentry. Runs synchronously before the log is
   // emitted; Sentry itself is async + no-op in dev so dev path is zero-cost.

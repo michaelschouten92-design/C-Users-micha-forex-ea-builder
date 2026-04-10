@@ -30,6 +30,24 @@ interface AdminCheckError {
 }
 
 /**
+ * Pure predicate: does this user record grant admin privileges?
+ *
+ * Shared by `checkAdmin()` (full pipeline including OTP) and
+ * `/api/admin/otp/route.ts` (pre-OTP role gate — can't use `checkAdmin()`
+ * there because OTP verification is what the route is trying to produce).
+ *
+ * The ADMIN_EMAIL env fallback exists so the first deploy can bootstrap
+ * without manually flipping the `role` column in the database.
+ */
+export function isUserAdmin(user: { role: string | null; email: string | null } | null): boolean {
+  if (!user) return false;
+  if (user.role === "ADMIN") return true;
+  const bootstrapEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+  if (bootstrapEmail && user.email?.toLowerCase() === bootstrapEmail) return true;
+  return false;
+}
+
+/**
  * Check if the current user is an admin.
  * Uses role field with ADMIN_EMAIL as bootstrap fallback.
  * Also applies rate limiting to admin endpoints.
@@ -64,12 +82,7 @@ export async function checkAdmin(): Promise<AdminCheckResult | AdminCheckError> 
   });
 
   // Check role-based access OR bootstrap via ADMIN_EMAIL (only if user has no ADMIN role yet)
-  const isAdmin =
-    adminUser?.role === "ADMIN" ||
-    (adminUser?.email != null &&
-      adminUser.email.toLowerCase() === process.env.ADMIN_EMAIL?.toLowerCase());
-
-  if (!isAdmin) {
+  if (!isUserAdmin(adminUser ?? null)) {
     return {
       authorized: false,
       response: NextResponse.json(apiError(ErrorCode.FORBIDDEN, "Access denied"), { status: 403 }),

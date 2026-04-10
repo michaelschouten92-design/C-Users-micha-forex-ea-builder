@@ -86,6 +86,29 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
+    // Block deletion if the user is a referral partner with financial records.
+    // The ReferralLedger is an append-only audit trail and cascading a delete
+    // would destroy commission history needed for accounting and tax records.
+    // These users must be manually anonymized by support — the ledger stays
+    // intact under the "legitimate interest" exception to GDPR erasure (EU
+    // bookkeeping retention requirements typically 7 years).
+    const partner = await prisma.referralPartner.findUnique({
+      where: { userId },
+      select: {
+        totalEarnedCents: true,
+        ledger: { select: { id: true }, take: 1 },
+      },
+    });
+    if (partner && (partner.totalEarnedCents > 0 || partner.ledger.length > 0)) {
+      return NextResponse.json(
+        {
+          error:
+            "Your account has referral partner commission records that must be retained for tax and audit purposes. Please contact support@algo-studio.com to request account anonymization — your personal data will be removed while the financial ledger is preserved.",
+        },
+        { status: 409 }
+      );
+    }
+
     // Cancel Stripe first - if DB cleanup fails, cron will catch the orphaned subscription.
     // This order is deliberate: Stripe cancellation is idempotent and safe to retry,
     // whereas deleting DB records before cancelling Stripe could leave active billing.

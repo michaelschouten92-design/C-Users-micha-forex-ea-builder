@@ -72,6 +72,26 @@ export async function POST(request: Request) {
       return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "User not found"), { status: 404 });
     }
 
+    // Block deletion if the user is a referral partner with financial records.
+    // See account/delete/route.ts for the rationale — same append-only ledger
+    // protection applies here. Admin must run an anonymization flow instead.
+    const partner = await prisma.referralPartner.findUnique({
+      where: { userId: user.id },
+      select: {
+        totalEarnedCents: true,
+        ledger: { select: { id: true }, take: 1 },
+      },
+    });
+    if (partner && (partner.totalEarnedCents > 0 || partner.ledger.length > 0)) {
+      return NextResponse.json(
+        apiError(
+          ErrorCode.FORBIDDEN,
+          "User is an active referral partner with commission records. Cascade delete would destroy the append-only ledger. Anonymize manually instead."
+        ),
+        { status: 409 }
+      );
+    }
+
     // Cancel Stripe subscription if active
     if (user.subscription?.stripeSubId) {
       try {
