@@ -97,7 +97,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  } catch (err) {
+    // Unexpected error (DB failure, serialization conflict, etc.) — return 500
+    // so the EA retries. Previously returned 400 "Invalid request" which made
+    // the EA give up, silently losing error telemetry on any DB hiccup.
+    logger.error({ err, instanceId: auth.instanceId }, "Telemetry error ingest failed");
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
