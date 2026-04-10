@@ -4,6 +4,13 @@ import { checkAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 
 /**
+ * Minimum payout threshold — matches Terms §10.3 (€50 minimum per SEPA
+ * transfer). Prevents accidental micro-payouts that would cost more in
+ * SEPA transfer fees than the amount itself.
+ */
+const MINIMUM_PAYOUT_CENTS = 5000;
+
+/**
  * GET: List payouts (optionally filtered by status).
  * POST: Create a payout batch for a partner.
  * PATCH: Approve or mark a payout as paid.
@@ -59,9 +66,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "partnerId required" }, { status: 400 });
   }
 
+  // Period is the previous calendar month, computed in UTC so the audit
+  // trail stays stable regardless of the host timezone (Vercel defaults to
+  // UTC today, but the previous implementation used server-local time which
+  // would silently shift period boundaries if the process TZ ever changed).
   const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Start of last month
-  const periodEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59); // End of last month
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59));
 
   try {
     const payoutId = await prisma.$transaction(async (tx) => {
@@ -74,6 +85,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const totalCents = unpaidEntries.reduce((sum, e) => sum + e.amountCents, 0);
       if (totalCents <= 0) {
         throw new Error("No positive balance to pay out");
+      }
+      if (totalCents < MINIMUM_PAYOUT_CENTS) {
+        throw new Error(
+          `Below minimum payout threshold (€${(MINIMUM_PAYOUT_CENTS / 100).toFixed(2)}). Current balance: €${(totalCents / 100).toFixed(2)}. Wait until the partner accumulates at least the minimum before issuing a SEPA payout.`
+        );
       }
 
       // Create payout
