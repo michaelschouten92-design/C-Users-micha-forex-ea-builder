@@ -18,7 +18,10 @@ export default function Error({
     <div className="min-h-screen bg-[#0F0A1A] flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <h1 className="text-6xl font-bold text-white mb-4">500</h1>
-        <p className="text-xl text-zinc-400 mb-8">Something went wrong.</p>
+        <p className="text-xl text-zinc-400 mb-6">Something went wrong.</p>
+        {error.digest && (
+          <p className="text-xs text-zinc-500 mb-6 font-mono">Reference: {error.digest}</p>
+        )}
         <button
           onClick={reset}
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all cursor-pointer"
