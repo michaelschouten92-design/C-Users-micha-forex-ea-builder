@@ -186,8 +186,12 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Apply to all routes
-        source: "/:path*",
+        // Apply to all routes EXCEPT /embed/* — the embed route has its own
+        // permissive framing policy below (see `frame-ancestors *`) because
+        // the whole point of the embed widget is to be iframed on third-party
+        // sites. The negative lookahead `(?!embed/)` excludes /embed/ from
+        // this catch-all so we don't emit conflicting X-Frame-Options values.
+        source: "/((?!embed/).*)",
         headers: [
           {
             key: "X-DNS-Prefetch-Control",
@@ -233,6 +237,60 @@ const nextConfig: NextConfig = {
               "base-uri 'self'",
               "form-action 'self'",
               "frame-ancestors 'self'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        // Public embed widget — must be iframeable from any origin. Users
+        // copy an <iframe src=".../embed/TOKEN"> snippet from the share
+        // menu and paste it on their own site, so we cannot restrict
+        // frame-ancestors here. X-Frame-Options is deliberately omitted
+        // (the CSP frame-ancestors directive supersedes it in modern
+        // browsers). All other security headers stay restrictive.
+        source: "/embed/:path*",
+        headers: [
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "0",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self' blob:",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io",
+              "frame-src 'none'",
+              "worker-src 'self' blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              // Allow embedding on any origin — this is the whole point of the embed widget
+              "frame-ancestors *",
               "upgrade-insecure-requests",
             ].join("; "),
           },
