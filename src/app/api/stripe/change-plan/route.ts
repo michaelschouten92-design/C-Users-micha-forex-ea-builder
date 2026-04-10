@@ -16,7 +16,11 @@ import {
   createRateLimitHeaders,
   formatRateLimitError,
 } from "@/lib/rate-limit";
-import { invalidateSubscriptionCache, getMonitoredTradingAccountUsage } from "@/lib/plan-limits";
+import {
+  invalidateSubscriptionCache,
+  getMonitoredTradingAccountUsage,
+  checkDowngradeImpact,
+} from "@/lib/plan-limits";
 import { getMaxMonitoredAccounts, getTierDisplayName, TIER_ORDER } from "@/lib/plans";
 
 export async function POST(request: NextRequest) {
@@ -76,6 +80,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Price not configured" }, { status: 500 });
     }
 
+    // Email verification is required for plan changes (consistency with checkout)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { emailVerified: true },
+    });
+    if (!user?.emailVerified) {
+      return NextResponse.json(
+        { error: "Please verify your email before changing plans" },
+        { status: 403 }
+      );
+    }
+
     // Get user subscription
     const subscription = await prisma.subscription.findUnique({
       where: { userId: session.user.id },
@@ -86,6 +102,21 @@ export async function POST(request: NextRequest) {
     }
 
     const currentTier = subscription.tier as keyof typeof TIER_ORDER;
+
+    // Block plan changes on past_due subscriptions — user must resolve the outstanding
+    // invoice via the billing portal first, otherwise they'd be gaming the system by
+    // "upgrading" while delinquent.
+    if (subscription.status === "past_due") {
+      return NextResponse.json(
+        {
+          error:
+            "Your last payment failed. Please update your payment method and settle the outstanding invoice before changing plans.",
+          code: "PAYMENT_PAST_DUE",
+        },
+        { status: 400 }
+      );
+    }
+
     const isActive = subscription.status === "active" || subscription.status === "trialing";
 
     if (!isActive) {
@@ -142,6 +173,24 @@ export async function POST(request: NextRequest) {
       const subRaw = stripeSub as unknown as Record<string, unknown>;
       const periodStart = subRaw.current_period_start as number;
       const periodEnd = subRaw.current_period_end as number;
+
+      // Safety: refuse to schedule a downgrade if the period has already ended
+      // (webhook delay / stale Stripe data) — otherwise we'd create a schedule
+      // with invalid phase dates.
+      if (!periodEnd || periodEnd * 1000 <= Date.now()) {
+        return NextResponse.json(
+          {
+            error:
+              "Your subscription period has ended or is invalid. Please refresh and try again.",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Compute advisory warnings for features that will become unavailable.
+      // Monitored accounts are enforced as a blocking check above; these are
+      // informational for the user (returned alongside scheduled=true).
+      const downgradeWarnings = await checkDowngradeImpact(session.user.id, plan);
 
       // Create a Subscription Schedule from the existing subscription
       // Wrapped in try-catch to rollback Stripe schedule if DB update fails
@@ -210,9 +259,19 @@ export async function POST(request: NextRequest) {
         "Downgrade scheduled at period end via Subscription Schedule"
       );
 
-      return NextResponse.json({ success: true, scheduled: true, effectiveDate });
+      return NextResponse.json({
+        success: true,
+        scheduled: true,
+        effectiveDate,
+        warnings: downgradeWarnings,
+      });
     } else {
       // --- UPGRADE: Immediate plan switch with prorations ---
+
+      // Idempotency key with 1-minute window to prevent duplicate prorations on
+      // double-click while still allowing retries after a failed attempt.
+      const timeWindow = Math.floor(Date.now() / (60 * 1000));
+      const idempotencyKey = `plan-change_${session.user.id}_${plan}_${interval}_${timeWindow}`;
 
       // If a pending downgrade schedule exists, release it first
       if (subscription.stripeScheduleId) {
@@ -241,15 +300,23 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Unable to find subscription item" }, { status: 500 });
         }
 
-        await getStripe().subscriptions.update(subscription.stripeSubId, {
-          items: [{ id: freshItem.id, price: newPriceId }],
-          proration_behavior: "create_prorations",
-        });
+        await getStripe().subscriptions.update(
+          subscription.stripeSubId,
+          {
+            items: [{ id: freshItem.id, price: newPriceId }],
+            proration_behavior: "create_prorations",
+          },
+          { idempotencyKey }
+        );
       } else {
-        await getStripe().subscriptions.update(subscription.stripeSubId, {
-          items: [{ id: currentItem.id, price: newPriceId }],
-          proration_behavior: "create_prorations",
-        });
+        await getStripe().subscriptions.update(
+          subscription.stripeSubId,
+          {
+            items: [{ id: currentItem.id, price: newPriceId }],
+            proration_behavior: "create_prorations",
+          },
+          { idempotencyKey }
+        );
       }
 
       invalidateSubscriptionCache(session.user.id);

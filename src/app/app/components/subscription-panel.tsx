@@ -12,6 +12,7 @@ type SubscriptionPanelProps = {
   monitoredAccountCount: number;
   hasStripeSubscription: boolean;
   currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: string | null;
   scheduledDowngradeTier?: string | null;
   emailVerified?: boolean;
 };
@@ -22,12 +23,16 @@ export function SubscriptionPanel({
   monitoredAccountCount,
   hasStripeSubscription,
   currentPeriodEnd,
+  cancelAtPeriodEnd,
   scheduledDowngradeTier,
   emailVerified,
 }: SubscriptionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"downgrade" | "cancel" | null>(null);
-  const [cancelPeriodEnd, setCancelPeriodEnd] = useState<string | null>(null);
+  // cancelPeriodEnd is authoritative from the server-provided cancelAtPeriodEnd,
+  // with a local override after the user clicks cancel/reactivate so the UI updates
+  // immediately without requiring a reload.
+  const [cancelPeriodEnd, setCancelPeriodEnd] = useState<string | null>(cancelAtPeriodEnd ?? null);
   const [pendingDowngrade, setPendingDowngrade] = useState<string | null>(
     scheduledDowngradeTier ?? null
   );
@@ -121,6 +126,27 @@ export function SubscriptionPanel({
     }
   }
 
+  async function handleReactivate() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/reactivate", {
+        method: "POST",
+        headers: getCsrfHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showError(data.error || "Failed to reactivate subscription. Please try again.");
+        return;
+      }
+      setCancelPeriodEnd(null);
+      showSuccess("Subscription reactivated", "Your subscription will continue renewing.");
+    } catch {
+      showError("Failed to reactivate subscription. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleCancelSubscription() {
     setLoading(true);
     try {
@@ -179,6 +205,9 @@ export function SubscriptionPanel({
                   Trial
                 </span>
               )}
+              {tier !== "FREE" && subscriptionStatus === "trialing" && currentPeriodEnd && (
+                <span className="text-xs text-[#A1A1AA]">ends {formatDate(currentPeriodEnd)}</span>
+              )}
               {tier !== "FREE" && subscriptionStatus === "past_due" && (
                 <span className="text-xs text-white px-2 py-0.5 rounded-full bg-[#F59E0B]">
                   Past Due
@@ -201,11 +230,20 @@ export function SubscriptionPanel({
             )}
             {cancelPeriodEnd && (
               <div className="mt-2 p-3 bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.3)] rounded-lg">
-                <p className="text-sm text-[#F59E0B]">
-                  Your subscription will end on{" "}
-                  <span className="font-medium">{formatDate(cancelPeriodEnd)}</span>. You&apos;ll
-                  keep full access until then.
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm text-[#F59E0B]">
+                    Your subscription will end on{" "}
+                    <span className="font-medium">{formatDate(cancelPeriodEnd)}</span>. You&apos;ll
+                    keep full access until then.
+                  </p>
+                  <button
+                    onClick={handleReactivate}
+                    disabled={loading}
+                    className="flex-shrink-0 text-xs text-white bg-[rgba(245,158,11,0.3)] hover:bg-[rgba(245,158,11,0.5)] px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Reactivate
+                  </button>
+                </div>
               </div>
             )}
             {pendingDowngrade && !cancelPeriodEnd && (

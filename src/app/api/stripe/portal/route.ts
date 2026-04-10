@@ -19,6 +19,13 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.suspended) {
+    return NextResponse.json(
+      { error: "Account suspended", code: "ACCOUNT_SUSPENDED" },
+      { status: 403 }
+    );
+  }
+
   // Rate limit
   const rateLimitResult = await checkRateLimit(apiRateLimiter, session.user.id);
   if (!rateLimitResult.success) {

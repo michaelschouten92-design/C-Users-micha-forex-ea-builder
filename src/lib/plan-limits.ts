@@ -3,7 +3,9 @@ import {
   PLANS,
   type PlanTier,
   getMaxMonitoredAccounts,
+  getMaxPublicShares,
   getTierDisplayName,
+  TIER_ALERT_CHANNELS,
   TIER_DISPLAY_NAMES,
 } from "./plans";
 
@@ -179,4 +181,58 @@ export async function getPlanUsageSummary(userId: string) {
         }
       : null,
   };
+}
+
+// ============================================
+// DOWNGRADE IMPACT CHECK
+// ============================================
+
+/**
+ * Inspect the user's current resources against the target tier's limits and
+ * return human-readable warnings for anything that will become unusable or
+ * capped after the downgrade takes effect.
+ *
+ * Does NOT block the downgrade — these are advisory messages surfaced to the
+ * user before they confirm. Monitored account limit is enforced separately
+ * (blocking) in the change-plan route.
+ */
+export async function checkDowngradeImpact(
+  userId: string,
+  targetTier: PlanTier
+): Promise<string[]> {
+  const warnings: string[] = [];
+
+  // Public track record shares
+  const maxShares = getMaxPublicShares(targetTier);
+  if (maxShares !== Infinity) {
+    const currentShares = await prisma.accountTrackRecordShare.count({
+      where: { userId, isPublic: true },
+    });
+    if (currentShares > maxShares) {
+      warnings.push(
+        `You have ${currentShares} public track record share${currentShares !== 1 ? "s" : ""}. The ${getTierDisplayName(targetTier)} plan allows ${maxShares}. Existing shares will be auto-hidden beyond the limit.`
+      );
+    }
+  }
+
+  // Alert channels: check if user has configured channels that the target tier doesn't support
+  const allowedChannels = TIER_ALERT_CHANNELS[targetTier];
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { telegramChatId: true, webhookUrl: true },
+  });
+
+  if (user?.telegramChatId && !allowedChannels.includes("TELEGRAM")) {
+    warnings.push(
+      `Telegram alerts are not available on the ${getTierDisplayName(targetTier)} plan — they will stop working after downgrade.`
+    );
+  }
+
+  if (user?.webhookUrl && !allowedChannels.includes("WEBHOOK")) {
+    warnings.push(
+      `Custom webhook alerts are not available on the ${getTierDisplayName(targetTier)} plan — your webhook URL will stop receiving alerts after downgrade.`
+    );
+  }
+
+  return warnings;
 }

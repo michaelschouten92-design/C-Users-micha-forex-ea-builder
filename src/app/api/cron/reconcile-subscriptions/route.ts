@@ -204,6 +204,129 @@ async function handleReconcile(request: NextRequest) {
       if (hitRateLimit) break;
     }
 
+    // -----------------------------------------------------------------
+    // Orphaned cancelled subscriptions: rows flagged cancelled in the DB
+    // but still pointing at a Stripe sub ID that never got cleaned up.
+    // Verify they're really gone in Stripe and clear the pointers so the
+    // DB doesn't keep stale references.
+    // -----------------------------------------------------------------
+    let orphansChecked = 0;
+    let orphansCleared = 0;
+
+    if (!isTimedOut() && !hitRateLimit) {
+      // Cancelled subs that still carry a Stripe sub ID are suspicious —
+      // the normal cancelled flow clears stripeSubId. If it lingers, verify
+      // and clean up.
+      const orphans = await prisma.subscription.findMany({
+        where: {
+          stripeSubId: { not: null },
+          status: "cancelled",
+        },
+        select: { id: true, userId: true, stripeSubId: true },
+        take: 20,
+      });
+
+      for (const orphan of orphans) {
+        if (isTimedOut() || hitRateLimit) break;
+        orphansChecked++;
+        try {
+          const stripeSub = await getStripe().subscriptions.retrieve(orphan.stripeSubId!);
+          if (stripeSub.status === "canceled") {
+            await prisma.subscription.update({
+              where: { id: orphan.id },
+              data: { stripeSubId: null, stripeScheduleId: null },
+            });
+            orphansCleared++;
+          }
+        } catch (err) {
+          const stripeErr = err as { statusCode?: number };
+          if (stripeErr.statusCode === 404) {
+            // Subscription no longer exists in Stripe — clear pointer
+            await prisma.subscription.update({
+              where: { id: orphan.id },
+              data: { stripeSubId: null, stripeScheduleId: null },
+            });
+            orphansCleared++;
+          } else if (stripeErr.statusCode === 429) {
+            hitRateLimit = true;
+            log.warn("Stripe 429 during orphan check — stopping");
+          } else {
+            log.warn({ err, orphanId: orphan.id }, "Orphan check failed");
+          }
+        }
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Periodic customer existence check for a small sample of active
+    // subscriptions — catches customer.deleted events we may have missed.
+    // -----------------------------------------------------------------
+    let customersChecked = 0;
+    let customersCleared = 0;
+
+    if (!isTimedOut() && !hitRateLimit) {
+      const sample = await prisma.subscription.findMany({
+        where: {
+          stripeCustomerId: { not: null },
+          status: { in: ["active", "trialing"] },
+        },
+        select: { id: true, userId: true, stripeCustomerId: true, tier: true, status: true },
+        orderBy: { id: "asc" },
+        take: 10,
+      });
+
+      for (const sub of sample) {
+        if (isTimedOut() || hitRateLimit) break;
+        customersChecked++;
+        try {
+          const customer = await getStripe().customers.retrieve(sub.stripeCustomerId!);
+          if ((customer as { deleted?: boolean }).deleted) {
+            await transitionSubscription(
+              prisma,
+              sub.userId,
+              { status: sub.status, tier: sub.tier },
+              { status: "cancelled", tier: "FREE" },
+              "reconcile_customer_deleted",
+              {
+                stripeCustomerId: null,
+                stripeSubId: null,
+                stripeScheduleId: null,
+                scheduledDowngradeTier: null,
+                cancelAtPeriodEnd: null,
+              }
+            );
+            invalidateSubscriptionCache(sub.userId);
+            customersCleared++;
+          }
+        } catch (err) {
+          const stripeErr = err as { statusCode?: number };
+          if (stripeErr.statusCode === 404) {
+            await transitionSubscription(
+              prisma,
+              sub.userId,
+              { status: sub.status, tier: sub.tier },
+              { status: "cancelled", tier: "FREE" },
+              "reconcile_customer_missing",
+              {
+                stripeCustomerId: null,
+                stripeSubId: null,
+                stripeScheduleId: null,
+                scheduledDowngradeTier: null,
+                cancelAtPeriodEnd: null,
+              }
+            );
+            invalidateSubscriptionCache(sub.userId);
+            customersCleared++;
+          } else if (stripeErr.statusCode === 429) {
+            hitRateLimit = true;
+            log.warn("Stripe 429 during customer check — stopping");
+          } else {
+            log.warn({ err, subId: sub.id }, "Customer existence check failed");
+          }
+        }
+      }
+    }
+
     const timedOut = isTimedOut();
 
     log.info(
@@ -211,6 +334,10 @@ async function handleReconcile(request: NextRequest) {
         checked,
         mismatches,
         errors,
+        orphansChecked,
+        orphansCleared,
+        customersChecked,
+        customersCleared,
         timedOut,
         hitRateLimit,
         durationMs: Date.now() - cronStartTime,
@@ -223,6 +350,10 @@ async function handleReconcile(request: NextRequest) {
       checked,
       mismatches,
       errors,
+      orphansChecked,
+      orphansCleared,
+      customersChecked,
+      customersCleared,
       timedOut,
       hitRateLimit,
     });

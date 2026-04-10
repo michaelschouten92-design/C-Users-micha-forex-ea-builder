@@ -142,6 +142,12 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.deleted": {
+        const customer = event.data.object as Stripe.Customer;
+        await handleCustomerDeleted(customer);
+        break;
+      }
+
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentSucceeded(invoice);
@@ -383,6 +389,18 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const mappedStatus = mapStripeStatus(subscription.status);
   const period = getSubscriptionPeriod(subscription);
 
+  // Derive cancelAtPeriodEnd from Stripe: null if not cancelling, else the date access ends.
+  // Stripe uses `cancel_at` (explicit timestamp) when set; otherwise fall back to current_period_end
+  // when cancel_at_period_end is true.
+  const subRaw = subscription as unknown as Record<string, unknown>;
+  const cancelAt = subRaw.cancel_at as number | null | undefined;
+  const cancelAtPeriodEndFlag = subRaw.cancel_at_period_end as boolean | undefined;
+  const cancelAtPeriodEndDate = cancelAtPeriodEndFlag
+    ? cancelAt
+      ? new Date(cancelAt * 1000)
+      : period.end
+    : null;
+
   // Use transaction with row-level locking to prevent concurrent webhook race conditions
   const result = await prisma.$transaction(async (tx) => {
     // Lock the subscription row to prevent concurrent updates
@@ -428,6 +446,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
         hadPaidPlan: true,
+        cancelAtPeriodEnd: cancelAtPeriodEndDate,
         ...(shouldClearSchedule && {
           scheduledDowngradeTier: null,
           stripeScheduleId: null,
@@ -520,6 +539,59 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
     // Sync Discord role to FREE (fire-and-forget with retry)
     syncDiscordWithRetry(userId, "FREE");
+  }
+}
+
+async function handleCustomerDeleted(customer: Stripe.Customer) {
+  // A Stripe customer was deleted (typically from the Stripe Dashboard).
+  // Any subscription row still pointing at this customer is now orphaned —
+  // transition to cancelled/FREE and clear all Stripe pointers.
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; userId: string; tier: string; status: string }>
+    >`
+      SELECT id, "userId", tier, status FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customer.id}
+      FOR UPDATE
+    `;
+
+    if (!rows.length) return null;
+
+    await transitionSubscription(
+      tx,
+      rows[0].userId,
+      { status: rows[0].status as SubscriptionStatus, tier: rows[0].tier as PlanTier },
+      { status: "cancelled", tier: "FREE" },
+      "stripe_customer_deleted",
+      {
+        stripeCustomerId: null,
+        stripeSubId: null,
+        stripeScheduleId: null,
+        scheduledDowngradeTier: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: null,
+      }
+    );
+
+    return rows[0].userId;
+  });
+
+  if (userId) {
+    invalidateSubscriptionCache(userId);
+    audit
+      .subscriptionCancel(userId)
+      .catch((err) => log.warn({ err }, "Audit log failed after customer.deleted"));
+    syncDiscordWithRetry(userId, "FREE");
+    log.warn(
+      { userId, customerId: customer.id },
+      "Stripe customer deleted — subscription orphaned and cancelled"
+    );
+  } else {
+    log.info(
+      { customerId: customer.id },
+      "customer.deleted received but no matching subscription — noop"
+    );
   }
 }
 
@@ -647,17 +719,29 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
     return;
   }
 
-  const subscription = await prisma.subscription.findFirst({
-    where: { stripeCustomerId: customerId },
-    include: { user: { select: { email: true } } },
+  // Lock the subscription row to prevent concurrent webhooks from sending duplicate emails.
+  const userEmail = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ userId: string }>>`
+      SELECT "userId" FROM "Subscription"
+      WHERE "stripeCustomerId" = ${customerId}
+      FOR UPDATE
+    `;
+    if (!rows.length) return null;
+
+    const user = await tx.user.findUnique({
+      where: { id: rows[0].userId },
+      select: { email: true },
+    });
+    return user?.email ?? null;
   });
 
-  if (!subscription?.user?.email) return;
+  if (!userEmail) return;
 
   const portalUrl = `${env.AUTH_URL || "https://algo-studio.com"}/app`;
-  sendPaymentActionRequiredEmail(subscription.user.email, portalUrl).catch((err) =>
+  sendPaymentActionRequiredEmail(userEmail, portalUrl).catch((err) =>
     log.error({ err }, "Payment action required email send failed")
   );
+  log.info({ customerId, invoiceId: invoice.id }, "Payment action required email sent");
 }
 
 async function handleTrialWillEnd(subscription: Stripe.Subscription) {
@@ -790,48 +874,64 @@ async function handleInvoiceUncollectible(invoice: Stripe.Invoice) {
 }
 
 async function handleScheduleCompleted(schedule: Stripe.SubscriptionSchedule) {
-  // Find the affected user before clearing (for cache invalidation)
-  const sub = await prisma.subscription.findUnique({
-    where: { stripeScheduleId: schedule.id },
-    select: { userId: true },
+  // Race-safe: lock the subscription row and clear BOTH schedule tracking fields.
+  // The scheduled downgrade has fired — tier transition happens via
+  // customer.subscription.updated — so both fields should be cleared together.
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ userId: string }>>`
+      SELECT "userId" FROM "Subscription"
+      WHERE "stripeScheduleId" = ${schedule.id}
+      FOR UPDATE
+    `;
+    if (!rows.length) return null;
+
+    await tx.subscription.updateMany({
+      where: { stripeScheduleId: schedule.id },
+      data: {
+        scheduledDowngradeTier: null,
+        stripeScheduleId: null,
+      },
+    });
+
+    return rows[0].userId;
   });
 
-  // Safety net: clear stripeScheduleId when the schedule completes
-  const result = await prisma.subscription.updateMany({
-    where: { stripeScheduleId: schedule.id },
-    data: { stripeScheduleId: null },
-  });
-
-  if (result.count > 0 && sub) {
-    invalidateSubscriptionCache(sub.userId);
+  if (userId) {
+    invalidateSubscriptionCache(userId);
     log.info(
-      { scheduleId: schedule.id, userId: sub.userId },
-      "Cleared stripeScheduleId after schedule completed"
+      { scheduleId: schedule.id, userId },
+      "Cleared schedule tracking fields after schedule completed"
     );
   }
 }
 
 async function handleScheduleCancelledOrReleased(schedule: Stripe.SubscriptionSchedule) {
-  // Find the affected user before clearing fields (for cache invalidation)
-  const sub = await prisma.subscription.findUnique({
-    where: { stripeScheduleId: schedule.id },
-    select: { userId: true },
+  // Race-safe: lock the subscription row before clearing fields.
+  // Handles cases where admin cancels/releases from Stripe Dashboard or concurrent
+  // webhook processing.
+  const userId = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ userId: string }>>`
+      SELECT "userId" FROM "Subscription"
+      WHERE "stripeScheduleId" = ${schedule.id}
+      FOR UPDATE
+    `;
+    if (!rows.length) return null;
+
+    await tx.subscription.updateMany({
+      where: { stripeScheduleId: schedule.id },
+      data: {
+        scheduledDowngradeTier: null,
+        stripeScheduleId: null,
+      },
+    });
+
+    return rows[0].userId;
   });
 
-  // Clear both tracking fields when schedule is cancelled or released
-  // (handles cases where admin cancels/releases from Stripe Dashboard)
-  const result = await prisma.subscription.updateMany({
-    where: { stripeScheduleId: schedule.id },
-    data: {
-      scheduledDowngradeTier: null,
-      stripeScheduleId: null,
-    },
-  });
-
-  if (result.count > 0 && sub) {
-    invalidateSubscriptionCache(sub.userId);
+  if (userId) {
+    invalidateSubscriptionCache(userId);
     log.info(
-      { scheduleId: schedule.id, userId: sub.userId },
+      { scheduleId: schedule.id, userId },
       "Cleared pending downgrade after schedule cancelled/released"
     );
   }
@@ -846,7 +946,18 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
       log.error({ disputeId: dispute.id }, "Dispute lost but no charge ID — manual review");
       return;
     }
-    const charge = await getStripe().charges.retrieve(chargeId);
+    // Guard against charge retrieval failures (404, network errors). Without this,
+    // Stripe would retry the webhook indefinitely on a missing charge.
+    let charge: Stripe.Charge;
+    try {
+      charge = await getStripe().charges.retrieve(chargeId);
+    } catch (err) {
+      log.error(
+        { err: extractErrorDetails(err), disputeId: dispute.id, chargeId },
+        "Dispute lost but charge retrieval failed — manual review required"
+      );
+      return;
+    }
     const customerId = getStringId(charge.customer);
     if (!customerId) {
       log.error(

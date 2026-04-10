@@ -73,8 +73,21 @@ export async function POST() {
     });
 
     const subRaw = updatedSub as unknown as Record<string, unknown>;
+    const cancelAt = subRaw.cancel_at as number | null | undefined;
     const periodEndRaw = subRaw.current_period_end as number | undefined;
-    const periodEnd = periodEndRaw ? new Date(periodEndRaw * 1000).toISOString() : null;
+    const effectiveEndRaw = cancelAt ?? periodEndRaw;
+    const effectiveEndDate = effectiveEndRaw ? new Date(effectiveEndRaw * 1000) : null;
+    const periodEnd = effectiveEndDate ? effectiveEndDate.toISOString() : null;
+
+    // Persist cancelAtPeriodEnd in DB immediately so the UI shows the cancellation
+    // state on page reload before the webhook arrives.
+    if (effectiveEndDate) {
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { cancelAtPeriodEnd: effectiveEndDate },
+      });
+      invalidateSubscriptionCache(session.user.id);
+    }
 
     log.info({ tier: subscription.tier, periodEnd }, "Subscription set to cancel at period end");
 

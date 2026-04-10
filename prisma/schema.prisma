@@ -188,6 +188,8 @@ model Subscription {
   scheduledDowngradeTier PlanTier?  // Target tier for pending downgrade (null = none)
   stripeScheduleId       String?   @unique  // Stripe Subscription Schedule ID
 
+  cancelAtPeriodEnd DateTime?  // When user has cancelled: date access ends. null = not cancelling.
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -6,12 +6,13 @@ import { Prisma } from "@prisma/client";
 
 const mockConstructEvent = vi.fn();
 const mockSubscriptionsRetrieve = vi.fn();
+const mockChargesRetrieve = vi.fn();
 
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({
     webhooks: { constructEvent: mockConstructEvent },
     subscriptions: { retrieve: mockSubscriptionsRetrieve },
-    charges: { retrieve: vi.fn() },
+    charges: { retrieve: (...args: unknown[]) => mockChargesRetrieve(...args) },
   }),
 }));
 
@@ -19,7 +20,9 @@ const mockWebhookEventCreate = vi.fn();
 const mockWebhookEventDelete = vi.fn();
 const mockQueryRaw = vi.fn();
 const mockSubscriptionUpdate = vi.fn();
+const mockSubscriptionUpdateMany = vi.fn();
 const mockSubscriptionFindFirst = vi.fn();
+const mockSubscriptionFindUnique = vi.fn();
 const mockUserFindUnique = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
@@ -31,11 +34,19 @@ vi.mock("@/lib/prisma", () => ({
     $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
       fn({
         $queryRaw: mockQueryRaw,
-        subscription: { update: mockSubscriptionUpdate },
+        subscription: {
+          update: mockSubscriptionUpdate,
+          updateMany: mockSubscriptionUpdateMany,
+        },
+        user: {
+          findUnique: mockUserFindUnique,
+        },
       }),
     subscription: {
       findFirst: mockSubscriptionFindFirst,
+      findUnique: mockSubscriptionFindUnique,
       update: mockSubscriptionUpdate,
+      updateMany: mockSubscriptionUpdateMany,
     },
     user: {
       findUnique: mockUserFindUnique,
@@ -456,6 +467,193 @@ describe("Stripe Webhook Handler", () => {
 
       const response = await POST(makeRequest());
       expect(response.status).toBe(200);
+    });
+  });
+
+  // ─── customer.deleted ──────────────────────────────────────────
+
+  describe("customer.deleted", () => {
+    it("cancels orphaned subscription and clears all Stripe pointers", async () => {
+      const event = makeStripeEvent("customer.deleted", {
+        id: "cus_test_123",
+        object: "customer",
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockQueryRaw.mockResolvedValue([
+        { id: "sub_db_1", userId: "user_123", tier: "PRO", status: "active" },
+      ]);
+      mockSubscriptionUpdate.mockResolvedValue({});
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+
+      expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user_123" },
+          data: expect.objectContaining({
+            tier: "FREE",
+            status: "cancelled",
+            stripeCustomerId: null,
+            stripeSubId: null,
+            stripeScheduleId: null,
+            scheduledDowngradeTier: null,
+            cancelAtPeriodEnd: null,
+          }),
+        })
+      );
+      expect(mockInvalidateCache).toHaveBeenCalledWith("user_123");
+    });
+
+    it("is a no-op when no matching subscription exists", async () => {
+      const event = makeStripeEvent("customer.deleted", { id: "cus_ghost" });
+      mockConstructEvent.mockReturnValue(event);
+      mockQueryRaw.mockResolvedValue([]);
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+      expect(mockSubscriptionUpdate).not.toHaveBeenCalled();
+      expect(mockInvalidateCache).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── subscription_schedule.completed ───────────────────────────
+
+  describe("subscription_schedule.completed", () => {
+    it("clears both stripeScheduleId and scheduledDowngradeTier in a transaction", async () => {
+      const event = makeStripeEvent("subscription_schedule.completed", {
+        id: "sub_sched_test",
+        object: "subscription_schedule",
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockQueryRaw.mockResolvedValue([{ userId: "user_sched" }]);
+      mockSubscriptionUpdateMany.mockResolvedValue({ count: 1 });
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+
+      expect(mockSubscriptionUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { stripeScheduleId: "sub_sched_test" },
+          data: { scheduledDowngradeTier: null, stripeScheduleId: null },
+        })
+      );
+      expect(mockInvalidateCache).toHaveBeenCalledWith("user_sched");
+    });
+  });
+
+  // ─── subscription_schedule.released ────────────────────────────
+
+  describe("subscription_schedule.released", () => {
+    it("clears schedule fields atomically", async () => {
+      const event = makeStripeEvent("subscription_schedule.released", {
+        id: "sub_sched_released",
+        object: "subscription_schedule",
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockQueryRaw.mockResolvedValue([{ userId: "user_sched2" }]);
+      mockSubscriptionUpdateMany.mockResolvedValue({ count: 1 });
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+
+      expect(mockSubscriptionUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { scheduledDowngradeTier: null, stripeScheduleId: null },
+        })
+      );
+      expect(mockInvalidateCache).toHaveBeenCalledWith("user_sched2");
+    });
+  });
+
+  // ─── charge.dispute.closed ─────────────────────────────────────
+
+  describe("charge.dispute.closed", () => {
+    it("downgrades subscription when dispute is lost", async () => {
+      const event = makeStripeEvent("charge.dispute.closed", {
+        id: "dp_test",
+        status: "lost",
+        charge: "ch_test_123",
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockChargesRetrieve.mockResolvedValue({
+        id: "ch_test_123",
+        customer: "cus_test_123",
+      });
+      mockQueryRaw.mockResolvedValue([
+        { id: "sub_db_1", userId: "user_disputed", tier: "PRO", status: "active" },
+      ]);
+      mockSubscriptionUpdate.mockResolvedValue({});
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+
+      expect(mockSubscriptionUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: "user_disputed" },
+          data: expect.objectContaining({
+            status: "cancelled",
+            tier: "FREE",
+            stripeSubId: null,
+          }),
+        })
+      );
+    });
+
+    it("does not throw when charge retrieval fails on dispute lost", async () => {
+      const event = makeStripeEvent("charge.dispute.closed", {
+        id: "dp_test_404",
+        status: "lost",
+        charge: "ch_missing",
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockChargesRetrieve.mockRejectedValue(
+        Object.assign(new Error("No such charge"), { statusCode: 404 })
+      );
+
+      const response = await POST(makeRequest());
+      // Should not return 500 — graceful handling ensures Stripe doesn't retry forever
+      expect(response.status).toBe(200);
+      expect(mockSubscriptionUpdate).not.toHaveBeenCalled();
+    });
+
+    it("just logs when dispute is not lost", async () => {
+      const event = makeStripeEvent("charge.dispute.closed", {
+        id: "dp_test_won",
+        status: "won",
+        charge: "ch_test",
+      });
+      mockConstructEvent.mockReturnValue(event);
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+      expect(mockChargesRetrieve).not.toHaveBeenCalled();
+      expect(mockSubscriptionUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── customer.subscription.trial_will_end ──────────────────────
+
+  describe("customer.subscription.trial_will_end", () => {
+    it("sends a trial ending reminder email", async () => {
+      const event = makeStripeEvent("customer.subscription.trial_will_end", {
+        id: "sub_trial",
+        customer: "cus_trial",
+        trial_end: Math.floor(Date.now() / 1000) + 3 * 24 * 3600,
+      });
+      mockConstructEvent.mockReturnValue(event);
+      mockSubscriptionFindFirst.mockResolvedValue({
+        tier: "PRO",
+        user: { email: "trial@example.com" },
+      });
+
+      const response = await POST(makeRequest());
+      expect(response.status).toBe(200);
+
+      expect(mockSendTrialEndingEmail).toHaveBeenCalledWith(
+        "trial@example.com",
+        "PRO",
+        expect.any(String)
+      );
     });
   });
 });

@@ -192,12 +192,13 @@ export const TIER_ORDER: Record<PlanTier, number> = {
 
 /**
  * Monthly MRR prices per tier (in EUR, for revenue calculations).
- * Single source of truth — used by admin stats and cron reports.
+ * Derived from DISPLAY_PRICES (which reads from env vars with fallbacks),
+ * so admin stats stay in sync with the actual pricing shown to users.
  */
 export const TIER_MRR_PRICES: Record<string, number> = {
-  PRO: 39,
-  ELITE: 79,
-  INSTITUTIONAL: 199,
+  PRO: Math.round(DISPLAY_PRICES.pro.monthly.amount / 100),
+  ELITE: Math.round(DISPLAY_PRICES.elite.monthly.amount / 100),
+  INSTITUTIONAL: Math.round(DISPLAY_PRICES.institutional.monthly.amount / 100),
 };
 
 export function getPlan(tier: PlanTier): Plan {
