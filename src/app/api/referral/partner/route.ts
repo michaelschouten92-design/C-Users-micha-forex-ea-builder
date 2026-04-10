@@ -58,7 +58,9 @@ export async function GET(): Promise<NextResponse> {
 }
 
 /**
- * POST: Apply to become a referral partner (status starts as PENDING).
+ * POST: Register as a referral partner.
+ * PRO+ subscribers are auto-approved per Terms §10.1 (self-service track).
+ * Free-tier users are blocked.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const session = await auth();
@@ -91,13 +93,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: {
         userId: session.user.id,
         payoutEmail: payoutEmail || null,
+        status: "ACTIVE", // Auto-approve PRO+ subscribers per Terms §10.1
       },
     });
 
     return NextResponse.json({
       id: partner.id,
       status: partner.status,
-      message: "Application submitted. You'll be notified when approved.",
+      message: "You're now an active referral partner. Your referral link is available below.",
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

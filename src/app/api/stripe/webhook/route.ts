@@ -995,6 +995,15 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
       syncDiscordWithRetry(userId, "FREE");
     }
 
+    // Reverse any referral commission booked from this charge (Terms §10.4)
+    // Chargebacks always reverse, regardless of timing — different policy than refunds.
+    try {
+      const { bookReversal } = await import("@/lib/referral/commission");
+      await bookReversal(charge, { reason: "chargeback" });
+    } catch (err) {
+      log.error({ err, chargeId, disputeId: dispute.id }, "referral:chargeback-reversal-failed");
+    }
+
     log.error(
       { disputeId: dispute.id, chargeId, customerId, status: dispute.status },
       "Dispute lost — subscription downgraded to FREE"

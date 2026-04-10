@@ -142,15 +142,39 @@ export async function bookCommission(invoice: Stripe.Invoice, userId: string): P
   }
 }
 
+/** Grace period for commission reversal on refunds — matches Terms §10.4. */
+const REVERSAL_GRACE_PERIOD_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
+
+interface BookReversalOptions {
+  /**
+   * Reason for reversal, determines policy:
+   * - "refund" (default): only full refunds within 60 days trigger reversal.
+   *   Partial refunds and refunds past 60 days are skipped per Terms §10.4.
+   * - "chargeback": always reverse in full, regardless of timing.
+   *   Called from the charge.dispute.closed handler when a dispute is lost.
+   */
+  reason?: "refund" | "chargeback";
+}
+
 /**
- * Book a reversal for a refunded charge.
- * Called from the charge.refunded webhook handler.
+ * Book a reversal for a refunded or disputed charge.
  *
- * Reversals are proportional to the refund amount and capped
- * at the original commission. Multiple partial refunds are handled
- * by tracking already-reversed amounts.
+ * Policy (Terms §10.4):
+ *   - Full refund within 60 days of original charge → full reversal
+ *   - Chargeback (dispute lost)                     → full reversal (any time)
+ *   - Partial refund                                → no reversal
+ *   - Refund past 60 days                           → no reversal
+ *
+ * Called from:
+ *   - charge.refunded webhook handler (reason: "refund")
+ *   - charge.dispute.closed (status: lost) handler (reason: "chargeback")
  */
-export async function bookReversal(charge: Stripe.Charge): Promise<void> {
+export async function bookReversal(
+  charge: Stripe.Charge,
+  options: BookReversalOptions = {}
+): Promise<void> {
+  const reason = options.reason ?? "refund";
+
   // charge.invoice may be a string ID, an expanded object, or absent
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawInvoice = (charge as any).invoice;
@@ -168,9 +192,41 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
   });
   if (!original) return; // No commission to reverse
 
-  const originalChargeCents = charge.amount;
-  const refundedCents = charge.amount_refunded;
-  if (originalChargeCents <= 0 || refundedCents <= 0) return;
+  // -----------------------------------------------------------------
+  // Policy check — different rules for refunds vs chargebacks
+  // -----------------------------------------------------------------
+  if (reason === "refund") {
+    const originalChargeCents = charge.amount;
+    const refundedCents = charge.amount_refunded;
+    if (originalChargeCents <= 0 || refundedCents <= 0) return;
+
+    // Skip partial refunds — only full refunds trigger reversal
+    const isFullRefund = charge.refunded === true || refundedCents >= originalChargeCents;
+    if (!isFullRefund) {
+      log.info(
+        { invoiceId, chargeId: charge.id, refundedCents, originalChargeCents },
+        "referral:partial-refund-no-reversal"
+      );
+      return;
+    }
+
+    // Skip refunds past the 60-day grace period
+    const chargeCreatedMs = charge.created * 1000;
+    const ageMs = Date.now() - chargeCreatedMs;
+    if (ageMs > REVERSAL_GRACE_PERIOD_MS) {
+      log.info(
+        {
+          invoiceId,
+          chargeId: charge.id,
+          ageDays: Math.floor(ageMs / (24 * 60 * 60 * 1000)),
+        },
+        "referral:refund-past-grace-period-no-reversal"
+      );
+      return;
+    }
+  }
+  // Chargebacks: always reverse, no time limit, no full-refund check
+  // (the dispute is lost regardless of refund amount → commission invalid)
 
   // Already reversed for this invoice
   const alreadyReversed = await prisma.referralLedger.aggregate({
@@ -179,13 +235,14 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
   });
   const alreadyReversedCents = Math.abs(alreadyReversed._sum.amountCents ?? 0);
 
-  // Target total reversal (proportional, capped at 100%)
-  const refundRatio = Math.min(refundedCents / originalChargeCents, 1.0);
-  const targetReversalCents = Math.floor(original.amountCents * refundRatio);
-
-  // This reversal = target - already reversed
-  const thisReversalCents = Math.max(0, targetReversalCents - alreadyReversedCents);
+  // Reverse the full commission (minus anything already reversed)
+  const thisReversalCents = Math.max(0, original.amountCents - alreadyReversedCents);
   if (thisReversalCents <= 0) return;
+
+  const description =
+    reason === "chargeback"
+      ? `Reversal: chargeback lost on charge ${charge.id}`
+      : `Reversal: full refund on charge ${charge.id}`;
 
   try {
     await prisma.referralLedger.create({
@@ -197,7 +254,7 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
         stripeChargeId: charge.id,
         amountCents: -thisReversalCents,
         currency: original.currency,
-        description: `Reversal: ${refundedCents}c refunded of ${originalChargeCents}c charge`,
+        description,
       },
     });
 
@@ -212,6 +269,7 @@ export async function bookReversal(charge: Stripe.Charge): Promise<void> {
         partnerId: original.partnerId,
         invoiceId,
         chargeId: charge.id,
+        reason,
         reversalCents: thisReversalCents,
       },
       "referral:commission-reversed"

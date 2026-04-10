@@ -65,37 +65,68 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               We share your data with the following processors, each under a written data processing
-              agreement (DPA) compliant with GDPR Article 28:
+              agreement (DPA) compliant with GDPR Article 28. Region indicates where your data is
+              physically stored.
             </p>
-            <ul className="list-disc pl-6 space-y-2 mt-2">
+
+            <h3 className="text-base font-semibold text-[#FAFAFA] mt-4 mb-2">
+              EU-hosted processors
+            </h3>
+            <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>Stripe</strong> — payment processing. Stores your payment method, billing
-                address, and Stripe customer ID. Stripe is the sole processor of your card details;
-                we never see or store them.
+                <strong>Stripe Payments Europe Ltd</strong> — payment processing. Stores your
+                payment method, billing address, and Stripe customer ID. Stripe is the sole
+                processor of your card details; we never see or store them. Region: Dublin, Ireland
+                (EU).
               </li>
               <li>
                 <strong>Resend</strong> — transactional emails (account verification, password
-                reset, subscription receipts, alerts).
-              </li>
-              <li>
-                <strong>Neon (PostgreSQL)</strong> — primary database hosting. All user data
-                (accounts, projects, strategies, trade records) is stored here, encrypted at rest.
-              </li>
-              <li>
-                <strong>Vercel</strong> — application hosting and CDN. Receives request metadata
-                (URL, IP, user agent) for routing and rate limiting.
+                reset, subscription receipts, alerts). Region: Dublin, Ireland (EU, eu-west-1).
               </li>
               <li>
                 <strong>Sentry</strong> — error monitoring (see section 5 for legal basis and data
-                minimization).
+                minimization). Region: Frankfurt, Germany (EU, de.sentry.io).
+              </li>
+            </ul>
+
+            <h3 className="text-base font-semibold text-[#FAFAFA] mt-4 mb-2">
+              US-hosted infrastructure
+            </h3>
+            <p className="text-sm mb-2">
+              The following core infrastructure providers host data in the United States (AWS
+              us-east-1, Virginia). Transfers are covered under the EU-US Data Privacy Framework
+              (DPF) and Standard Contractual Clauses (SCCs). See section 6 for details.
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
+                <strong>Neon (PostgreSQL)</strong> — primary database hosting. All user data
+                (accounts, projects, strategies, trade records) is stored here, encrypted at rest.
+                Region: AWS us-east-1, Virginia.
               </li>
               <li>
+                <strong>Vercel</strong> — application hosting and serverless function execution.
+                Receives request metadata (URL, IP, user agent) for routing and rate limiting.
+                Function region: iad1 (Washington D.C.). CDN/Edge: global.
+              </li>
+              <li>
+                <strong>Upstash Redis</strong> — rate limiting and ephemeral cache storage. Stores
+                temporary counters keyed to your user ID. No personal data beyond user identifiers.
+                Region: AWS us-east-1, Virginia (with global replication).
+              </li>
+            </ul>
+
+            <h3 className="text-base font-semibold text-[#FAFAFA] mt-4 mb-2">
+              Optional / opt-in processors
+            </h3>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
                 <strong>Cloudflare Turnstile</strong> — CAPTCHA on registration and login. Receives
-                IP and browser fingerprint purely for bot detection; no persistent tracking.
+                IP and browser fingerprint purely for bot detection; no persistent tracking. Region:
+                Cloudflare global edge network.
               </li>
               <li>
                 <strong>OpenAI</strong> — AI strategy analysis, only when you explicitly trigger it
-                (see section 4).
+                (see section 4). Region: United States.
               </li>
               <li>
                 <strong>Discord</strong> — only if you log in via Discord OAuth or link Discord to
@@ -109,7 +140,7 @@ export default function PrivacyPolicyPage() {
                 time.
               </li>
             </ul>
-            <p className="mt-2">
+            <p className="mt-4">
               We never sell your data to third parties. You can request copies of our DPAs by
               emailing support@algo-studio.com.
             </p>
@@ -189,7 +220,53 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">6. Data Security</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">
+              6. International Data Transfers
+            </h2>
+            <p>
+              Some of our infrastructure providers (Neon database, Vercel serverless functions, and
+              Upstash Redis for rate limiting) host data in the United States, specifically in AWS
+              region us-east-1 (Virginia). This constitutes an international transfer of personal
+              data under GDPR Chapter V.
+            </p>
+            <p className="mt-3">
+              <strong>Legal basis for the transfer:</strong>
+            </p>
+            <ul className="list-disc pl-6 space-y-2 mt-2">
+              <li>
+                <strong>EU-US Data Privacy Framework (DPF)</strong> — Amazon Web Services (the
+                underlying infrastructure provider for Neon and Upstash) is certified under the DPF,
+                which the European Commission has recognized as providing an adequate level of data
+                protection for transfers to the United States (Commission Implementing Decision of
+                10 July 2023).
+              </li>
+              <li>
+                <strong>Standard Contractual Clauses (SCCs)</strong> — in addition to DPF, we have
+                Standard Contractual Clauses in place with Neon, Vercel, and Upstash as a
+                complementary safeguard, in accordance with Article 46(2)(c) GDPR.
+              </li>
+              <li>
+                <strong>Supplementary measures</strong> — all data is encrypted in transit (TLS 1.3)
+                and at rest (AES-256). Access to production databases is restricted to authenticated
+                administrators via the providers&apos; own access control systems.
+              </li>
+            </ul>
+            <p className="mt-3">
+              <strong>Why us-east-1?</strong> Co-locating our database (Neon), serverless functions
+              (Vercel), and cache (Upstash) in the same region provides the lowest possible
+              application latency. We continuously evaluate EU-only hosting alternatives and may
+              migrate in the future if the performance trade-offs become favorable.
+            </p>
+            <p className="mt-3">
+              <strong>Your rights regarding transfers:</strong> you can request a copy of the SCCs
+              by emailing support@algo-studio.com. If you prefer that your data not be transferred
+              outside the EU, you can request deletion of your account under GDPR Art. 17 (see
+              section 9).
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">7. Data Security</h2>
             <p>We take appropriate technical and organizational measures to protect your data:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>Passwords are hashed with bcrypt</li>
@@ -201,7 +278,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">7. Data Retention</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">8. Data Retention</h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>Account data is retained as long as your account is active</li>
               <li>Deleted projects are permanently removed after 30 days</li>
@@ -211,7 +288,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">8. Your Rights (GDPR)</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">9. Your Rights (GDPR)</h2>
             <p>You have the right to:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>
@@ -237,7 +314,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">9. Cookies</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">10. Cookies</h2>
             <p>We use the following cookies:</p>
             <ul className="list-disc pl-6 space-y-2 mt-2">
               <li>
@@ -255,15 +332,25 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">10. Contact</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">11. Contact</h2>
             <p>
-              For questions about your privacy or to exercise your rights, contact us via the email
-              address in your account settings.
+              For questions about your privacy or to exercise your rights, email{" "}
+              <a
+                href="mailto:support@algo-studio.com"
+                className="text-[#818CF8] hover:text-[#FAFAFA] underline"
+              >
+                support@algo-studio.com
+              </a>
+              . For legal entity details, see our{" "}
+              <Link href="/imprint" className="text-[#818CF8] hover:text-[#FAFAFA] underline">
+                imprint
+              </Link>
+              . We respond within 24 hours on business days.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">11. Changes</h2>
+            <h2 className="text-xl font-semibold text-[#FAFAFA] mb-3">12. Changes</h2>
             <p>
               We may update this privacy policy from time to time. Changes will be published on this
               page with an updated date.
@@ -271,9 +358,13 @@ export default function PrivacyPolicyPage() {
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)] text-sm text-[#71717A]">
+        <div className="mt-12 pt-8 border-t border-[rgba(255,255,255,0.06)] text-sm text-[#71717A] flex gap-4 flex-wrap">
           <Link href="/terms" className="hover:text-[#A1A1AA]">
             Terms of Service
+          </Link>
+          <span>·</span>
+          <Link href="/imprint" className="hover:text-[#A1A1AA]">
+            Imprint
           </Link>
         </div>
       </div>

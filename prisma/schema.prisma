@@ -1433,7 +1433,9 @@ model ReferralPartner {
   status           String   @default("PENDING") // PENDING, ACTIVE, SUSPENDED, TERMINATED
   payoutEmail      String?
   payoutMethod     String?  // "bank_transfer", "paypal"
-  payoutDetails    String?  @db.Text // Encrypted payout instructions
+  payoutDetails    String?  @db.Text // Encrypted payout instructions (legacy — use iban/accountHolder)
+  payoutIban       String?  // SEPA IBAN for quarterly payouts (per Terms §10.3)
+  payoutAccountHolder String? // Account holder name, must match IBAN
   totalEarnedCents Int      @default(0) // Cached aggregate (ledger SUM is truth)
   totalPaidCents   Int      @default(0) // Cached aggregate (ledger SUM is truth)
   adminNotes       String?  @db.Text

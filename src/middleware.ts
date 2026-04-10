@@ -85,7 +85,7 @@ export function middleware(request: NextRequest) {
   const refCode = request.nextUrl.searchParams.get("ref");
   if (refCode) {
     response.cookies.set("referral_code", refCode, {
-      maxAge: 30 * 86400, // 30 days
+      maxAge: 60 * 86400, // 60 days — attribution window per Terms §10.2
       path: "/",
       httpOnly: true, // Secure: not accessible to client-side JS; read server-side via cookies()
       sameSite: "lax",

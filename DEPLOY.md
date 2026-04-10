@@ -81,6 +81,8 @@ Set all of the following in **Vercel Dashboard → Project → Settings → Envi
 
 Copy both from Neon dashboard → Project → Connection Details. Use "Pooled connection" for `DATABASE_URL` and "Direct connection" for `DIRECT_DATABASE_URL`.
 
+**Current region:** AWS `us-east-1` (N. Virginia). This is disclosed in the privacy policy under international data transfers (EU-US DPF + SCCs). Co-located with Vercel `iad1` and Upstash `us-east-1` for minimum query latency.
+
 ### 3.2 Auth — REQUIRED
 
 | Var                   | Value                                                                                     |
@@ -102,14 +104,18 @@ Copy both from Neon dashboard → Project → Connection Details. Use "Pooled co
 | `STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID` | Same — Institutional product                                          |
 | `STRIPE_TRIAL_DAYS`                     | Optional, e.g. `14` — days of free trial                              |
 
+**Stripe account region:** Netherlands → Stripe Payments Europe Ltd (Dublin, Ireland). EU entity, GDPR-friendly. No separate DPA needed — covered by Stripe's standard terms which include SCCs.
+
 ### 3.4 Email — REQUIRED
 
-| Var              | Value                                                                                         |
-| ---------------- | --------------------------------------------------------------------------------------------- |
-| `RESEND_API_KEY` | Resend Dashboard → API Keys                                                                   |
-| `EMAIL_FROM`     | `Algo Studio <noreply@your-domain.com>` — **must use your verified domain**, not `resend.dev` |
+| Var              | Value                                                                             |
+| ---------------- | --------------------------------------------------------------------------------- |
+| `RESEND_API_KEY` | Resend Dashboard → API Keys                                                       |
+| `EMAIL_FROM`     | `Algo Studio <noreply@algo-studio.com>` — **must use the verified custom domain** |
 
-**Before you set `EMAIL_FROM`:** go to Resend → Domains → Add Domain → add the SPF and DKIM DNS records to your domain registrar. Verification takes 5-30 minutes. Do NOT ship with the Resend sandbox domain — emails will be rejected by most mail providers.
+**Status:** `algo-studio.com` is already verified in Resend (eu-west-1, Dublin EU region). SPF/DKIM DNS records are in place. You can use `noreply@algo-studio.com` directly.
+
+**Do NOT use** `onboarding@resend.dev` in production — the env schema will reject it with a hard fail.
 
 ### 3.5 Rate limiting — REQUIRED
 
@@ -117,6 +123,8 @@ Copy both from Neon dashboard → Project → Connection Details. Use "Pooled co
 | -------------------------- | -------------------------------------------------- |
 | `UPSTASH_REDIS_REST_URL`   | Upstash Dashboard → your database → REST API → URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Same page → REST API → Token                       |
+
+**Current setup:** database `algostudio-ratelimit` in AWS us-east-1 (Virginia), Free Tier plan, Global replication enabled. Endpoint: `intimate-sturgeon-48085.upstash.io`. Free tier (500k commands/month) is sufficient for launch.
 
 ### 3.6 Cryptographic secrets — REQUIRED
 
@@ -131,10 +139,14 @@ Copy both from Neon dashboard → Project → Connection Details. Use "Pooled co
 
 ### 3.7 Error monitoring — REQUIRED (recommended)
 
-| Var                      | Where to get it                                                      |
-| ------------------------ | -------------------------------------------------------------------- |
-| `SENTRY_DSN`             | Sentry → Project Settings → Client Keys (DSN) — **server** DSN       |
-| `NEXT_PUBLIC_SENTRY_DSN` | Same page — **client-side** DSN. These may be the same or different. |
+| Var                      | Where to get it                                                    |
+| ------------------------ | ------------------------------------------------------------------ |
+| `SENTRY_DSN`             | Sentry → Project Settings → Client Keys (DSN) — server DSN         |
+| `NEXT_PUBLIC_SENTRY_DSN` | Same page — client-side DSN. Can use the same DSN as `SENTRY_DSN`. |
+
+**Current setup:** Sentry organization "algo-studio" in EU region (`de.sentry.io` — Frankfurt). Project: `algo-studio`. Developer plan (free tier: 5k errors/month, 50 session replays, email alerts on high-priority issues).
+
+**DSN format check:** your DSN URL must contain `.ingest.de.sentry.io` (EU region). If it contains `ingest.sentry.io` (US) or `ingest.us.sentry.io`, the account is in the wrong region and must be recreated.
 
 ### 3.8 Admin bootstrap — REQUIRED
 
