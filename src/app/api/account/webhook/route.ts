@@ -177,6 +177,23 @@ async function handleUpdate(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Invalid webhook configuration" }, { status: 400 });
     }
 
+    // Tier gate: webhook URL requires ELITE+ (see TIER_ALERT_CHANNELS in plans.ts)
+    if (parsed.data.webhookUrl) {
+      const subscription = await prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+        select: { tier: true },
+      });
+      if (
+        !subscription ||
+        (subscription.tier !== "ELITE" && subscription.tier !== "INSTITUTIONAL")
+      ) {
+        return NextResponse.json(
+          { error: "Webhook alerts require the Authority plan or higher." },
+          { status: 403 }
+        );
+      }
+    }
+
     const updateData: {
       webhookUrl?: string | null;
       telegramBotToken?: string | null;

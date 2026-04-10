@@ -534,16 +534,8 @@ model EAError {
 // ADMIN CONFIGURATION
 // ============================================
 
-model PlanLimitConfig {
-  id                 String   @id @default(cuid())
-  tier               PlanTier @unique
-  maxProjects        Int
-  maxExportsPerMonth Int
-  canExportMQL5      Boolean  @default(true)
-  canExportMQL4      Boolean  @default(false)
-  updatedAt          DateTime @updatedAt
-  updatedBy          String
-}
+// PlanLimitConfig removed — legacy EA builder feature.
+// Plan limits are now hardcoded in src/lib/plans.ts
 
 model UserSegment {
   id        String   @id @default(cuid())

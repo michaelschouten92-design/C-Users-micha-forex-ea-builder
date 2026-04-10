@@ -20,11 +20,8 @@ function buildPriceTierMap() {
   if (Object.keys(PRICE_TO_TIER).length > 0) return;
   const ids = [
     [process.env.STRIPE_PRO_MONTHLY_PRICE_ID, "PRO"],
-    [process.env.STRIPE_PRO_YEARLY_PRICE_ID, "PRO"],
     [process.env.STRIPE_ELITE_MONTHLY_PRICE_ID, "ELITE"],
-    [process.env.STRIPE_ELITE_YEARLY_PRICE_ID, "ELITE"],
     [process.env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID, "INSTITUTIONAL"],
-    [process.env.STRIPE_INSTITUTIONAL_YEARLY_PRICE_ID, "INSTITUTIONAL"],
   ] as const;
   for (const [id, tier] of ids) {
     if (id) PRICE_TO_TIER[id] = tier;

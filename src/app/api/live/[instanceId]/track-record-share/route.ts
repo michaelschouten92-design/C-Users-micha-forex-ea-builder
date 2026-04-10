@@ -13,6 +13,8 @@ import { randomBytes } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError, ErrorCode } from "@/lib/error-codes";
+import { resolveTier } from "@/lib/plan-limits";
+import { getMaxPublicShares } from "@/lib/plans";
 
 const bodySchema = z.object({
   action: z.enum(["publish", "unpublish"]),
@@ -70,6 +72,31 @@ export async function POST(
       });
     }
     return NextResponse.json({ token: null, isPublic: false, url: null });
+  }
+
+  // Tier gate: count currently public shares against tier limit.
+  // A republish of an already-public share doesn't count against the limit.
+  if (action === "publish" && !(existing && existing.isPublic)) {
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+      select: { tier: true, status: true, currentPeriodEnd: true, manualPeriodEnd: true },
+    });
+    const tier = resolveTier(subscription);
+    const maxShares = getMaxPublicShares(tier);
+    if (maxShares !== Infinity) {
+      const currentPublicCount = await prisma.accountTrackRecordShare.count({
+        where: { userId: session.user.id, isPublic: true },
+      });
+      if (currentPublicCount >= maxShares) {
+        return NextResponse.json(
+          apiError(
+            ErrorCode.FORBIDDEN,
+            `Public share limit reached (${maxShares}). Upgrade to publish more track records.`
+          ),
+          { status: 403 }
+        );
+      }
+    }
   }
 
   // action === "publish"

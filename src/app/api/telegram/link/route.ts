@@ -15,6 +15,18 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Tier gate: Telegram alerts require a paid subscription
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId: session.user.id },
+    select: { tier: true },
+  });
+  if (!subscription || subscription.tier === "FREE") {
+    return NextResponse.json(
+      { error: "Telegram alerts require a paid subscription. Upgrade to enable." },
+      { status: 403 }
+    );
+  }
+
   const botUsername = process.env.ALGO_TELEGRAM_BOT_USERNAME;
   if (!botUsername) {
     return NextResponse.json({ error: "Telegram bot not configured" }, { status: 503 });

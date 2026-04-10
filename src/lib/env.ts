@@ -50,9 +50,7 @@ const envSchema = z.object({
 
   // Stripe Price IDs (required when Stripe is enabled)
   STRIPE_PRO_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
-  STRIPE_PRO_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
   STRIPE_ELITE_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
-  STRIPE_ELITE_YEARLY_PRICE_ID: z.string().startsWith("price_").optional(),
   STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: z.string().startsWith("price_").optional(),
 
   // Sentry (optional - for error tracking)
@@ -301,9 +299,7 @@ function validateEnv() {
       STRIPE_SECRET_KEY: undefined,
       STRIPE_WEBHOOK_SECRET: undefined,
       STRIPE_PRO_MONTHLY_PRICE_ID: undefined,
-      STRIPE_PRO_YEARLY_PRICE_ID: undefined,
       STRIPE_ELITE_MONTHLY_PRICE_ID: undefined,
-      STRIPE_ELITE_YEARLY_PRICE_ID: undefined,
       STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: undefined,
       SENTRY_DSN: undefined,
       UPSTASH_REDIS_REST_URL: undefined,
@@ -374,9 +370,7 @@ function validateEnv() {
         STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
         STRIPE_PRO_MONTHLY_PRICE_ID: process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
-        STRIPE_PRO_YEARLY_PRICE_ID: process.env.STRIPE_PRO_YEARLY_PRICE_ID,
         STRIPE_ELITE_MONTHLY_PRICE_ID: process.env.STRIPE_ELITE_MONTHLY_PRICE_ID,
-        STRIPE_ELITE_YEARLY_PRICE_ID: process.env.STRIPE_ELITE_YEARLY_PRICE_ID,
         STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID: process.env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID,
         SENTRY_DSN: process.env.SENTRY_DSN,
         NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,

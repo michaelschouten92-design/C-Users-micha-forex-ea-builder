@@ -17,9 +17,7 @@ import {
   formatRateLimitError,
 } from "@/lib/rate-limit";
 import { invalidateSubscriptionCache, getMonitoredTradingAccountUsage } from "@/lib/plan-limits";
-import { getMaxMonitoredAccounts, getTierDisplayName } from "@/lib/plans";
-
-const tierOrder = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 } as const;
+import { getMaxMonitoredAccounts, getTierDisplayName, TIER_ORDER } from "@/lib/plans";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -87,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No active subscription to change" }, { status: 400 });
     }
 
-    const currentTier = subscription.tier as keyof typeof tierOrder;
+    const currentTier = subscription.tier as keyof typeof TIER_ORDER;
     const isActive = subscription.status === "active" || subscription.status === "trialing";
 
     if (!isActive) {
@@ -109,7 +107,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unable to find subscription item" }, { status: 500 });
     }
 
-    const isDowngrade = tierOrder[plan] < tierOrder[currentTier];
+    const isDowngrade = TIER_ORDER[plan] < TIER_ORDER[currentTier];
 
     if (isDowngrade) {
       // --- DOWNGRADE: Schedule tier change at period end via Subscription Schedules ---

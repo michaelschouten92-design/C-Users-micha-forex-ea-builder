@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { PLANS } from "@/lib/plans";
+import { PLANS, TIER_ORDER } from "@/lib/plans";
 import {
   checkoutRequestSchema,
   formatZodErrors,
@@ -119,8 +119,12 @@ export async function POST(request: NextRequest) {
       );
     }
     // Prevent downgrade via checkout — use change-plan (account settings) instead
-    const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 };
-    if (isActive && currentTier && tierOrder[currentTier] > tierOrder[plan]) {
+    if (
+      isActive &&
+      currentTier &&
+      TIER_ORDER[currentTier as keyof typeof TIER_ORDER] >
+        TIER_ORDER[plan as keyof typeof TIER_ORDER]
+    ) {
       return NextResponse.json(
         { error: "Please manage your subscription from account settings" },
         { status: 400 }

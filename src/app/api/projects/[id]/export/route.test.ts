@@ -66,11 +66,10 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/plan-limits", () => ({
   getCachedTier: vi.fn().mockResolvedValue("FREE"),
-  checkExportLimit: vi.fn().mockResolvedValue({ allowed: true, current: 0, max: 5 }),
 }));
 
 vi.mock("@/lib/plans", () => ({
-  PLANS: { FREE: { limits: { maxExportsPerMonth: 5 } } },
+  PLANS: { FREE: { limits: {} } },
 }));
 
 vi.mock("@/lib/validations", () => ({

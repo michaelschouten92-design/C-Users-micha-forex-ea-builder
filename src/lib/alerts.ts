@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { enqueueNotification } from "@/lib/outbox";
 import { decrypt, isEncrypted } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
+import { isAlertChannelAllowed } from "@/lib/plans";
+import { resolveTier } from "@/lib/plan-limits";
 
 const log = logger.child({ module: "alerts" });
 
@@ -23,7 +25,14 @@ interface TriggerAlertPayload {
 export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> {
   const { userId, instanceId, alertType, message, eaName } = payload;
 
-  const configs = await prisma.eAAlertConfig.findMany({
+  // Resolve tier for alert channel gating
+  const subscription = await prisma.subscription.findUnique({
+    where: { userId },
+    select: { tier: true, status: true, currentPeriodEnd: true, manualPeriodEnd: true },
+  });
+  const tier = resolveTier(subscription);
+
+  const allConfigs = await prisma.eAAlertConfig.findMany({
     where: {
       userId,
       alertType,
@@ -34,6 +43,9 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       user: { select: { email: true, telegramBotToken: true, telegramChatId: true } },
     },
   });
+
+  // Filter configs to only tier-allowed channels (fail-closed)
+  const configs = allConfigs.filter((c) => isAlertChannelAllowed(tier, c.channel));
 
   if (configs.length === 0) return;
 

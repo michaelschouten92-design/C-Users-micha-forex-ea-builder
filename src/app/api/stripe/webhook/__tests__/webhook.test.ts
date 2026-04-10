@@ -48,9 +48,7 @@ vi.mock("@/lib/env", () => ({
     STRIPE_WEBHOOK_SECRET: "whsec_test_secret",
     AUTH_URL: "https://test.example.com",
     STRIPE_PRO_MONTHLY_PRICE_ID: "price_pro_monthly",
-    STRIPE_PRO_YEARLY_PRICE_ID: "price_pro_yearly",
     STRIPE_ELITE_MONTHLY_PRICE_ID: "price_elite_monthly",
-    STRIPE_ELITE_YEARLY_PRICE_ID: "price_elite_yearly",
   },
 }));
 

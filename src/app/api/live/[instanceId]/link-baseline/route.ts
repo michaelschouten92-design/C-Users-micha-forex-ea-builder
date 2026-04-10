@@ -6,6 +6,8 @@ import { ErrorCode, apiError } from "@/lib/error-codes";
 import { logAuditEvent, getAuditContext } from "@/lib/audit";
 import { linkExternalBaseline } from "@/lib/strategy-identity/external-baseline";
 import { bindIdentityToVersion } from "@/lib/strategy-identity/identity";
+import { resolveTier } from "@/lib/plan-limits";
+import { getMaxBaselinesPerStrategy } from "@/lib/plans";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -108,6 +110,36 @@ export async function POST(
         ),
         { status: 409 }
       );
+    }
+
+    // 5b. Tier gate: limit linked baselines per user.
+    // FREE users are capped at 1 linked baseline across all their instances.
+    if (!relink) {
+      const subscription = await prisma.subscription.findUnique({
+        where: { userId: session.user.id },
+        select: { tier: true, status: true, currentPeriodEnd: true, manualPeriodEnd: true },
+      });
+      const tier = resolveTier(subscription);
+      const maxBaselines = getMaxBaselinesPerStrategy(tier);
+      if (maxBaselines !== Infinity) {
+        const linkedCount = await prisma.liveEAInstance.count({
+          where: {
+            userId: session.user.id,
+            deletedAt: null,
+            strategyVersionId: { not: null },
+            id: { not: instanceId },
+          },
+        });
+        if (linkedCount >= maxBaselines) {
+          return NextResponse.json(
+            apiError(
+              ErrorCode.FORBIDDEN,
+              `Baseline limit reached (${maxBaselines}). Upgrade to link more strategy baselines.`
+            ),
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // 6. Validate the backtest run: exists, owned by same user, has required metrics

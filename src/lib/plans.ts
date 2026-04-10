@@ -4,6 +4,8 @@
 // Billing metric: monitored trading accounts (TerminalConnection)
 import { env, features } from "./env";
 
+export type PlanTier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
+
 // Display prices — override via env vars (amounts in cents), fallback to defaults
 const parsePrice = (envVal: string | undefined, fallback: number) => {
   const parsed = parseInt(envVal ?? "", 10);
@@ -115,11 +117,9 @@ export const PLANS = {
       "Edge degradation detection",
       "Verified Track Record",
       "1 monitored trading account",
+      "Browser push alerts",
     ],
     limits: {
-      maxProjects: Infinity,
-      maxExportsPerMonth: Infinity,
-      canExportMQL5: true,
       maxMonitoredTradingAccounts: 1,
     },
     prices: null,
@@ -131,13 +131,12 @@ export const PLANS = {
       "All platform features included",
       "3 monitored trading accounts",
       "Multi-strategy portfolio view",
-      "Email & webhook alerts",
+      "Telegram alerts",
+      "5 public track record shares",
+      "Unlimited strategy baselines",
       "Priority support",
     ],
     limits: {
-      maxProjects: Infinity,
-      maxExportsPerMonth: Infinity,
-      canExportMQL5: true,
       maxMonitoredTradingAccounts: 3,
     },
     prices: priceConfig.pro,
@@ -148,15 +147,14 @@ export const PLANS = {
     features: [
       "All platform features included",
       "10 monitored trading accounts",
+      "Telegram + Slack + webhook alerts",
+      "Unlimited public track record shares",
       "Embeddable proof widget",
       "1-on-1 strategy review (1/month)",
       "Priority support",
     ],
     mostPopular: true,
     limits: {
-      maxProjects: Infinity,
-      maxExportsPerMonth: Infinity,
-      canExportMQL5: true,
       maxMonitoredTradingAccounts: 10,
     },
     prices: priceConfig.elite,
@@ -167,21 +165,18 @@ export const PLANS = {
     features: [
       "All platform features included",
       "Unlimited monitored trading accounts",
+      "All alert channels",
       "Custom onboarding",
       "Dedicated support channel",
       "SLA-backed uptime guarantee",
     ],
     limits: {
-      maxProjects: Infinity,
-      maxExportsPerMonth: Infinity,
-      canExportMQL5: true,
       maxMonitoredTradingAccounts: Infinity,
     },
     prices: priceConfig.institutional,
   },
 } as const;
 
-export type PlanTier = "FREE" | "PRO" | "ELITE" | "INSTITUTIONAL";
 export type Plan = (typeof PLANS)[PlanTier];
 
 /**
@@ -227,52 +222,41 @@ export function formatPrice(amount: number, currency: string): string {
 }
 
 // ============================================
-// DYNAMIC PLAN LIMITS (DB overrides hardcoded)
+// TIER FEATURE GATES
 // ============================================
 
-interface PlanLimits {
-  maxProjects: number;
-  maxExportsPerMonth: number;
-  canExportMQL5: boolean;
+/** Alert channels available per tier. */
+export const TIER_ALERT_CHANNELS: Record<PlanTier, readonly string[]> = {
+  FREE: ["BROWSER_PUSH"],
+  PRO: ["BROWSER_PUSH", "TELEGRAM"],
+  ELITE: ["BROWSER_PUSH", "TELEGRAM", "SLACK", "WEBHOOK", "EMAIL"],
+  INSTITUTIONAL: ["BROWSER_PUSH", "TELEGRAM", "SLACK", "WEBHOOK", "EMAIL"],
+};
+
+/** Maximum number of public track record shares per tier. Infinity = unlimited. */
+export const TIER_MAX_PUBLIC_SHARES: Record<PlanTier, number> = {
+  FREE: 1,
+  PRO: 5,
+  ELITE: Infinity,
+  INSTITUTIONAL: Infinity,
+};
+
+/** Maximum distinct baselines per strategy identity per tier. Infinity = unlimited. */
+export const TIER_MAX_BASELINES_PER_STRATEGY: Record<PlanTier, number> = {
+  FREE: 1,
+  PRO: Infinity,
+  ELITE: Infinity,
+  INSTITUTIONAL: Infinity,
+};
+
+export function isAlertChannelAllowed(tier: PlanTier, channel: string): boolean {
+  return TIER_ALERT_CHANNELS[tier].includes(channel);
 }
 
-// In-memory cache for plan limits (60s TTL)
-let limitsCache: { data: Map<string, PlanLimits>; expiresAt: number } | null = null;
+export function getMaxPublicShares(tier: PlanTier): number {
+  return TIER_MAX_PUBLIC_SHARES[tier];
+}
 
-/**
- * Get effective plan limits for a tier.
- * Checks DB PlanLimitConfig first (with 60s cache), falls back to hardcoded PLANS.
- */
-export async function getEffectiveLimits(tier: PlanTier): Promise<PlanLimits> {
-  const now = Date.now();
-
-  // Return from cache if still valid
-  if (limitsCache && limitsCache.expiresAt > now) {
-    const cached = limitsCache.data.get(tier);
-    if (cached) return cached;
-  }
-
-  // Refresh cache from DB (dynamic import to avoid bundling Prisma in client)
-  try {
-    const { prisma } = await import("./prisma");
-    const configs = await prisma.planLimitConfig.findMany();
-    const map = new Map<string, PlanLimits>();
-    for (const c of configs) {
-      map.set(c.tier, {
-        maxProjects: c.maxProjects >= UNLIMITED_SENTINEL ? Infinity : c.maxProjects,
-        maxExportsPerMonth:
-          c.maxExportsPerMonth >= UNLIMITED_SENTINEL ? Infinity : c.maxExportsPerMonth,
-        canExportMQL5: c.canExportMQL5,
-      });
-    }
-    limitsCache = { data: map, expiresAt: now + 60_000 };
-
-    const cached = map.get(tier);
-    if (cached) return cached;
-  } catch {
-    // DB unavailable — fall through to hardcoded
-  }
-
-  // Fallback to hardcoded limits
-  return PLANS[tier].limits;
+export function getMaxBaselinesPerStrategy(tier: PlanTier): number {
+  return TIER_MAX_BASELINES_PER_STRATEGY[tier];
 }

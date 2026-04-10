@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { logger, extractErrorDetails } from "@/lib/logger";
 import { audit } from "@/lib/audit";
 import { invalidateSubscriptionCache } from "@/lib/plan-limits";
+import { TIER_ORDER } from "@/lib/plans";
 import {
   sendPaymentFailedEmail,
   sendPaymentActionRequiredEmail,
@@ -365,12 +366,9 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const priceId = subscription.items.data[0]?.price.id;
   let tier: "PRO" | "ELITE" | "INSTITUTIONAL";
 
-  if (priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID || priceId === env.STRIPE_PRO_YEARLY_PRICE_ID) {
+  if (priceId === env.STRIPE_PRO_MONTHLY_PRICE_ID) {
     tier = "PRO";
-  } else if (
-    priceId === env.STRIPE_ELITE_MONTHLY_PRICE_ID ||
-    priceId === env.STRIPE_ELITE_YEARLY_PRICE_ID
-  ) {
+  } else if (priceId === env.STRIPE_ELITE_MONTHLY_PRICE_ID) {
     tier = "ELITE";
   } else if (priceId === env.STRIPE_INSTITUTIONAL_MONTHLY_PRICE_ID) {
     tier = "INSTITUTIONAL";
@@ -445,8 +443,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 
     // Audit tier changes and send confirmation email (fire-and-forget, outside transaction)
     if (result.previousTier !== tier) {
-      const tierOrder: Record<string, number> = { FREE: 0, PRO: 1, ELITE: 2, INSTITUTIONAL: 3 };
-      const isUpgrade = tierOrder[tier] > tierOrder[result.previousTier as keyof typeof tierOrder];
+      const isUpgrade =
+        TIER_ORDER[tier] > TIER_ORDER[result.previousTier as keyof typeof TIER_ORDER];
 
       (isUpgrade
         ? audit.subscriptionUpgrade(result.userId, result.previousTier, tier)

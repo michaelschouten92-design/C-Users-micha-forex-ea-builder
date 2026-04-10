@@ -3,8 +3,7 @@ import { randomBytes, createHash, randomUUID } from "crypto";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMQL5Code } from "@/lib/mql5-generator";
-import { checkExportLimit, getCachedTier } from "@/lib/plan-limits";
-import { PLANS } from "@/lib/plans";
+import { getCachedTier } from "@/lib/plan-limits";
 import {
   exportRequestSchema,
   buildJsonSchema,
@@ -112,22 +111,7 @@ export async function POST(request: NextRequest, { params }: Props) {
     // Audit the export request
     await audit.exportRequest(session.user.id, id, "MQ5");
 
-    // ADVISORY ONLY: This pre-check is outside the transaction and can be bypassed by
-    // concurrent requests. It exists solely for fast rejection of obviously over-limit
-    // users. The authoritative, race-condition-safe enforcement happens atomically
-    // inside the transaction below (see tx.exportJob.count + conditional insert).
-    const exportLimit = await checkExportLimit(session.user.id);
-    if (!exportLimit.allowed) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.EXPORT_LIMIT,
-          "Export limit reached",
-          `You've used ${exportLimit.current} of ${exportLimit.max} exports this month. Upgrade to increase your limits.`
-        ),
-        { status: 403 }
-      );
-    }
-
+    // Export limits removed — legacy EA builder feature
     // Fetch the project with the specified version
     const project = await prisma.project.findFirst({
       where: {
@@ -242,19 +226,8 @@ export async function POST(request: NextRequest, { params }: Props) {
     );
     const fileExtension = ".mq5";
 
-    // Atomically check limit + create export job + LiveEAInstance inside a transaction
-    const maxExports = PLANS[tier].limits.maxExportsPerMonth;
-    const startOfMonth = new Date();
-    startOfMonth.setUTCDate(1);
-    startOfMonth.setUTCHours(0, 0, 0, 0);
-
+    // Export limits removed — legacy EA builder feature
     const txResult = await prisma.$transaction(async (tx) => {
-      const currentCount = await tx.exportJob.count({
-        where: { userId: session.user.id, createdAt: { gte: startOfMonth }, deletedAt: null },
-      });
-      if (currentCount >= maxExports) {
-        return null;
-      }
       const job = await tx.exportJob.create({
         data: {
           userId: session.user.id,
@@ -321,17 +294,6 @@ export async function POST(request: NextRequest, { params }: Props) {
 
       return { job, strategyVersionId: strategyVersion.id };
     });
-
-    if (!txResult) {
-      return NextResponse.json(
-        apiError(
-          ErrorCode.EXPORT_LIMIT,
-          "Export limit reached",
-          `You've reached your monthly export limit. Upgrade to increase your limits.`
-        ),
-        { status: 403 }
-      );
-    }
 
     const { job: exportJob, strategyVersionId } = txResult;
 

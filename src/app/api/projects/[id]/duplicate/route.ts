@@ -1,7 +1,5 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveTier } from "@/lib/plan-limits";
-import { PLANS } from "@/lib/plans";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
@@ -41,22 +39,8 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
-    // Verify ownership, check limit, and create — all in a transaction
+    // Project limits removed — legacy EA builder feature
     const result = await prisma.$transaction(async (tx) => {
-      // Read tier from DB inside transaction to prevent race condition
-      const subscription = await tx.subscription.findUnique({
-        where: { userId: session!.user!.id! },
-        select: { tier: true, status: true, currentPeriodEnd: true },
-      });
-      const tier = resolveTier(subscription);
-      const max = PLANS[tier].limits.maxProjects;
-      const projectCount = await tx.project.count({
-        where: { userId: session!.user!.id!, deletedAt: null },
-      });
-      if (projectCount >= max) {
-        return { error: true as const, status: 403, max: max === Infinity ? -1 : max };
-      }
-
       const sourceProject = await tx.project.findFirst({
         where: { id, userId: session!.user!.id!, deletedAt: null },
         include: {
@@ -69,7 +53,7 @@ export async function POST(request: Request, { params }: Params) {
       });
 
       if (!sourceProject) {
-        return { error: true as const, status: 404, max: 0 };
+        return { error: true as const, status: 404 };
       }
 
       const baseName = sourceProject.name.replace(/\s*\(copy(?:\s+\d+)?\)$/, "");
@@ -100,19 +84,9 @@ export async function POST(request: Request, { params }: Params) {
     });
 
     if (result.error) {
-      if (result.status === 404) {
-        return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), {
-          status: 404,
-        });
-      }
-      return NextResponse.json(
-        apiError(
-          ErrorCode.PROJECT_LIMIT,
-          "Project limit reached",
-          `You've reached the maximum of ${result.max} projects on your current plan. Upgrade to increase your limits.`
-        ),
-        { status: 403 }
-      );
+      return NextResponse.json(apiError(ErrorCode.NOT_FOUND, "Project not found"), {
+        status: 404,
+      });
     }
 
     const newProject = result.project;

@@ -177,7 +177,7 @@ export default async function ProjectPage({ params }: Props) {
         <LazyStrategyBuilder
           projectId={project.id}
           latestVersion={latestVersion}
-          canExportMQL5={planLimits.limits.canExportMQL5}
+          canExportMQL5={true}
           tier={planLimits.tier}
         />
       </main>
