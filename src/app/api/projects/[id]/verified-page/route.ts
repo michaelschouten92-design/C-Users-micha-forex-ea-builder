@@ -155,6 +155,16 @@ export async function GET(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Verify project ownership before exposing page config (incl. pinnedInstanceId + draft settings)
+  const project = await prisma.project.findFirst({
+    where: { id, userId: session.user.id, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
   const identity = await prisma.strategyIdentity.findUnique({
     where: { projectId: id },
     select: { id: true },
