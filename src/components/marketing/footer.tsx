@@ -55,9 +55,9 @@ export function Footer() {
       <div className="py-16 px-6">
         <div className="max-w-6xl mx-auto">
           {/* Main grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10 mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-10 mb-12">
             {/* Brand column */}
-            <div className="col-span-2 sm:col-span-3 lg:col-span-1 mb-4 lg:mb-0">
+            <div className="col-span-2 sm:col-span-4 lg:col-span-1 mb-4 lg:mb-0">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#6366F1] to-[#818CF8] flex items-center justify-center flex-shrink-0">
                   <svg
