@@ -891,6 +891,55 @@ export default async function HomePage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════
+            7.5. Trading Guides — Internal linking to SEO clusters
+            ═══════════════════════════════════════════════════════ */}
+        <section className="py-20 md:py-28 px-6 bg-[#08080A]" aria-label="Trading guides">
+          <div className="max-w-5xl mx-auto">
+            <AnimateOnScroll>
+              <SectionHeading eyebrow="Resources">Trading guides</SectionHeading>
+            </AnimateOnScroll>
+
+            <div className="mt-14 grid md:grid-cols-3 gap-5">
+              {[
+                {
+                  title: "EA Drift Detection",
+                  desc: "How CUSUM statistical monitoring catches Expert Advisor degradation weeks before your equity curve shows it.",
+                  href: "/features/drift-detection",
+                  cta: "Read the guide",
+                },
+                {
+                  title: "Prop Firm EA Rules",
+                  desc: "FTMO, E8 Markets, FundedNext, The Funded Trader — drawdown limits, profit targets, and EA policies compared honestly.",
+                  href: "/prop-firms",
+                  cta: "Compare firms",
+                },
+                {
+                  title: "Alternatives & Comparisons",
+                  desc: "Algo Studio vs MyFxBook, FxBlue, Tradervue, Edgewonk. Honest feature matrix including where each tool wins.",
+                  href: "/alternatives",
+                  cta: "See comparisons",
+                },
+              ].map((item) => (
+                <AnimateOnScroll key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="group block h-full p-6 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111114] hover:border-[rgba(99,102,241,0.4)] transition-colors"
+                  >
+                    <h3 className="text-base font-semibold text-[#FAFAFA] mb-2 group-hover:text-[#818CF8] transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-[#A1A1AA] leading-relaxed mb-4">{item.desc}</p>
+                    <span className="text-xs font-medium text-[#6366F1] group-hover:text-[#818CF8] transition-colors">
+                      {item.cta} →
+                    </span>
+                  </Link>
+                </AnimateOnScroll>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════
             8. FAQ — Long-tail SEO + objection handling
             ═══════════════════════════════════════════════════════ */}
         <section
