@@ -116,6 +116,7 @@ export function createCsrfErrorResponse(): NextResponse {
  */
 export const CSRF_EXCLUDED_ROUTES = [
   "/api/stripe/webhook", // Uses Stripe signature verification
+  "/api/telegram/webhook", // Uses x-telegram-bot-api-secret-token header, not browser cookies
   "/api/telemetry/", // EA bot clients use X-EA-Key, not browser cookies
   "/api/track-record/", // Monitor EA POSTs with X-EA-Key, not browser cookies
   "/api/internal/heartbeat", // Uses x-internal-api-key header auth, not session cookies
