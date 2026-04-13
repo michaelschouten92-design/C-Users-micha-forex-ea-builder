@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog/posts";
 import { prisma } from "@/lib/prisma";
+import { getAllFeatures } from "@/data/features";
+import { getAllPropFirms } from "@/data/prop-firms";
+import { getAllCompetitors } from "@/data/competitors";
 
 async function getPublicStrategyPages(baseUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
@@ -53,9 +56,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPublicTraderProfiles(baseUrl),
   ]);
 
+  const featurePages: MetadataRoute.Sitemap = getAllFeatures().map((f) => ({
+    url: `${baseUrl}/features/${f.slug}`,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  const propFirmPages: MetadataRoute.Sitemap = getAllPropFirms().map((f) => ({
+    url: `${baseUrl}/prop-firms/${f.slug}`,
+    lastModified: new Date(f.lastVerified),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  const alternativePages: MetadataRoute.Sitemap = getAllCompetitors().map((c) => ({
+    url: `${baseUrl}/alternatives/${c.slug}`,
+    lastModified: new Date(c.lastVerified),
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   return [
     ...strategyPages,
     ...traderProfiles,
+    {
+      url: `${baseUrl}/features`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    ...featurePages,
+    {
+      url: `${baseUrl}/prop-firms`,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    ...propFirmPages,
+    {
+      url: `${baseUrl}/alternatives`,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    ...alternativePages,
     {
       url: baseUrl,
       changeFrequency: "weekly",

@@ -66,4 +66,29 @@ describe("sitemap", () => {
     const traderUrls = urls.filter((u) => u.startsWith("https://algo-studio.com/u/"));
     expect(traderUrls).toHaveLength(1);
   });
+
+  // Programmatic SEO clusters
+  it("includes /features hub and at least one /features/[slug] page", () => {
+    expect(urls).toContain("https://algo-studio.com/features");
+    const featureSlugUrls = urls.filter((u) =>
+      u.match(/^https:\/\/algo-studio\.com\/features\/[^/]+$/)
+    );
+    expect(featureSlugUrls.length).toBeGreaterThan(0);
+  });
+
+  it("includes /prop-firms hub and at least one /prop-firms/[slug] page", () => {
+    expect(urls).toContain("https://algo-studio.com/prop-firms");
+    const firmSlugUrls = urls.filter((u) =>
+      u.match(/^https:\/\/algo-studio\.com\/prop-firms\/[^/]+$/)
+    );
+    expect(firmSlugUrls.length).toBeGreaterThan(0);
+  });
+
+  it("includes /alternatives hub and at least one /alternatives/[slug] page", () => {
+    expect(urls).toContain("https://algo-studio.com/alternatives");
+    const altSlugUrls = urls.filter((u) =>
+      u.match(/^https:\/\/algo-studio\.com\/alternatives\/[^/]+$/)
+    );
+    expect(altSlugUrls.length).toBeGreaterThan(0);
+  });
 });

@@ -5,16 +5,24 @@ const SECTIONS = [
     title: "Platform",
     links: [
       { label: "How It Works", href: "/how-it-works" },
+      { label: "Features", href: "/features" },
       { label: "Strategies", href: "/strategies" },
       { label: "Pricing", href: "/pricing" },
       { label: "Sample Evaluation", href: "/sample-evaluation" },
     ],
   },
   {
-    title: "Resources",
+    title: "Guides",
     links: [
+      { label: "Prop Firms", href: "/prop-firms" },
+      { label: "Alternatives", href: "/alternatives" },
       { label: "FAQ", href: "/faq" },
       { label: "Blog", href: "/blog" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
       { label: "Roadmap", href: "/roadmap" },
       { label: "Contact", href: "/contact" },
     ],
