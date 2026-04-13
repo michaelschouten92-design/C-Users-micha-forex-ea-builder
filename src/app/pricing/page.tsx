@@ -162,13 +162,15 @@ export default function PricingPage() {
           <AnimateOnScroll delay={1}>
             <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0D0D12] p-6 flex flex-col h-full">
               <h3 className="text-lg font-semibold text-[#FAFAFA]">Baseline</h3>
-              <p className="text-xs text-[#71717A] mt-1">Start monitoring one account for free.</p>
-              <div className="mt-4">
+              <p className="text-xs text-[#71717A] mt-1 min-h-8">
+                Start monitoring one account for free.
+              </p>
+              <div className="mt-4 flex items-baseline min-h-[2.5rem]">
                 <span className="text-3xl font-bold text-[#FAFAFA]">{formatPrice(0, "eur")}</span>
                 <span className="text-[#71717A] ml-2 text-sm">/ forever</span>
               </div>
 
-              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] min-h-[3.75rem] flex items-center">
                 <p className="text-sm font-medium text-[#FAFAFA]">1 monitored trading account</p>
               </div>
 
@@ -195,10 +197,10 @@ export default function PricingPage() {
           <AnimateOnScroll delay={2}>
             <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0D0D12] p-6 flex flex-col h-full">
               <h3 className="text-lg font-semibold text-[#FAFAFA]">Control</h3>
-              <p className="text-xs text-[#71717A] mt-1">
+              <p className="text-xs text-[#71717A] mt-1 min-h-8">
                 Monitor multiple strategies across accounts.
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex items-baseline min-h-[2.5rem]">
                 {proPrice ? (
                   <>
                     <span className="text-3xl font-bold text-[#FAFAFA]">
@@ -211,7 +213,7 @@ export default function PricingPage() {
                 )}
               </div>
 
-              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] min-h-[3.75rem] flex items-center">
                 <p className="text-sm font-medium text-[#FAFAFA]">
                   Up to 3 monitored trading accounts
                 </p>
@@ -240,8 +242,10 @@ export default function PricingPage() {
                 </span>
               </div>
               <h3 className="text-lg font-semibold text-[#FAFAFA]">Authority</h3>
-              <p className="text-xs text-[#71717A] mt-1">Full portfolio governance at scale.</p>
-              <div className="mt-4">
+              <p className="text-xs text-[#71717A] mt-1 min-h-8">
+                Full portfolio governance at scale.
+              </p>
+              <div className="mt-4 flex items-baseline min-h-[2.5rem]">
                 {elitePrice ? (
                   <>
                     <span className="text-3xl font-bold text-[#FAFAFA]">
@@ -254,7 +258,7 @@ export default function PricingPage() {
                 )}
               </div>
 
-              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(99,102,241,0.06)] border border-[rgba(99,102,241,0.15)]">
+              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(99,102,241,0.06)] border border-[rgba(99,102,241,0.15)] min-h-[3.75rem] flex items-center">
                 <p className="text-sm font-medium text-[#FAFAFA]">
                   Up to 10 monitored trading accounts
                 </p>
@@ -278,10 +282,10 @@ export default function PricingPage() {
           <AnimateOnScroll delay={4}>
             <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#0D0D12] p-6 flex flex-col h-full">
               <h3 className="text-lg font-semibold text-[#FAFAFA]">Institutional</h3>
-              <p className="text-xs text-[#71717A] mt-1">
+              <p className="text-xs text-[#71717A] mt-1 min-h-8">
                 Unlimited accounts with dedicated support.
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex items-baseline min-h-[2.5rem]">
                 {institutionalPrice ? (
                   <>
                     <span className="text-3xl font-bold text-[#FAFAFA]">
@@ -294,7 +298,7 @@ export default function PricingPage() {
                 )}
               </div>
 
-              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+              <div className="mt-4 py-2.5 px-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] min-h-[3.75rem] flex items-center">
                 <p className="text-sm font-medium text-[#FAFAFA]">
                   Unlimited monitored trading accounts
                 </p>
