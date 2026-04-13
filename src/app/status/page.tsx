@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Algo Studio System Status",
     description: "Real-time status of all Algo Studio services and infrastructure.",
+    images: ["/opengraph-image"],
   },
 };
 

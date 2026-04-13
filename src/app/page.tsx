@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     description:
       "Real-time EA monitoring for MetaTrader 5. Detect when your forex strategies start losing their edge — and act before it costs you.",
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",

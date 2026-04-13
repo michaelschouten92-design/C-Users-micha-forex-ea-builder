@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     title: "About Algo Studio — MT5 Strategy Monitoring Platform",
     description:
       "Continuous monitoring, drift detection, and verified track records for algorithmic trading strategies.",
+    images: ["/opengraph-image"],
   },
 };
 

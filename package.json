@@ -29,6 +29,7 @@
     "demo:teardown": "tsx scripts/demo-seed.ts --teardown",
     "demo:screenshots": "npx tsx scripts/demo-seed-screenshots.ts",
     "demo:screenshots:teardown": "npx tsx scripts/demo-seed-screenshots.ts --teardown",
+    "seo:crawl": "npx tsx scripts/seo-crawl.ts",
     "prepare": "husky"
   },
   "dependencies": {

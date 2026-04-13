@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contact | Algo Studio",
     description: "Get in touch with Algo Studio. Contact us for support, questions, or feedback.",
+    images: ["/opengraph-image"],
   },
 };
 

@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     title: "Frequently Asked Questions — Algo Studio",
     description:
       "Everything you need to know about monitoring your MetaTrader 5 Expert Advisors with Algo Studio.",
+    images: ["/opengraph-image"],
   },
 };
 

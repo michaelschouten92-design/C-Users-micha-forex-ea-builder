@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     title: "Algo Studio Roadmap — See What's Coming",
     description:
       "From advanced analytics to broker integrations. See every feature we're building for strategy monitoring and governance.",
+    images: ["/opengraph-image"],
   },
 };
 

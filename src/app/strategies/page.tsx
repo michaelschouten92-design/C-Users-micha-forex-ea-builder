@@ -17,6 +17,7 @@ export const metadata: Metadata = {
       "Browse curated, independently verified algorithmic trading strategies with cryptographic proof of performance.",
     url: `${baseUrl}/strategies`,
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: { card: "summary_large_image" },
 };
@@ -26,6 +27,14 @@ export default function StrategiesPage() {
     <div className="min-h-screen bg-[#08080A] text-[#FAFAFA]">
       <SiteNav />
       <div className="pt-16">
+        <header className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mb-2">
+            Verified Trading Strategies
+          </h1>
+          <p className="text-sm text-[#71717A] mb-6">
+            Curated algorithmic trading strategies with independently verified performance.
+          </p>
+        </header>
         <StrategiesView />
         <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-12 text-center">
           <h2 className="text-base font-semibold text-[#FAFAFA] mb-2">

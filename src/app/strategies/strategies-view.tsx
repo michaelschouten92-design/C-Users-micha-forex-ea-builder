@@ -76,12 +76,7 @@ export function StrategiesView() {
 
   return (
     <div>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mb-2">Verified Strategies</h1>
-        <p className="text-sm text-[#71717A] mb-6">
-          Curated algorithmic trading strategies with independently verified performance.
-        </p>
-
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
         {/* Sort controls */}
         <div className="flex flex-wrap gap-2 mb-6">
           {SORT_OPTIONS.map((opt, i) => (

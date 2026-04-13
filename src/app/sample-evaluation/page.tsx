@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     title: "See What a Strategy Evaluation Looks Like — Algo Studio",
     description:
       "Health scoring, drift detection, Monte Carlo risk simulation — all from a single backtest upload. Try it free.",
+    images: ["/opengraph-image"],
   },
 };
 

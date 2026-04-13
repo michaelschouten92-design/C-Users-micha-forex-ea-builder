@@ -12,7 +12,7 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "getting-started-with-algostudio",
-    title: "Getting Started with Algo Studio: Build Your First EA in 5 Minutes",
+    title: "Getting Started: Build Your First EA in 5 Minutes",
     description:
       "Step-by-step tutorial to build your first MetaTrader 5 Expert Advisor in Algo Studio. From signup to exported MQL5 file — no coding required.",
     date: "2025-03-15",
@@ -339,7 +339,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "what-is-an-expert-advisor",
     title: "What Is an Expert Advisor (EA)? The Complete Guide for 2025",
     description:
-      "Everything you need to know about Expert Advisors for MetaTrader 5: how they work, types of EAs, advantages over manual trading, and how to build one without coding.",
+      "Everything about Expert Advisors for MT5: how they work, types, advantages over manual trading, and how to build one without coding.",
     date: "2025-03-20",
     author: "Algo Studio Team",
     readTime: "10 min read",
@@ -562,7 +562,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "automated-trading-vs-manual-trading",
-    title: "Automated Trading vs Manual Trading: Which Is Better in 2025?",
+    title: "Automated vs Manual Trading: Which Is Better in 2025?",
     description:
       "Honest comparison of automated and manual forex trading: pros, cons, win rates, time investment, and the hybrid approach most professionals use.",
     date: "2025-07-01",
@@ -674,9 +674,9 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "metatrader-5-vs-metatrader-4",
-    title: "MetaTrader 5 vs MetaTrader 4: Which Platform Should You Use in 2025?",
+    title: "MetaTrader 5 vs MetaTrader 4: Which Should You Use?",
     description:
-      "Complete MT5 vs MT4 comparison for forex traders and EA developers. Strategy Tester, MQL5 vs MQL4, timeframes, order types, and why MT5 wins for new development.",
+      "Complete MT5 vs MT4 comparison for EA developers: Strategy Tester, MQL5 vs MQL4, order types, and why MT5 wins for new development.",
     date: "2025-07-15",
     author: "Algo Studio Team",
     readTime: "10 min read",
@@ -767,234 +767,6 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>For new EA development in 2025, there's no reason to choose MT4. MT5 is superior in every technical aspect: faster backtesting, better programming language, more timeframes, more order types, real tick data, built-in economic calendar, and multi-market support.</p>
       <p>MetaQuotes has officially discontinued new MT4 broker licenses — the future is MT5. Starting new development on MT4 is building on a platform with no future updates.</p>
       <p>If you're building an EA with Algo Studio, your exported code is MQL5 — optimized for MetaTrader 5's latest features and designed to take advantage of the superior Strategy Tester. Ready to start? Try our <a href="/templates">free EA templates</a> or learn the basics with our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a>.</p>
-    `,
-  },
-  {
-    slug: "moving-average-crossover-strategy",
-    title: "Moving Average Crossover Strategy: Complete Build and Optimization Guide",
-    description:
-      "Build and optimize an MA crossover Expert Advisor step by step. Entry/exit rules, SMA vs EMA, ADX filters, period combinations, and realistic performance expectations.",
-    date: "2025-04-10",
-    author: "Algo Studio Team",
-    readTime: "12 min read",
-    tags: ["strategy", "indicators", "tutorial"],
-    content: `
-      <p>The Moving Average crossover is the most popular EA strategy in forex trading for a reason: it's simple, it works in trending markets, and it's easy to understand and optimize. It's also the strategy most professional traders started with before building more complex systems. In this guide, we'll build one from scratch, add filters to improve performance, and optimize it properly.</p>
-
-      <h2>The Basic Concept</h2>
-      <p>A Moving Average crossover uses two MAs with different periods. The fast MA (short period) reacts quickly to recent price changes. The slow MA (long period) smooths out noise and represents the broader trend. When the fast MA crosses above the slow MA, it signals that recent momentum has shifted upward — a potential new uptrend. The opposite cross signals a potential downtrend.</p>
-      <ul>
-        <li><strong>Fast MA</strong> (short period, e.g., 10): Represents recent momentum</li>
-        <li><strong>Slow MA</strong> (long period, e.g., 50): Represents the broader trend direction</li>
-      </ul>
-      <p><strong>Buy signal:</strong> Fast MA crosses above Slow MA (bullish crossover — also called a "golden cross" with 50/200 MA)</p>
-      <p><strong>Sell signal:</strong> Fast MA crosses below Slow MA (bearish crossover — also called a "death cross" with 50/200 MA)</p>
-      <p>This is a <strong>trend-following</strong> strategy. It doesn't try to predict reversals or pick tops and bottoms. Instead, it waits for a trend to establish itself and then rides the move. The trade-off: lower win rate (35-45%) but larger winners because you hold through extended trending moves.</p>
-
-      <h2>Choosing Your Moving Averages</h2>
-
-      <h3>SMA vs EMA</h3>
-      <p>The <strong>Simple Moving Average (SMA)</strong> gives equal weight to all candles in the period. The <strong>Exponential Moving Average (EMA)</strong> gives more weight to recent candles, making it more responsive to current price action.</p>
-
-      <table>
-        <thead>
-          <tr><th>Feature</th><th>SMA</th><th>EMA</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Responsiveness</td><td>Slower</td><td>Faster</td></tr>
-          <tr><td>False signals</td><td>Fewer</td><td>More</td></tr>
-          <tr><td>Signal delay</td><td>Later entries</td><td>Earlier entries</td></tr>
-          <tr><td>Smoothness</td><td>Smoother</td><td>More jagged</td></tr>
-          <tr><td>Best for</td><td>Daily/weekly charts</td><td>H1/H4 charts</td></tr>
-        </tbody>
-      </table>
-
-      <p>For crossover strategies on intraday timeframes (H1, H4), <strong>EMA is generally preferred</strong> because it catches trend changes faster. On daily and weekly charts, SMA's smoothness provides higher-quality signals.</p>
-
-      <h3>Best Period Combinations</h3>
-      <ul>
-        <li><strong>8/21 EMA:</strong> Aggressive short-term crossover. More signals, more noise. Good for scalping on M15-H1.</li>
-        <li><strong>10/50 EMA:</strong> Classic short-term crossover. Strong default for H1. This is what we use in our <a href="/how-it-works">MA Crossover template</a>.</li>
-        <li><strong>20/50 EMA:</strong> Balanced approach. Fewer signals but less whipsaw than 10/50.</li>
-        <li><strong>20/100 EMA:</strong> Medium-term. Fewer signals but higher quality. Good for H4.</li>
-        <li><strong>50/200 SMA:</strong> The "Golden Cross / Death Cross" — long-term trend identification on daily charts. Used by institutional traders.</li>
-      </ul>
-      <p>The key principle: maintain enough separation between the fast and slow periods. If they're too close (like 10/15), you get constant crossovers in any sideways movement. If they're too far apart (like 5/200), signals come too late to be useful.</p>
-
-      <h2>Building the MA Crossover EA</h2>
-      <p>Here's how to build it in Algo Studio's <a href="/">visual builder</a>:</p>
-      <ol>
-        <li><strong>Timing:</strong> Drag a <strong>Trading Sessions</strong> block and select London (08:00-17:00 GMT). This limits trading to the most liquid hours with the tightest spreads.</li>
-        <li><strong>Indicators:</strong> Add two <strong>Moving Average</strong> blocks — set one to EMA period 10 (fast) and the other to EMA period 50 (slow). Connect both to the timing block.</li>
-        <li><strong>Trade execution:</strong> Add <strong>Place Buy</strong> and <strong>Place Sell</strong> blocks connected to the indicator conditions.</li>
-        <li><strong>Risk management:</strong> Add <strong>Stop Loss</strong> (1.5x ATR with period 14), <strong>Take Profit</strong> (2:1 risk-reward), <strong>Position Sizing</strong> (1% risk), and <strong>Max Trades Per Day</strong> (3).</li>
-        <li><strong>Export:</strong> Click Export MQL5, compile in MetaEditor, and <a href="/blog/backtest-your-ea-metatrader5">backtest on EURUSD H1</a>.</li>
-      </ol>
-
-      <h2>Adding Filters to Improve Performance</h2>
-      <p>The raw crossover strategy generates many false signals in ranging markets. Price chops back and forth across both MAs, triggering buy and sell signals in rapid succession. Each one hits the stop loss. This "whipsaw" period is the MA crossover's biggest weakness. Filters reduce this problem dramatically.</p>
-
-      <h3>ADX Filter (Most Impactful)</h3>
-      <p>The ADX (Average Directional Index) measures trend strength regardless of direction. Adding an <strong>ADX block with a threshold of 25</strong> ensures your EA only takes crossover trades when a real trend exists. When ADX is below 25, the market is ranging — and the EA stays out.</p>
-      <p>This single filter typically <strong>reduces trade count by 30-40%</strong> while significantly improving the win rate and profit factor. It's the single most effective filter you can add to any trend-following strategy.</p>
-
-      <h3>RSI Filter</h3>
-      <p>Add an <strong>RSI block</strong> to avoid buying when the market is already overbought (RSI above 70) or selling when already oversold (RSI below 30). This prevents late entries at the end of strong moves — you don't want to buy a crossover when the pair has already run 200 pips and is due for a pullback.</p>
-
-      <h3>Session Filter</h3>
-      <p>Limiting trades to the London session or London/NY overlap (13:00-17:00 GMT) ensures you only trade during peak liquidity. Crossovers during the Asian session are more likely to be false breaks because there's less institutional volume to sustain a trend.</p>
-
-      <h3>Minimum Bar Distance Filter</h3>
-      <p>Add a rule: don't take a new crossover signal if the previous one was fewer than 5 bars ago. Rapid crossovers in choppy markets trigger multiple losing trades. Spacing them out naturally filters whipsaw periods.</p>
-
-      <h2>Optimization: Finding the Best Parameters</h2>
-      <p>After your basic EA works, use the MT5 Strategy Tester's optimization mode to find better parameters. Here's how to do it without falling into the <a href="/blog/avoid-overfitting-expert-advisor">overfitting trap</a>:</p>
-
-      <h3>What to Optimize</h3>
-      <ul>
-        <li><strong>Fast MA period:</strong> Test range 5-20, step 1</li>
-        <li><strong>Slow MA period:</strong> Test range 30-100, step 5</li>
-        <li><strong>ATR multiplier:</strong> Test 1.0, 1.5, 2.0, 2.5</li>
-        <li><strong>ADX threshold:</strong> Test 20, 25, 30</li>
-      </ul>
-
-      <h3>What NOT to Do</h3>
-      <ul>
-        <li>Don't optimize everything at once — it creates millions of combinations and increases overfitting risk</li>
-        <li>Don't pick the single best result — look for parameter plateaus where many nearby values are profitable</li>
-        <li>Don't optimize on the full data range — reserve the last 20-30% for out-of-sample validation</li>
-        <li>Don't trust any result based on fewer than 100 trades</li>
-      </ul>
-
-      <h2>Expected Performance</h2>
-      <p>A well-optimized MA crossover EA with proper filters typically achieves:</p>
-      <table>
-        <thead>
-          <tr><th>Metric</th><th>Realistic Range</th><th>Suspicious If</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Win rate</td><td>35-45%</td><td>Above 55%</td></tr>
-          <tr><td>Profit factor</td><td>1.3-1.8</td><td>Above 2.5</td></tr>
-          <tr><td>Risk-reward ratio</td><td>1:1.5 to 1:3</td><td>Above 1:5</td></tr>
-          <tr><td>Monthly return</td><td>2-5%</td><td>Above 15%</td></tr>
-          <tr><td>Max drawdown</td><td>10-25%</td><td>Below 5%</td></tr>
-        </tbody>
-      </table>
-
-      <p>If your backtest shows 90%+ win rates or 500% annual returns, you've almost certainly overfitted. A realistic MA crossover won't make you rich overnight, but it provides a solid, proven foundation that compounds over time. Many professional traders started with MA crossovers and built more complex strategies on top of this base.</p>
-
-      <p>Want to skip the setup? Use our ready-made <a href="/how-it-works">Moving Average Crossover EA template</a> — pre-configured with 10/50 EMA, ATR-based stops, and London session timing. Or compare this approach with <a href="/blog/rsi-vs-macd-for-automated-trading">RSI vs MACD strategies</a>.</p>
-    `,
-  },
-  {
-    slug: "avoid-overfitting-expert-advisor",
-    title: "How to Avoid Overfitting Your Expert Advisor: The Complete Guide",
-    description:
-      "Overfitting is the #1 reason EAs fail live. Learn to detect curve fitting, use walk-forward analysis, parameter stability testing, and the robustness checklist.",
-    date: "2025-04-15",
-    author: "Algo Studio Team",
-    readTime: "11 min read",
-    tags: ["advanced", "backtesting", "strategy"],
-    content: `
-      <p>You've built an EA that turns $10,000 into $100,000 in backtesting. The equity curve is a perfect 45-degree line. The win rate is 78%. You're excited. You go live — and it loses money from day one. What happened? Almost certainly, <strong>overfitting</strong>. It's the #1 reason Expert Advisors fail in live trading, and it's more insidious than most traders realize.</p>
-
-      <h2>What Is Overfitting?</h2>
-      <p>Overfitting (also called "curve fitting") happens when your EA is too perfectly optimized for historical data. Instead of learning the underlying market patterns — the actual edge that repeats — it learns the noise: the random fluctuations, one-off events, and coincidences that won't repeat in the future.</p>
-      <p>An overfitted EA is like a student who memorizes the answers to last year's exam instead of understanding the subject. They ace the practice test but fail the real one because they never learned the material — they just memorized a specific set of answers.</p>
-      <p>The core problem is mathematical: with enough parameters, you can fit <strong>any</strong> dataset perfectly. Give me 20 optimizable inputs and I can create an EA that never loses in backtesting — but it has zero predictive power for the future.</p>
-
-      <h2>Signs of an Overfitted EA</h2>
-      <p>Learning to spot overfitting before going live is the most valuable skill an EA developer can have:</p>
-
-      <table>
-        <thead>
-          <tr><th>Warning Sign</th><th>What It Means</th><th>Realistic Range</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Profit factor above 3.0</td><td>Too good for a real strategy</td><td>1.2 - 2.5</td></tr>
-          <tr><td>Win rate above 75%</td><td>Likely fitted to noise</td><td>35-60%</td></tr>
-          <tr><td>No drawdowns</td><td>Impossible in real markets</td><td>10-25% max DD</td></tr>
-          <tr><td>15+ parameters</td><td>Too many degrees of freedom</td><td>4-6 parameters</td></tr>
-          <tr><td>Only works on 1 pair</td><td>Fitted to that pair's history</td><td>Works on 2+ pairs</td></tr>
-          <tr><td>Fewer than 50 trades</td><td>Not statistically significant</td><td>100+ trades minimum</td></tr>
-        </tbody>
-      </table>
-
-      <h3>The Parameter Test</h3>
-      <p>After optimization, check what happens when you change each parameter by 10-20%. If MA period 17 produces great results but 15 and 19 produce terrible results, the strategy is fragile. The "magic number" 17 isn't an edge — it's a coincidence. Good parameters form a <strong>plateau</strong>: a range of values that all produce similar results.</p>
-
-      <h3>The Out-of-Sample Test</h3>
-      <p>Great results on your optimization period (in-sample) but terrible results on new data (out-of-sample) is the clearest sign of overfitting. If your EA is profitable on 2020-2023 but loses money on 2024, it learned the past instead of the pattern.</p>
-
-      <h2>How to Prevent Overfitting</h2>
-
-      <h3>1. Keep It Simple</h3>
-      <p>This is the single most important rule. The best EAs use <strong>2-3 indicators with 4-6 optimizable parameters</strong>. Every additional parameter increases overfitting risk exponentially.</p>
-      <p>Here's the math: with 1 parameter that has 10 possible values, you're testing 10 combinations. With 2 parameters, 100. With 5 parameters, 100,000. With 10 parameters, <strong>10 billion</strong>. The more combinations you test, the more likely you'll find one that works purely by chance.</p>
-      <p>If your strategy needs 10 indicators to be profitable, it doesn't have a real edge. It found noise that happened to correlate with historical price movements. Algo Studio's visual building blocks naturally keep strategies lean — when you can see the entire strategy at a glance, over-engineering is obvious.</p>
-
-      <h3>2. Walk-Forward Analysis (Gold Standard)</h3>
-      <p>Walk-forward analysis is the most rigorous way to validate an EA. It simulates what would actually happen if you periodically re-optimized your strategy:</p>
-      <ol>
-        <li>Split your data into segments (e.g., 6-month blocks)</li>
-        <li>Optimize on the first segment (in-sample)</li>
-        <li>Test on the next, unseen segment (out-of-sample) <strong>without changing parameters</strong></li>
-        <li>Move forward: optimize on segments 1+2, test on segment 3</li>
-        <li>Repeat for all segments</li>
-        <li>Combine all out-of-sample results for the real performance estimate</li>
-      </ol>
-      <p>If the combined out-of-sample results are profitable (even if less impressive than in-sample), you have a robust strategy. MT5's Strategy Tester supports walk-forward testing natively — use it.</p>
-
-      <h3>3. Out-of-Sample Testing (Simple Version)</h3>
-      <p>If walk-forward is too complex, use the simple version: optimize on 70% of your data, test on the remaining 30%. For example:</p>
-      <ul>
-        <li>Optimize on January 2021 - June 2024</li>
-        <li>Test on July 2024 - December 2024 without changing any parameters</li>
-        <li>If out-of-sample profit factor is at least 60-70% of in-sample, the strategy is likely robust</li>
-        <li>If it drops below 50%, you've overfitted</li>
-      </ul>
-
-      <h3>4. Parameter Stability Testing</h3>
-      <p>After finding your "best" parameters, test neighboring values systematically. For example, if your best fast MA period is 12:</p>
-      <ul>
-        <li>Test periods 8, 9, 10, 11, 12, 13, 14, 15, 16</li>
-        <li>If 10-14 are all profitable, you have a robust parameter plateau</li>
-        <li>If only 12 is profitable, it's a random spike — not a real edge</li>
-      </ul>
-      <p>A robust strategy shows a smooth performance surface, not an isolated spike.</p>
-
-      <h3>5. Multi-Symbol Testing</h3>
-      <p>Test your EA on similar pairs without re-optimizing. An <a href="/how-it-works">MA crossover</a> optimized on EURUSD should show some profitability on GBPUSD or AUDUSD. If it only works on one pair, it's overfitted to that pair's specific price history.</p>
-      <p>You're not looking for identical performance — just directionally profitable results on correlated instruments.</p>
-
-      <h3>6. Minimum Trade Count</h3>
-      <p>Never draw conclusions from fewer than 100 trades. With only 30 trades, the results could easily be luck. The math:</p>
-      <ul>
-        <li><strong>30 trades:</strong> Results are essentially random. Statistical power is too low to distinguish skill from luck.</li>
-        <li><strong>100 trades:</strong> You can start to draw conclusions, but confidence is still moderate.</li>
-        <li><strong>200-500 trades:</strong> Strong statistical significance. If it's profitable here, there's likely a real edge.</li>
-      </ul>
-
-      <h3>7. Realistic Spread and Slippage</h3>
-      <p>Many overfitting issues are hidden by unrealistic backtest settings. Always set a realistic spread (check your broker's average spread for the pair) and add 1-2 pips of slippage. If your strategy collapses with realistic transaction costs, it wasn't really profitable — it was exploiting the gap between idealized and real execution.</p>
-
-      <h2>The Robustness Checklist</h2>
-      <p>Before deploying any EA live, verify it passes every item:</p>
-      <ul>
-        <li>Strategy uses <strong>3 or fewer indicators</strong></li>
-        <li><strong>6 or fewer</strong> optimizable parameters</li>
-        <li>Profitable on <strong>out-of-sample data</strong> (at least 60% of in-sample performance)</li>
-        <li><strong>Parameter plateau</strong> exists (not a single "magic number")</li>
-        <li>Shows some profitability on <strong>at least 2 correlated pairs</strong></li>
-        <li><strong>100+ trades</strong> in backtesting (ideally 200+)</li>
-        <li>Profit factor between <strong>1.2 and 2.5</strong> (not suspiciously high)</li>
-        <li>Maximum drawdown <strong>under 25%</strong></li>
-        <li>Results hold with <strong>realistic spread and slippage</strong></li>
-      </ul>
-
-      <p>A strategy that passes all these checks is genuinely robust and has a real chance of working in live trading. It won't show 500% annual returns — realistic expectations are 2-5% monthly — but it'll compound reliably over time.</p>
-
-      <p>Ready to build a robust EA? Start with our <a href="/templates">free templates</a> — each is designed with minimal parameters and clear logic. Or learn the complete workflow in our <a href="/blog/from-trading-idea-to-automated-ea">From Idea to EA guide</a>. For a broader checklist, read our <a href="/blog/5-mistakes-automating-trading-strategies">5 costly mistakes traders make when automating strategies</a> — overfitting is #1 on the list.</p>
     `,
   },
   {
@@ -1104,7 +876,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "forex-trading-sessions-explained",
     title: "Forex Trading Sessions Explained: When Should Your EA Trade?",
     description:
-      "Complete guide to forex trading sessions for EA developers. London, New York, Tokyo, and Sydney — timing, volume, volatility, and which sessions suit each strategy.",
+      "Guide to forex trading sessions for EAs. London, New York, Tokyo, Sydney — timing, volume, volatility, and which sessions suit each strategy.",
     date: "2025-04-25",
     author: "Algo Studio Team",
     readTime: "11 min read",
@@ -1213,7 +985,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "how-to-build-mt5-ea-without-coding",
     title: "How to Build an MT5 EA Without Coding: Step-by-Step Tutorial",
     description:
-      "Build a complete MetaTrader 5 Expert Advisor without writing code. Visual builder tutorial with RSI strategy, risk management, export, and backtesting walkthrough.",
+      "Build a MetaTrader 5 Expert Advisor without code. Visual builder tutorial: RSI strategy, risk management, export, and backtesting walkthrough.",
     date: "2025-05-01",
     author: "Algo Studio Team",
     readTime: "11 min read",
@@ -1337,7 +1109,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "rsi-vs-macd-for-automated-trading",
-    title: "RSI vs MACD: Which Indicator Works Better for Automated Trading?",
+    title: "RSI vs MACD: Which Indicator Is Better for EAs?",
     description:
       "In-depth RSI vs MACD comparison for Expert Advisors. Strengths, weaknesses, best market conditions, backtesting results, and how to combine them effectively.",
     date: "2025-05-05",
@@ -1481,7 +1253,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "manual-trading-vs-automated-trading-pros-cons",
     title: "Manual Trading vs Automated Trading: Honest Pros and Cons",
     description:
-      "Should you trade manually or use an Expert Advisor? Honest comparison covering psychology, time, backtesting, scalability, and the hybrid approach professionals use.",
+      "Trade manually or use an EA? Honest comparison covering psychology, time, backtesting, scalability, and the hybrid approach pros use.",
     date: "2025-05-10",
     author: "Algo Studio Team",
     readTime: "11 min read",
@@ -1587,260 +1359,6 @@ export const BLOG_POSTS: BlogPost[] = [
     `,
   },
   {
-    slug: "5-mistakes-automating-trading-strategies",
-    title: "5 Costly Mistakes Traders Make When Automating Strategies",
-    description:
-      "Avoid the 5 most expensive EA development mistakes: over-optimization, skipping risk management, too many indicators, rushing to live, and ignoring market changes.",
-    date: "2025-05-15",
-    author: "Algo Studio Team",
-    readTime: "10 min read",
-    tags: ["strategy", "beginner", "backtesting"],
-    content: `
-      <p>Building an Expert Advisor is exciting — you design a strategy, <a href="/blog/backtest-your-ea-metatrader5">backtest it</a>, and see beautiful profit curves climbing to the upper right. But between that backtest and real profit, there are common pitfalls that trip up nearly every new EA developer. These five mistakes collectively account for the vast majority of EA failures. Avoid them and you're already ahead of 90% of beginners.</p>
-
-      <h2>Mistake 1: Over-Optimizing Parameters</h2>
-      <p>This is the single most expensive mistake in EA development. You run the MT5 optimizer and find the "perfect" combination: MA period 17, RSI period 11, stop loss 43 pips, ADX threshold 27. The backtest shows 300% profit with a 72% win rate. You're thrilled. You go live — and it loses money from week one.</p>
-      <p><strong>What happened:</strong> You didn't find a real market pattern. You found random noise that happened to align with those specific parameter values in that specific historical period. This is called <a href="/blog/avoid-overfitting-expert-advisor">curve fitting</a>. With enough parameters, you can make any strategy look profitable on any historical data — but it has zero predictive power for the future.</p>
-
-      <h3>The Math Behind Overfitting</h3>
-      <p>Each parameter you add multiplies the number of combinations the optimizer tests. With 5 parameters, each having 10 possible values, that's 100,000 combinations. By pure chance, some will look fantastic — but they're statistical mirages.</p>
-
-      <p><strong>How to avoid it:</strong></p>
-      <ul>
-        <li>Keep parameters to a minimum — <strong>4-6 optimizable inputs maximum</strong></li>
-        <li>Always validate on out-of-sample data (optimize on 2021-2023, test on 2024 without changing anything)</li>
-        <li>Look for <strong>parameter plateaus</strong> — if MA period 17 is profitable, periods 14-20 should also show positive results. If only 17 works, it's random</li>
-        <li>Be suspicious of any backtest showing profit factor above 2.5 or win rate above 65%</li>
-      </ul>
-
-      <h2>Mistake 2: Skipping Risk Management</h2>
-      <p>Many beginners spend 90% of their time perfecting entry signals and 10% on risk management. Professionals do the opposite. The beginner mindset: "If my entries are good enough, I don't need a stop loss." This is exactly how accounts blow up.</p>
-      <p><strong>The math:</strong> Even a strategy with a 60% win rate will have 5+ consecutive losers within any 100-trade sample. Without a stop loss, a single runaway loser can erase weeks or months of profit. Without position sizing, you're gambling with random lot sizes that have no relationship to your account balance.</p>
-
-      <p><strong>The minimum risk management checklist:</strong></p>
-      <ul>
-        <li><strong>Stop loss on every trade</strong> — no exceptions, ever. ATR-based stops adapt to volatility automatically</li>
-        <li><strong>1-2% risk per trade maximum</strong> — this ensures you survive inevitable losing streaks</li>
-        <li><strong>Risk-based position sizing</strong> — calculate lot size from your risk percentage and stop distance, not arbitrary numbers</li>
-        <li><strong>Daily trade limit</strong> — 3-5 trades prevents overtrading in choppy conditions</li>
-        <li><strong>Maximum drawdown threshold</strong> — stop trading if drawdown exceeds 20%</li>
-      </ul>
-      <p>Read our complete <a href="/blog/risk-management-for-forex-ea">risk management guide</a> for the full professional checklist. In Algo Studio, every <a href="/templates">template</a> includes pre-configured risk management blocks.</p>
-
-      <h2>Mistake 3: Using Too Many Indicators</h2>
-      <p>The logic seems sound: more indicators = more confirmation = better signals. In practice, the opposite is true. Adding a 5th or 6th indicator almost always makes your EA worse, not better.</p>
-      <p><strong>Why more indicators hurt:</strong></p>
-      <ul>
-        <li><strong>More overfitting risk:</strong> Each indicator adds parameters. More parameters = more opportunities to fit noise</li>
-        <li><strong>Conflicting signals:</strong> With 5 indicators, they'll rarely all agree. You end up with an EA that almost never trades because conditions are too restrictive</li>
-        <li><strong>Redundant information:</strong> RSI and Stochastic measure similar things. Adding both gives you the same information twice while doubling parameter count</li>
-        <li><strong>Reduced robustness:</strong> Simple strategies are more robust across different market conditions because they capture broad patterns, not specific noise</li>
-      </ul>
-
-      <p><strong>The sweet spot:</strong></p>
-      <ul>
-        <li><strong>1-2 indicators</strong> for entry signals (e.g., MA crossover, or RSI)</li>
-        <li><strong>0-1 filter</strong> to avoid bad conditions (e.g., ADX for trend strength, or session timing)</li>
-        <li><strong>Total: 2-3 indicators maximum</strong></li>
-      </ul>
-      <p>If your strategy needs 5 indicators to be profitable, it doesn't have a real edge. Read more about <a href="/blog/best-indicators-for-forex-ea">the best indicators for forex EAs</a>.</p>
-
-      <h2>Mistake 4: Going Live Too Quickly</h2>
-      <p>The backtest looks great — 200% returns, smooth equity curve, profit factor of 1.8. You immediately deposit $5,000 and go live. Two weeks later, you're down 12% and panicking. What happened?</p>
-      <p><strong>The gap between backtest and reality:</strong></p>
-      <ul>
-        <li><strong>Slippage:</strong> In backtesting, you get the exact price. In live trading, fast-moving markets might fill you 1-3 pips worse</li>
-        <li><strong>Spread variation:</strong> Backtests often use fixed spreads. Real spreads widen during news, low liquidity, and market open/close</li>
-        <li><strong>Requotes:</strong> Your broker might reject orders during volatile conditions</li>
-        <li><strong>Psychological pressure:</strong> Watching real money fluctuate feels different than watching a simulation</li>
-      </ul>
-
-      <p><strong>The correct sequence:</strong></p>
-      <ol>
-        <li><a href="/blog/backtest-your-ea-metatrader5">Backtest on 2+ years</a> with "every tick based on real ticks" and realistic spread/commission</li>
-        <li>Validate on out-of-sample data</li>
-        <li><strong>Demo trade for 1-3 months</strong> — verify real-world execution matches backtest expectations</li>
-        <li>Start live with the <strong>smallest possible position size</strong></li>
-        <li>Scale up gradually over 3-6 months as confidence builds</li>
-      </ol>
-
-      <h2>Mistake 5: Not Adapting to Changing Markets</h2>
-      <p>You build a great EA in January. It works well for 6 months. Then it slowly starts losing — smaller wins, larger losses, declining profit factor. You keep running it, hoping it will recover. Month after month, the losses continue. By the time you finally stop, you've given back most of your gains.</p>
-      <p><strong>Why this happens:</strong> Markets are not static. Volatility regimes change — a calm market becomes volatile, or vice versa. Correlations between pairs shift. Central bank policies create new market dynamics. A strategy optimized for trending conditions will <a href="/blog/avoid-overfitting-expert-advisor">fail in ranging conditions</a>, and the market doesn't announce when it switches.</p>
-
-      <p><strong>How to stay ahead:</strong></p>
-      <ul>
-        <li><strong>Monthly performance reviews:</strong> Compare recent results to backtest expectations. If profit factor has dropped below 1.0 for 2+ months, investigate</li>
-        <li><strong>Rolling out-of-sample testing:</strong> Periodically re-backtest on the most recent 6 months. If performance has degraded, the market may have shifted</li>
-        <li><strong>Built-in adaptability:</strong> Use ATR-based stops (adapt to volatility), <a href="/blog/forex-trading-sessions-explained">session filters</a> (trade during optimal hours), and ADX filters (only trade when trends exist)</li>
-        <li><strong>Re-optimization schedule:</strong> Re-optimize parameters every 6-12 months using walk-forward analysis. Don't over-optimize, but don't ignore changing conditions</li>
-        <li><strong>Accept strategy lifecycle:</strong> Every strategy has a shelf life. Some last years, some last months. When a strategy no longer works, retire it and build the next one</li>
-      </ul>
-
-      <h2>Summary: The 5 Mistakes Checklist</h2>
-      <table>
-        <thead>
-          <tr><th>Mistake</th><th>Cost</th><th>Prevention</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Over-optimizing</td><td>Strategy fails live</td><td>4-6 parameters, out-of-sample testing</td></tr>
-          <tr><td>No risk management</td><td>Account blowup</td><td>1% risk, ATR stops, daily limits</td></tr>
-          <tr><td>Too many indicators</td><td>Fragile, overfitted strategy</td><td>2-3 indicators maximum</td></tr>
-          <tr><td>Rushing to live</td><td>Unnecessary losses</td><td>Demo trade 1-3 months first</td></tr>
-          <tr><td>Ignoring market changes</td><td>Slow account drain</td><td>Monthly reviews, periodic re-optimization</td></tr>
-        </tbody>
-      </table>
-
-      <p>Ready to build your EA the right way? Start with our <a href="/blog/getting-started-with-algostudio">Getting Started with Algo Studio tutorial</a> and use the <a href="/">visual builder</a> to create strategies that follow these best practices from the start. Or jump straight to a pre-configured <a href="/templates">EA template</a>. Still deciding whether automation is right for you? Read our <a href="/blog/manual-trading-vs-automated-trading-pros-cons">manual vs automated trading pros and cons</a>.</p>
-    `,
-  },
-  {
-    slug: "from-trading-idea-to-automated-ea",
-    title: "From Trading Idea to Automated EA: The Complete 7-Phase Workflow",
-    description:
-      "Turn a trading idea into a working Expert Advisor in 7 phases: strategy definition, visual building, backtesting, optimization, validation, demo, and live deployment.",
-    date: "2025-05-20",
-    author: "Algo Studio Team",
-    readTime: "12 min read",
-    tags: ["tutorial", "strategy", "workflow"],
-    content: `
-      <p>You have a trading idea. Maybe you noticed that price often bounces when RSI hits 30, or that moving average crossovers catch big trends, or that the London open breaks the Asian range every morning. How do you turn that observation into a working, profitable Expert Advisor? This guide walks you through the complete 7-phase workflow — from raw idea to live trading — with the exact steps professionals follow.</p>
-
-      <h2>Phase 1: Define Your Strategy in Plain Language</h2>
-      <p>Before opening any tool, write down your strategy in plain, unambiguous language. This step is more important than most traders realize — if you can't describe your strategy in clear sentences, you can't automate it. An EA needs exact rules for every scenario.</p>
-
-      <h3>Entry Rules</h3>
-      <ul>
-        <li>What conditions must ALL be true to open a trade?</li>
-        <li>Which direction: buy only, sell only, or both?</li>
-        <li>Example: "Buy when the 10 EMA crosses above the 50 EMA AND ADX is above 25 AND it's during the London session (08:00-17:00 GMT)"</li>
-      </ul>
-
-      <h3>Exit Rules</h3>
-      <ul>
-        <li>Where does the stop loss go? (Fixed pips, ATR-based, indicator-based)</li>
-        <li>Where does the take profit go? (Fixed target, risk-reward ratio, opposite signal)</li>
-        <li>Are there other exit conditions? (Time-based exit, trailing stop, break-even move)</li>
-      </ul>
-
-      <h3>Filters</h3>
-      <ul>
-        <li>When should the EA NOT trade? (Ranging markets, news events, specific <a href="/blog/forex-trading-sessions-explained">sessions</a>)</li>
-        <li>What market conditions invalidate the setup? (ADX below 20, range too wide/narrow)</li>
-      </ul>
-
-      <h3>Risk Management</h3>
-      <ul>
-        <li>How much capital to risk per trade? (e.g., 1% of account balance)</li>
-        <li>Maximum open positions? (e.g., 2)</li>
-        <li>Daily trade limit? (e.g., 3)</li>
-        <li>Maximum drawdown before pausing? (e.g., 20%)</li>
-      </ul>
-
-      <p>If any of these answers are vague ("I'll decide based on how the chart looks"), it can't be automated. The beauty of this exercise: it forces clarity. Many traders realize their "strategy" is actually a collection of gut feelings — and that's exactly why automation produces better results.</p>
-
-      <h2>Phase 2: Build It Visually</h2>
-      <p>With your rules clearly defined, open <a href="/">Algo Studio's no-code MT5 EA builder</a> and translate each rule into visual blocks:</p>
-
-      <ol>
-        <li><strong>Start with timing:</strong> Drag a Trading Sessions block (e.g., London) or Custom Times block to define when the EA is active</li>
-        <li><strong>Add entry indicators:</strong> Place your indicator blocks (Moving Average, RSI, etc.) and configure their parameters</li>
-        <li><strong>Add filters:</strong> Connect filter blocks (ADX, additional MAs, etc.) to refine conditions</li>
-        <li><strong>Add trade execution:</strong> Connect Place Buy/Sell blocks to your indicator conditions</li>
-        <li><strong>Set risk management:</strong> Add Stop Loss (ATR-based recommended), Take Profit (R:R ratio), Position Sizing (% risk), and Max Trades Per Day</li>
-      </ol>
-
-      <p>The <a href="/">visual builder</a> gives you something traditional coding can't: you can see your entire strategy logic at a glance. If the canvas looks like spaghetti, your strategy is too complex. If you can't explain the flow in 30 seconds, simplify. Read more about <a href="/blog/best-indicators-for-forex-ea">choosing the right indicators</a>.</p>
-
-      <h2>Phase 3: First Backtest</h2>
-      <p>Export your EA from Algo Studio (click Export MQL5) and load it into MetaTrader 5. Run an initial <a href="/blog/backtest-your-ea-metatrader5">backtest</a> with these settings:</p>
-
-      <table>
-        <thead>
-          <tr><th>Setting</th><th>Value</th><th>Why</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Symbol</td><td>EURUSD</td><td>Most liquid, tightest spreads, best data quality</td></tr>
-          <tr><td>Timeframe</td><td>Match your strategy (e.g., H1)</td><td>Must match the timeframe your indicators are designed for</td></tr>
-          <tr><td>Period</td><td>Minimum 2 years</td><td>Covers different market conditions (trending, ranging, volatile)</td></tr>
-          <tr><td>Tick model</td><td>Every tick based on real ticks</td><td>Most accurate results — use this for all serious testing</td></tr>
-          <tr><td>Deposit</td><td>$10,000</td><td>Realistic benchmark for percentage-based analysis</td></tr>
-          <tr><td>Spread</td><td>Realistic (check your broker)</td><td>Unrealistic spread can hide unprofitable strategies</td></tr>
-        </tbody>
-      </table>
-
-      <h3>What to Look For in Initial Results</h3>
-      <ul>
-        <li><strong>Profit factor:</strong> Above 1.2 shows potential. Above 1.5 is promising. Above 3.0 is suspicious (<a href="/blog/avoid-overfitting-expert-advisor">possible overfitting</a>)</li>
-        <li><strong>Max drawdown:</strong> Below 20% is comfortable. 20-30% is acceptable. Above 30% needs work</li>
-        <li><strong>Total trades:</strong> At least 100 for statistical significance. Below 50 is meaningless</li>
-        <li><strong>Equity curve:</strong> Should slope upward relatively smoothly. Large flat periods or single massive winners are warning signs</li>
-      </ul>
-      <p>If initial results are negative, don't immediately optimize. First check that your logic is correct — are entries firing when expected? Are stops and targets the right size? Visual debugging on the canvas is much faster than code debugging.</p>
-
-      <h2>Phase 4: Optimize (Carefully)</h2>
-      <p>If initial results show promise, use the MT5 optimizer to fine-tune parameters. This is where most traders go wrong — they optimize too aggressively and end up with a strategy that's perfect on history but useless going forward.</p>
-
-      <h3>Optimization Rules</h3>
-      <ul>
-        <li><strong>Optimize 2-3 parameters at a time</strong> — never all parameters simultaneously</li>
-        <li><strong>Use genetic algorithm</strong> for initial exploration, then switch to complete algorithm for final refinement</li>
-        <li><strong>Look for parameter plateaus:</strong> If fast MA period 12 is profitable, periods 10-14 should also be profitable. A "spike" at exactly period 12 is random noise</li>
-        <li><strong>Never pick the single best result</strong> — it's almost always overfitted. Pick a value from the center of a profitable plateau</li>
-        <li><strong>Set realistic spread and commission</strong> during optimization — a strategy that only works with zero spread isn't a real strategy</li>
-      </ul>
-
-      <h2>Phase 5: Out-of-Sample Validation</h2>
-      <p>This is the most important phase — and the one most traders skip. Out-of-sample validation separates real edges from statistical illusions.</p>
-      <ol>
-        <li>If you optimized on January 2021 - December 2023, test on January 2024 - December 2024 <strong>without changing any parameters</strong></li>
-        <li>If out-of-sample profit factor is at least 60-70% of in-sample profit factor, the strategy is likely robust</li>
-        <li>If out-of-sample results collapse (profit factor drops below 1.0), you've overfitted — go back to Phase 4 and simplify</li>
-      </ol>
-      <p>For even more rigorous validation, use walk-forward analysis: optimize on rolling windows and test on successive forward periods. MT5 supports this natively in the Strategy Tester.</p>
-
-      <h2>Phase 6: Demo Trading</h2>
-      <p>Backtest results use historical data with perfect fills. Live conditions introduce real-world friction:</p>
-      <ul>
-        <li><strong>Slippage:</strong> You might get filled 1-3 pips worse than expected during fast moves</li>
-        <li><strong>Spread variation:</strong> Spreads widen during news, market open/close, and low-liquidity periods</li>
-        <li><strong>Execution delays:</strong> Network latency adds milliseconds that matter for scalping strategies</li>
-        <li><strong>Edge cases:</strong> Weekends, holidays, broker maintenance, and rollover handling</li>
-      </ul>
-      <p>Run your EA on a demo account for <strong>1-3 months minimum</strong>. Compare demo results to backtest expectations. If they diverge significantly (e.g., demo shows 50% worse results), investigate before going live.</p>
-
-      <h2>Phase 7: Go Live (Small, Then Scale)</h2>
-      <p>If demo results confirm your backtest within a reasonable margin, start live trading. Follow this scaling protocol:</p>
-      <ol>
-        <li><strong>Week 1-4:</strong> Smallest possible position size. Your only goal is to verify execution quality</li>
-        <li><strong>Month 2-3:</strong> If results track expectations, increase to 50% of intended position size</li>
-        <li><strong>Month 4+:</strong> If still on track, scale to full position size</li>
-        <li><strong>Ongoing:</strong> Monthly performance reviews against backtest benchmarks</li>
-      </ol>
-      <p>The temptation to skip ahead is strong. Resist it. The market will be there next month. Patience at this stage separates successful EA traders from those who blow accounts.</p>
-
-      <h2>The Complete 7-Phase Checklist</h2>
-      <table>
-        <thead>
-          <tr><th>Phase</th><th>Deliverable</th><th>Pass Criteria</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>1. Define</td><td>Written strategy rules</td><td>Every rule is exact and unambiguous</td></tr>
-          <tr><td>2. Build</td><td>Visual strategy in Algo Studio</td><td>Logic flow is clear and simple</td></tr>
-          <tr><td>3. Backtest</td><td>MT5 backtest report</td><td>PF &gt; 1.3, DD &lt; 25%, 100+ trades</td></tr>
-          <tr><td>4. Optimize</td><td>Refined parameters</td><td>Parameter plateaus exist</td></tr>
-          <tr><td>5. Validate</td><td>Out-of-sample results</td><td>OOS PF &gt; 60% of in-sample</td></tr>
-          <tr><td>6. Demo</td><td>1-3 months live demo</td><td>Results match backtest within 30%</td></tr>
-          <tr><td>7. Live</td><td>Gradual scaling over 3+ months</td><td>Consistent with expectations</td></tr>
-        </tbody>
-      </table>
-
-      <p>Ready to start? Try one of our pre-built templates as a starting point: <a href="/how-it-works">Moving Average Crossover</a> (trend-following), <a href="/how-it-works">RSI Mean Reversion</a> (counter-trend), or <a href="/how-it-works">Breakout Strategy</a> (session-based). Each gives you a proven strategy you can customize and take through all 7 phases.</p>
-
-      <p>New to Algo Studio? Our <a href="/blog/getting-started-with-algostudio">Getting Started tutorial</a> walks you through building your first EA in 5 minutes. Before you go live, read about the <a href="/blog/5-mistakes-automating-trading-strategies">5 most costly mistakes traders make when automating</a>. And if you're still weighing whether to automate at all, our <a href="/blog/automated-trading-vs-manual-trading">automated vs manual trading comparison</a> gives you the honest trade-offs.</p>
-    `,
-  },
-  {
     slug: "ema-crossover-strategy-guide",
     title: "EMA Crossover Strategy: Complete Guide for MT5",
     description:
@@ -1918,7 +1436,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "prop-firm-ea-settings",
     title: "Best EA Settings for Prop Firm Challenges (FTMO, E8 Markets)",
     description:
-      "Configure your Expert Advisor to pass prop firm challenges. Learn the exact risk settings, drawdown limits, and strategy parameters for FTMO, E8 Markets, and other funded programs.",
+      "Configure your EA to pass prop firm challenges. Exact risk settings, drawdown limits, and strategy parameters for FTMO, E8, and funded programs.",
     date: "2025-08-05",
     author: "Algo Studio Team",
     readTime: "12 min read",
@@ -2202,7 +1720,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "moving-average-crossover-strategy",
     title: "The Complete Guide to Moving Average Crossover Strategy",
     description:
-      "Deep dive into the Moving Average crossover strategy: golden cross, death cross, best periods, timeframe selection, filtering false signals, and practical backtesting tips for EA development.",
+      "Moving Average crossover strategy deep dive: golden cross, death cross, best periods, timeframes, filtering false signals, and backtesting tips.",
     date: "2025-08-05",
     author: "Algo Studio Team",
     readTime: "9 min read",
@@ -2304,7 +1822,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "avoid-overfitting-expert-advisor",
     title: "How to Avoid Overfitting Your Expert Advisor",
     description:
-      "Learn to identify and prevent overfitting in your Expert Advisor: warning signs, out-of-sample testing, walk-forward analysis, parameter robustness testing, and minimum trade count rules.",
+      "Identify and prevent overfitting in your EA: warning signs, out-of-sample testing, walk-forward analysis, robustness testing, and trade count rules.",
     date: "2025-08-20",
     author: "Algo Studio Team",
     readTime: "9 min read",
@@ -2412,7 +1930,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "5-mistakes-automating-trading-strategies",
     title: "5 Common Mistakes When Automating Your Trading Strategy",
     description:
-      "Avoid the 5 costliest mistakes traders make when building Expert Advisors: over-optimization, ignoring costs, skipping risk management, trading during news, and not using demo first.",
+      "Avoid 5 costly EA-building mistakes: over-optimization, ignoring costs, skipping risk management, trading during news, and not demo-testing first.",
     date: "2025-09-01",
     author: "Algo Studio Team",
     readTime: "9 min read",
@@ -2526,7 +2044,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "from-trading-idea-to-automated-ea",
     title: "From Trading Idea to Automated EA: A Step-by-Step Guide",
     description:
-      "The complete workflow for turning a trading idea into a live Expert Advisor: define rules, configure in Algo Studio, export MQL5, backtest, optimize, demo trade, and go live.",
+      "Turn a trading idea into a live EA: define rules, configure in Algo Studio, export MQL5, backtest, optimize, demo trade, and go live.",
     date: "2025-09-15",
     author: "Algo Studio Team",
     readTime: "10 min read",

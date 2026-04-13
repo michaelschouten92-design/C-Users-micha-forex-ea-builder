@@ -25,7 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: { title, description, url, siteName: "Algo Studio", type: "profile" },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Algo Studio",
+      type: "profile",
+      images: ["/opengraph-image"],
+    },
     twitter: { card: "summary", title, description },
     alternates: { canonical: url },
   };

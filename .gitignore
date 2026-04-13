@@ -55,3 +55,6 @@ e2e/.auth/
 
 # Claude Code worktrees
 C-Users-micha-forex-ea-builder/
+
+# SEO audit reports
+/audit/seo-*.json

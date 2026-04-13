@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     title: "How Algo Studio Works — MT5 EA Monitoring in 3 Steps",
     description:
       "Install the Monitor EA, upload your backtest, and get alerted when your strategy drifts from expected performance.",
+    images: ["/opengraph-image"],
   },
 };
 

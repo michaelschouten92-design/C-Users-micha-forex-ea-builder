@@ -97,6 +97,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       siteName: "Algo Studio",
       type: "article",
+      images: ["/opengraph-image"],
     },
     twitter: {
       card: "summary_large_image",

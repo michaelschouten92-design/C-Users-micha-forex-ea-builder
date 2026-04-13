@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     title: "Blog | Algo Studio",
     description:
       "Articles on strategy monitoring, verification, and governance for algorithmic trading.",
+    images: ["/opengraph-image"],
   },
 };
 
