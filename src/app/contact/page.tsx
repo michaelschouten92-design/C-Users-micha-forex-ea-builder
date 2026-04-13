@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { ContactForm } from "./contact-form";
+
+const breadcrumbs = [
+  { name: "Home", href: "/" },
+  { name: "Contact", href: "/contact" },
+];
 
 export const metadata: Metadata = {
   title: "Contact — Support & Questions | Algo Studio",
@@ -18,8 +24,13 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div id="main-content" className="min-h-screen flex flex-col bg-[#08080A]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
+      />
       <SiteNav />
       <div className="max-w-2xl mx-auto pt-32 pb-16 px-4 flex-1">
+        <Breadcrumbs items={breadcrumbs} />
         <h1 className="text-[28px] md:text-[36px] font-extrabold text-[#FAFAFA] tracking-tight mb-4">
           Contact us
         </h1>

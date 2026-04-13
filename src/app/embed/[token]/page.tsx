@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { EmbedWidget } from "./embed-widget";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 interface EmbedPageProps {
   params: Promise<{ token: string }>;

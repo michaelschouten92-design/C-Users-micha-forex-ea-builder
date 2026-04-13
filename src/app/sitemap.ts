@@ -1,7 +1,44 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog/posts";
+import { prisma } from "@/lib/prisma";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+async function getPublicStrategyPages(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    const pages = await prisma.verifiedStrategyPage.findMany({
+      where: { isPublic: true },
+      select: { slug: true, updatedAt: true },
+    });
+    return pages.map((p) => ({
+      url: `${baseUrl}/strategy/${p.slug}`,
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function getPublicTraderProfiles(baseUrl: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    const users = await prisma.user.findMany({
+      where: { handle: { not: null } },
+      select: { handle: true, lastLoginAt: true },
+    });
+    return users
+      .filter((u): u is { handle: string; lastLoginAt: Date | null } => u.handle !== null)
+      .map((u) => ({
+        url: `${baseUrl}/u/${u.handle}`,
+        lastModified: u.lastLoginAt ?? new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.5,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.SITE_URL ?? "https://algo-studio.com";
 
   const blogPosts = getAllPosts().map((post) => ({
@@ -11,7 +48,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
+  const [strategyPages, traderProfiles] = await Promise.all([
+    getPublicStrategyPages(baseUrl),
+    getPublicTraderProfiles(baseUrl),
+  ]);
+
   return [
+    ...strategyPages,
+    ...traderProfiles,
     {
       url: baseUrl,
       changeFrequency: "weekly",

@@ -5,6 +5,7 @@ const SECTIONS = [
     title: "Platform",
     links: [
       { label: "How It Works", href: "/how-it-works" },
+      { label: "Strategies", href: "/strategies" },
       { label: "Pricing", href: "/pricing" },
       { label: "Sample Evaluation", href: "/sample-evaluation" },
     ],

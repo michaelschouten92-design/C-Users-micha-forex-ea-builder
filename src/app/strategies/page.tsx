@@ -2,9 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { StrategiesView } from "./strategies-view";
 
 const baseUrl = process.env.SITE_URL ?? "https://algo-studio.com";
+
+const breadcrumbs = [
+  { name: "Home", href: "/" },
+  { name: "Strategies", href: "/strategies" },
+];
 
 export const metadata: Metadata = {
   title: "Verified Trading Strategies — Cryptographic Proof | Algo Studio",
@@ -25,9 +31,14 @@ export const metadata: Metadata = {
 export default function StrategiesPage() {
   return (
     <div className="min-h-screen bg-[#08080A] text-[#FAFAFA]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
+      />
       <SiteNav />
       <div className="pt-16">
         <header className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12">
+          <Breadcrumbs items={breadcrumbs} />
           <h1 className="text-2xl sm:text-3xl font-bold text-[#FAFAFA] mb-2">
             Verified Trading Strategies
           </h1>

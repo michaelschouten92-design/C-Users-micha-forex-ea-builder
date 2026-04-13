@@ -2,8 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
 import { GlassCard } from "@/components/marketing/glass-card";
+
+const breadcrumbs = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+];
 
 export const metadata: Metadata = {
   title: "About Algo Studio — Why We Built an EA Monitoring Platform",
@@ -44,10 +50,15 @@ export default function AboutPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
+      />
       <SiteNav />
 
       <main className="pt-32 pb-0 px-4 sm:px-6 flex-1">
         <div className="max-w-3xl mx-auto">
+          <Breadcrumbs items={breadcrumbs} />
           {/* ── HERO ── */}
           <section>
             <AnimateOnScroll>

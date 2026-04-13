@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { Breadcrumbs, breadcrumbJsonLd } from "@/components/marketing/breadcrumbs";
 import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SubscribeButton } from "./subscribe-button";
@@ -122,12 +123,24 @@ const institutionalPrice = PLANS.INSTITUTIONAL.prices?.monthly;
 
 /* ── Page (Server Component) ── */
 
+const breadcrumbs = [
+  { name: "Home", href: "/" },
+  { name: "Pricing", href: "/pricing" },
+];
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#08080A] text-[#FAFAFA]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(breadcrumbs)) }}
+      />
       <SiteNav />
 
       <main id="main-content" className="pt-32 pb-0 px-6">
+        <div className="max-w-4xl mx-auto pt-2">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
         {/* ═══════════════════════════════════════════════════════
             1. HEADER
             ═══════════════════════════════════════════════════════ */}
