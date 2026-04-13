@@ -14,10 +14,16 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+// Noindex: share tokens are per-trader credentials, not public content.
+// Each URL contains a unique token and would pollute Google's index with
+// thousands of near-duplicate pages. Link recipients reach the page directly;
+// no SERP discovery is intended.
+const ROBOTS_NOINDEX = { index: false, follow: false } as const;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   const data = await loadTrackRecord(token);
-  if (!data) return { title: "Track Record Not Found | Algo Studio" };
+  if (!data) return { title: "Track Record Not Found | Algo Studio", robots: ROBOTS_NOINDEX };
 
   const displayName =
     data.account.broker && data.account.accountNumberMasked
@@ -28,6 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    robots: ROBOTS_NOINDEX,
     twitter: { card: "summary_large_image", title, description },
   };
 }
