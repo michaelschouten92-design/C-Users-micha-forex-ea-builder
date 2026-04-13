@@ -1,7 +1,7 @@
 import { PROP_FIRMS, getPropFirmBySlug } from "@/data/prop-firms";
 import { renderClusterOG, OG_SIZE } from "@/lib/og/cluster-og";
 
-export const runtime = "edge";
+// Statically pre-generated at build time (see generateStaticParams below).
 export const alt = "Prop firm EA rules guide";
 export const size = OG_SIZE;
 export const contentType = "image/png";

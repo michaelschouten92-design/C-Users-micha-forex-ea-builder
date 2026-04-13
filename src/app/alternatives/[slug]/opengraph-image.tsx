@@ -1,7 +1,7 @@
 import { COMPETITORS, getCompetitorBySlug } from "@/data/competitors";
 import { renderClusterOG, OG_SIZE } from "@/lib/og/cluster-og";
 
-export const runtime = "edge";
+// Statically pre-generated at build time (see generateStaticParams below).
 export const alt = "Algo Studio alternative comparison";
 export const size = OG_SIZE;
 export const contentType = "image/png";
