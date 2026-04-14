@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { SiteNav } from "@/components/marketing/site-nav";
 import { Footer } from "@/components/marketing/footer";
+import { TrackedLink } from "@/components/marketing/tracked-link";
 import { GridBackground } from "@/components/marketing/grid-background";
 import { SocialProofBar } from "@/components/marketing/social-proof-bar";
 import { AnimateOnScroll } from "@/components/marketing/animate-on-scroll";
@@ -159,18 +160,20 @@ export default async function HomePage() {
 
             {/* CTAs — Primary: action-oriented, Secondary: lower commitment */}
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
+              <TrackedLink
                 href="/register"
+                location="homepage_hero"
                 className="px-7 py-3.5 bg-[#6366F1] text-white font-semibold rounded-lg hover:bg-[#818CF8] transition-all text-sm btn-primary-cta"
               >
                 Monitor your first strategy free
-              </Link>
-              <Link
+              </TrackedLink>
+              <TrackedLink
                 href="/sample-evaluation"
+                location="homepage_hero_secondary"
                 className="px-7 py-3.5 border border-[rgba(255,255,255,0.10)] text-[#A1A1AA] font-medium rounded-lg hover:border-[rgba(255,255,255,0.20)] hover:text-[#FAFAFA] transition-colors text-sm"
               >
                 See a live demo
-              </Link>
+              </TrackedLink>
             </div>
 
             {/* Trust line — Objection removal */}

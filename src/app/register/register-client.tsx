@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import Link from "next/link";
+import { trackEvent } from "@/lib/analytics";
 
 // ============================================
 // INNER FORM (needs useSearchParams inside Suspense)
@@ -75,6 +76,15 @@ function RegisterFormInner({
     renderCaptcha();
   }, [renderCaptcha]);
 
+  // Fire once per page mount — proves the user reached the register page
+  // (top of the signup funnel we can instrument).
+  useEffect(() => {
+    trackEvent("register_page_viewed", {
+      has_referral: referralCode ? true : false,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -103,10 +113,17 @@ function RegisterFormInner({
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      trackEvent("register_form_validation_failed", {
+        field_errors: Object.keys(errors).join(","),
+      });
       return;
     }
 
     setLoading(true);
+    trackEvent("register_form_submitted", {
+      has_captcha: captchaToken ? true : false,
+      has_referral: referralCode ? true : false,
+    });
 
     const result = await signIn("credentials", {
       email,
@@ -131,7 +148,9 @@ function RegisterFormInner({
         ERROR_MESSAGES[code] ||
           "Something went wrong. Please try again or contact support@algo-studio.com for help."
       );
+      trackEvent("register_failed", { error_code: code || "unknown" });
     } else {
+      trackEvent("register_completed", { method: "credentials" });
       router.push(redirectTo);
       router.refresh();
     }
@@ -140,6 +159,7 @@ function RegisterFormInner({
   async function handleOAuthSignIn(provider: "google") {
     setOauthLoading(provider);
     setError("");
+    trackEvent("register_oauth_clicked", { provider });
 
     await signIn(provider, {
       callbackUrl: redirectTo,

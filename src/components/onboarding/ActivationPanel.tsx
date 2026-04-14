@@ -3,17 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { OnboardingStep } from "./OnboardingStep";
-
-/** Fire Plausible custom event (no-op if Plausible not loaded) */
-function trackEvent(name: string, props?: Record<string, string | number>) {
-  if (typeof window !== "undefined" && "plausible" in window) {
-    (
-      window as unknown as {
-        plausible: (name: string, opts?: { props: Record<string, string | number> }) => void;
-      }
-    ).plausible(name, props ? { props } : undefined);
-  }
-}
+import { trackEvent } from "@/lib/analytics";
 
 interface OnboardingStatus {
   hasBacktest: boolean;
