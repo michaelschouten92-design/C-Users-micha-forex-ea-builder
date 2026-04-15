@@ -22,11 +22,14 @@ vi.mock("@/lib/prisma", () => ({
     referralPartner: {
       findUnique: (...args: unknown[]) => mockPartnerFindUnique(...args),
     },
+    // audit-5 P1-G1: AuditLog is anonymized (updateMany) rather than
+    // deleted, and a post-delete audit event is written out-of-tx.
+    auditLog: { create: vi.fn().mockResolvedValue({}) },
     $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
       fn({
         passwordResetToken: { deleteMany: mockDeleteMany },
         emailVerificationToken: { deleteMany: mockDeleteMany },
-        auditLog: { deleteMany: mockDeleteMany },
+        auditLog: { updateMany: mockUpdateMany },
         user: {
           findUnique: vi.fn().mockResolvedValue(null),
           delete: mockUserDelete,
@@ -34,6 +37,12 @@ vi.mock("@/lib/prisma", () => ({
         },
       }),
   },
+}));
+
+// audit-5 P1-G4: post-delete audit event is written via logAuditEvent; the
+// email hash keeps the trail provable without leaking PII.
+vi.mock("@/lib/audit", () => ({
+  logAuditEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockCompare = vi.fn();

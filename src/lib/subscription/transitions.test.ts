@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Must use vi.hoisted so mocks are available before vi.mock factory runs
-const { mockInfo, mockWarn } = vi.hoisted(() => ({
+const { mockInfo, mockWarn, mockError } = vi.hoisted(() => ({
   mockInfo: vi.fn(),
   mockWarn: vi.fn(),
+  mockError: vi.fn(),
 }));
 
 vi.mock("@/lib/logger", () => ({
   logger: {
-    child: () => ({ info: mockInfo, warn: mockWarn }),
+    child: () => ({ info: mockInfo, warn: mockWarn, error: mockError }),
   },
 }));
 
@@ -164,8 +165,12 @@ describe("mapStripeStatus", () => {
     expect(mapStripeStatus(stripeStatus)).toBe(expected);
   });
 
-  it("defaults to 'active' for unknown Stripe status", () => {
-    expect(mapStripeStatus("unknown_future_status")).toBe("active");
+  it("fail-closes to 'unpaid' for unknown Stripe status (defense in depth)", () => {
+    // Previously defaulted to 'active' which silently granted tier access
+    // on a future Stripe-API addition. audit-2 P1-A2 changed the fallback
+    // to 'unpaid' so resolveTier drops to FREE until we explicitly support
+    // the new status.
+    expect(mapStripeStatus("unknown_future_status")).toBe("unpaid");
   });
 });
 

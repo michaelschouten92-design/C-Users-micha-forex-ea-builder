@@ -113,6 +113,16 @@ vi.mock("@/lib/logger", () => ({
   extractErrorDetails: (err: unknown) => err,
 }));
 
+// audit-2 P1-A7: change-plan writes a subscriptionDowngrade audit event on
+// the immediate-downgrade fallback path (period already ended).
+vi.mock("@/lib/audit", () => ({
+  audit: {
+    subscriptionUpgrade: vi.fn().mockResolvedValue(undefined),
+    subscriptionDowngrade: vi.fn().mockResolvedValue(undefined),
+    subscriptionCancel: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 vi.mock("@/lib/rate-limit", () => ({
   apiRateLimiter: {},
   checkRateLimit: async () => ({ success: true }),
@@ -249,7 +259,11 @@ describe("POST /api/stripe/change-plan", () => {
     );
   });
 
-  it("blocks downgrade when current period has already ended", async () => {
+  it("applies immediate downgrade when current period has already ended", async () => {
+    // audit-2 P1-A7: previously this returned 400 which gave users an
+    // unrecoverable UX in the last minutes of their cycle. Now the route
+    // applies the downgrade immediately via subscriptions.update (no
+    // schedule needed, period is over) and returns success.
     const expiredPeriodEnd = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
     mockSubscriptionFindUnique.mockResolvedValue({
       id: "sub_db_1",
@@ -273,8 +287,11 @@ describe("POST /api/stripe/change-plan", () => {
     });
 
     const res = await POST(makeRequest({ plan: "PRO", interval: "monthly" }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.immediate).toBe(true);
     expect(mockSchedulesCreate).not.toHaveBeenCalled();
+    expect(mockSubscriptionsUpdate).toHaveBeenCalled();
   });
 
   it("returns 401 when not authenticated", async () => {

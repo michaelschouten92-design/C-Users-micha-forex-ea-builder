@@ -114,7 +114,11 @@ describe("mirrorTradeEventToEATrade", () => {
       expect(args.data.closeTime).toEqual(new Date(TIMESTAMP * 1000));
     });
 
-    it("skips when no matching TRADE_OPEN was seen (no UNKNOWN placeholder)", async () => {
+    it("writes an __ORPHAN__ placeholder when no matching TRADE_OPEN was seen", async () => {
+      // audit-1 P1-6: previously the mirror skipped orphan TRADE_CLOSE
+      // events silently, which cost edge-score its data. Now we persist
+      // a placeholder row with a sentinel symbol so aggregates include
+      // the P&L while per-symbol UI surfaces filter the row out.
       mockFindUnique.mockResolvedValueOnce(null);
 
       await mirrorTradeEventToEATrade(fakePrisma, {
@@ -125,7 +129,18 @@ describe("mirrorTradeEventToEATrade", () => {
       });
 
       expect(mockUpdate).not.toHaveBeenCalled();
-      expect(mockCreate).not.toHaveBeenCalled();
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            instanceId: INSTANCE_ID,
+            ticket: "99",
+            symbol: "__ORPHAN__",
+            profit: -10,
+            closePrice: 1.0,
+          }),
+        })
+      );
     });
 
     it("skips when ticket is missing", async () => {
@@ -141,7 +156,7 @@ describe("mirrorTradeEventToEATrade", () => {
     });
 
     it("coerces numeric tickets to trimmed strings", async () => {
-      mockFindUnique.mockResolvedValueOnce({ id: "trade_1" });
+      mockFindUnique.mockResolvedValueOnce({ id: "trade_1", openPrice: 1.2 });
 
       await mirrorTradeEventToEATrade(fakePrisma, {
         instanceId: INSTANCE_ID,
@@ -152,7 +167,9 @@ describe("mirrorTradeEventToEATrade", () => {
 
       expect(mockFindUnique).toHaveBeenCalledWith({
         where: { instanceId_ticket: { instanceId: INSTANCE_ID, ticket: "7" } },
-        select: { id: true },
+        // audit-1 P0-A1: select now includes openPrice for the
+        // closePrice=null fallback path.
+        select: { id: true, openPrice: true },
       });
     });
   });

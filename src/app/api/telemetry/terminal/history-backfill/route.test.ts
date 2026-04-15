@@ -187,12 +187,16 @@ describe("POST /api/telemetry/terminal/history-backfill", () => {
   });
 
   it("respects per-instance row cap (rejects when already at cap)", async () => {
-    mockGroupBy.mockResolvedValueOnce([{ instanceId: CHILD_ID, _count: { id: 2000 } }]);
+    // Cap bumped 2_000 → 10_000 in audit-1 P1-A2 so long-running accounts
+    // don't silently lose history. Seed at the new ceiling.
+    mockGroupBy.mockResolvedValueOnce([{ instanceId: CHILD_ID, _count: { id: 10_000 } }]);
     const { POST } = await import("./route");
     const res = await POST(makeRequest({ trades: [VALID_TRADE] }));
     const body = await res.json();
     expect(body.accepted).toBe(0);
     expect(body.results[0].reason).toContain("row cap");
+    expect(body.capReached).toBe(true);
+    expect(body.capLimit).toBe(10_000);
   });
 
   it("uppercases symbols at ingest", async () => {
