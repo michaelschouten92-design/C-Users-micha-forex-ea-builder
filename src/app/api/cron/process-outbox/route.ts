@@ -4,15 +4,21 @@ import { logger } from "@/lib/logger";
 import { timingSafeEqual } from "@/lib/csrf";
 import { sendWithRetryForOutbox } from "@/lib/email";
 import { fireWebhook } from "@/lib/webhook";
-import { sendTelegramAlert } from "@/lib/telegram";
+import { sendTelegramAlert, resolveTelegramBotToken } from "@/lib/telegram";
 import { sendSlackMessage } from "@/lib/slack";
 import { sendPushNotification } from "@/lib/push";
+import * as Sentry from "@sentry/nextjs";
 
 const log = logger.child({ route: "/api/cron/process-outbox" });
 
 const BATCH_SIZE = 50;
 const CRON_TIMEOUT_MS = 55_000;
-const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+// 2 minutes: short enough that double-delivery windows stay bounded (external
+// services like Stripe/email providers usually accept within seconds), long
+// enough that an in-flight delivery isn't stolen from a still-alive worker.
+// Any stuck-recovery fires a Sentry alert so an operator can verify whether
+// the external side actually received the notification.
+const STUCK_THRESHOLD_MS = 2 * 60 * 1000;
 
 /**
  * Outbox Status State Machine
@@ -114,12 +120,18 @@ async function recoverStuckEntries(): Promise<string[]> {
 /**
  * Atomically release still-processing entries back to FAILED on cron timeout.
  * Uses raw SQL UPDATE ... RETURNING to avoid read-then-write races.
+ *
+ * Sets `nextRetryAt` to ~1 minute in the future so the next cron run
+ * doesn't immediately re-claim + re-timeout the same slow entries. Without
+ * this cushion a single stubborn entry could loop forever between PROCESSING
+ * and FAILED on every minute-tick, never settling into SENT or DEAD.
  */
 async function releaseOnTimeout(claimedIds: string[]): Promise<string[]> {
   if (claimedIds.length === 0) return [];
+  const retryAt = new Date(Date.now() + 60_000);
   const released = await prisma.$queryRaw<Array<{ id: string }>>`
     UPDATE "NotificationOutbox"
-    SET status = 'FAILED', "updatedAt" = NOW()
+    SET status = 'FAILED', "updatedAt" = NOW(), "nextRetryAt" = ${retryAt}
     WHERE id = ANY(${claimedIds}::text[])
       AND status = 'PROCESSING'
     RETURNING id
@@ -155,10 +167,21 @@ async function handleProcessOutbox(request: NextRequest) {
   let dead = 0;
 
   try {
-    // Recovery: reset entries stuck in PROCESSING for >10 minutes (crash recovery)
+    // Recovery: reset entries stuck in PROCESSING past STUCK_THRESHOLD_MS.
+    // Every stuck entry is a potential at-least-once duplicate (external
+    // delivery may have succeeded before the worker died), so escalate to
+    // Sentry so an operator can verify the other side actually received.
     const recoveredIds = await recoverStuckEntries();
     if (recoveredIds.length > 0) {
-      logBulkTransition(recoveredIds, "PROCESSING", "FAILED", "crash_recovery_stuck_10m");
+      logBulkTransition(recoveredIds, "PROCESSING", "FAILED", "crash_recovery_stuck");
+      Sentry.captureMessage("Outbox stuck-recovery — verify external delivery", {
+        level: "warning",
+        extra: {
+          count: recoveredIds.length,
+          stuckThresholdMs: STUCK_THRESHOLD_MS,
+          entryIds: recoveredIds.slice(0, 20),
+        },
+      });
     }
 
     // Atomically claim entries — concurrent cron runs will get disjoint sets
@@ -212,10 +235,24 @@ async function handleProcessOutbox(request: NextRequest) {
             break;
           }
           case "TELEGRAM": {
-            const botToken = str(payload.botToken);
+            // Resolve the bot token at delivery-time from the user record —
+            // the outbox payload only carries a `tokenSource` marker so
+            // decrypted tokens never land in `NotificationOutbox.payload`.
+            const rawTokenSource =
+              typeof payload.tokenSource === "string" ? payload.tokenSource : "";
+            const tokenSource: "central" | "user" | null =
+              rawTokenSource === "central" || rawTokenSource === "user" ? rawTokenSource : null;
             const message = str(payload.message);
-            if (botToken && message) {
-              success = await sendTelegramAlert(botToken, entry.destination, message);
+            if (tokenSource && message) {
+              const botToken = await resolveTelegramBotToken(entry.userId, tokenSource);
+              if (botToken) {
+                success = await sendTelegramAlert(botToken, entry.destination, message);
+              }
+            } else if (typeof payload.botToken === "string" && message) {
+              // Legacy path: older queued entries still carry the token in
+              // the payload. Accept them to drain the queue safely; new
+              // entries always go through the marker path above.
+              success = await sendTelegramAlert(payload.botToken, entry.destination, message);
             }
             break;
           }
@@ -227,13 +264,17 @@ async function handleProcessOutbox(request: NextRequest) {
             break;
           }
           case "BROWSER_PUSH": {
-            await sendPushNotification(entry.userId, {
+            const result = await sendPushNotification(entry.userId, {
               title: str(payload.title) || "Algo Studio",
               body: str(payload.body),
               url: typeof payload.url === "string" ? payload.url : undefined,
               tag: typeof payload.tag === "string" ? payload.tag : undefined,
             });
-            success = true;
+            // Treat "no subscriptions" as a success (there's nothing to
+            // deliver to — retrying won't help). Otherwise require at
+            // least one accepted delivery; transient failures will retry
+            // via the outbox backoff.
+            success = result.delivered || result.noSubscriptions;
             break;
           }
           default:
@@ -261,8 +302,25 @@ async function handleProcessOutbox(request: NextRequest) {
           nextRetryAt: nextRetry,
         });
 
-        if (newStatus === "DEAD") dead++;
-        else failed++;
+        if (newStatus === "DEAD") {
+          dead++;
+          // DEAD is terminal — the notification will never reach the user.
+          // Escalate to Sentry so an operator sees the drop instead of
+          // waiting for a user complaint.
+          Sentry.captureMessage("Outbox entry gave up (DEAD)", {
+            level: "error",
+            extra: {
+              outboxId: entry.id,
+              channel: entry.channel,
+              destination: entry.destination,
+              attempts: newAttempts,
+              maxAttempts: entry.maxAttempts,
+              lastError: err instanceof Error ? err.message : String(err),
+            },
+          });
+        } else {
+          failed++;
+        }
       }
     }
 

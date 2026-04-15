@@ -26,6 +26,13 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+// Stub out Sentry so the route module doesn't try to initialise the real
+// SDK during a unit test; we only assert state transitions here.
+vi.mock("@sentry/nextjs", () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}));
+
 // ─── Tests ────────────────────────────────────────────────────────────
 
 describe("outbox state machine transitions", () => {

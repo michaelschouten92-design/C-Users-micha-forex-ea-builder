@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { enqueueNotification } from "@/lib/outbox";
-import { decrypt, isEncrypted } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
 import { isAlertChannelAllowed } from "@/lib/plans";
 import { resolveTier } from "@/lib/plan-limits";
@@ -72,11 +71,20 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     return c.lastTriggered.getTime() < cooldownCutoff.getTime(); // was expired → claimed
   });
 
+  // Per-trigger idempotency key. Two triggers for the same (instance, alert,
+  // bucket) land on the same alertSourceId → the @@unique([alertSourceId,
+  // channel]) constraint on NotificationOutbox makes the second enqueue a
+  // P2002 no-op. Acts as a DB-level backstop if the cooldown-claim above
+  // races with a concurrent heartbeat.
+  const bucket = Math.floor(now.getTime() / RATE_LIMIT_MS);
+  const alertSourceId = `alert:${instanceId}:${alertType}:${bucket}`;
+
   for (const config of claimedConfigs) {
     const channel = config.channel;
     if (channel === "BROWSER_PUSH") {
       await enqueueNotification({
         userId,
+        alertSourceId,
         channel: "BROWSER_PUSH",
         destination: userId,
         payload: {
@@ -89,22 +97,24 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
     } else if (channel === "TELEGRAM") {
       const chatId = config.user.telegramChatId;
       if (chatId) {
-        // Use central Algo Studio bot token; fall back to user's own bot (legacy)
-        const centralToken = process.env.ALGO_TELEGRAM_BOT_TOKEN;
-        const rawUserToken = config.user.telegramBotToken;
-        const userToken = rawUserToken
-          ? isEncrypted(rawUserToken)
-            ? decrypt(rawUserToken)
-            : rawUserToken
-          : null;
-        const botToken = centralToken || userToken;
-        if (botToken) {
+        // Decide WHICH token to use at enqueue-time so the outbox payload
+        // only carries a marker — never the token itself. Resolving the
+        // actual bearer token happens at delivery-time (process-outbox)
+        // via getTelegramBotTokenForUser(). This keeps decrypted user
+        // tokens out of the outbox JSON and out of DB backups.
+        const hasCentralToken = Boolean(process.env.ALGO_TELEGRAM_BOT_TOKEN);
+        const hasUserToken = Boolean(config.user.telegramBotToken);
+        if (hasCentralToken || hasUserToken) {
           const telegramMessage = `<b>Algo Studio Alert: ${alertType}</b>\n\nEA: ${eaName}\n${message}`;
           await enqueueNotification({
             userId,
+            alertSourceId,
             channel: "TELEGRAM",
             destination: chatId,
-            payload: { botToken, message: telegramMessage },
+            payload: {
+              tokenSource: hasCentralToken ? "central" : "user",
+              message: telegramMessage,
+            },
           });
         }
       }
@@ -113,6 +123,7 @@ export async function triggerAlert(payload: TriggerAlertPayload): Promise<void> 
       if (email) {
         await enqueueNotification({
           userId,
+          alertSourceId,
           channel: "EMAIL",
           destination: email,
           subject: `Algo Studio Alert: ${eaName} — ${alertType}`,

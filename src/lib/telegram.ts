@@ -4,9 +4,36 @@
  */
 
 import { logger } from "./logger";
+import { prisma } from "./prisma";
+import { decrypt, isEncrypted } from "./crypto";
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const REQUEST_TIMEOUT_MS = 10000;
+
+/**
+ * Resolve the bot token to use for a given user, without ever touching the
+ * outbox payload. Producers (triggerAlert) write only a `tokenSource` marker
+ * to the outbox; this helper does the decrypt-at-delivery-time lookup so
+ * plaintext tokens never land in `NotificationOutbox.payload`.
+ *
+ * Returns null when no usable token is available — the caller should treat
+ * that as a hard delivery failure for the entry.
+ */
+export async function resolveTelegramBotToken(
+  userId: string,
+  tokenSource: "central" | "user"
+): Promise<string | null> {
+  if (tokenSource === "central") {
+    return process.env.ALGO_TELEGRAM_BOT_TOKEN ?? null;
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { telegramBotToken: true },
+  });
+  const raw = user?.telegramBotToken;
+  if (!raw) return null;
+  return isEncrypted(raw) ? decrypt(raw) : raw;
+}
 
 /**
  * Send a text message via the Telegram Bot API.
