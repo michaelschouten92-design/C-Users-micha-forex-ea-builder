@@ -95,6 +95,10 @@ input ENUM_BASE_CORNER InpPanelCorner = CORNER_RIGHT_UPPER; // Panel corner
 input int    InpPanelX        = 16;               // Panel X offset (pixels)
 input int    InpPanelY        = 28;               // Panel Y offset (pixels)
 
+// Historical backfill (one-shot upload of pre-existing closed deals on first attach)
+input bool   InpBackfillHistory = true;           // Upload history once on first attach
+input bool   InpForceBackfill   = false;          // Re-run backfill even if already done
+
 //+------------------------------------------------------------------+
 //| CONSTANTS                                                        |
 //+------------------------------------------------------------------+
@@ -480,6 +484,12 @@ void OnTimer()
    // Update on-chart panel
    if(InpShowPanel)
       PanelUpdate();
+
+   // One-shot history backfill — only fires after the first successful
+   // heartbeat (so child instances exist server-side for attribution).
+   // Gated by a GV marker so it runs at most once per installation.
+   if(InpBackfillHistory && g_lastSuccessfulHb > 0)
+      BackfillHistoryIfNeeded();
 
    // Flush dirty queue to disk (at most once per timer tick, after all mutations)
    if(g_queueDirty)
@@ -3507,4 +3517,217 @@ void OnTick()
 {
    // No-op — all logic is timer-based and event-based
 }
+
+//+==================================================================+
+//| HISTORY BACKFILL                                                  |
+//|                                                                   |
+//| One-shot upload of pre-existing closed deals to populate the      |
+//| dashboard's denormalized trade view (EATrade) for strategies that |
+//| were already running before the Monitor was attached.             |
+//|                                                                   |
+//| Design invariants:                                                |
+//|   - Does NOT touch the track-record chain (append-only; retro-    |
+//|     fitting events would invalidate hashes).                      |
+//|   - Idempotent at the endpoint level (upsert on instanceId+ticket)|
+//|   - Gated by a GV marker so it runs at most once per installation.|
+//|   - Only deals for magic numbers observed in g_contexts or the    |
+//|     auto-discovery scan are uploaded — random foreign magics are  |
+//|     skipped.                                                      |
+//|   - Silent failures do not block live operation; the GV marker is |
+//|     only set on full success, so a transient error causes a retry |
+//|     on the next timer tick.                                       |
+//+==================================================================+
+
+// Max deals uploaded per first-attach backfill. Matches server per-instance
+// cap with headroom. 99% of users have far fewer historical trades.
+#define BACKFILL_MAX_DEALS 500
+// Max deals per HTTP request — must not exceed server-side z.array().max(50).
+#define BACKFILL_BATCH_SIZE 50
+
+string BackfillMarkerGVName()
+{
+   // Keyed by the same 8-char apiKey prefix used by other per-installation GVs
+   // (g_lockGV, state files). One marker per installation.
+   return "ASM_" + StringSubstr(InpApiKey, 0, 8) + "_backfilled_v1";
+}
+
+bool BackfillAlreadyDone()
+{
+   if(InpForceBackfill) return false;
+   return GlobalVariableCheck(BackfillMarkerGVName());
+}
+
+void MarkBackfillDone()
+{
+   GlobalVariableSet(BackfillMarkerGVName(), (double)TimeCurrent());
+}
+
+// Returns true if the given (magic, symbol) pair matches one of the contexts
+// the Monitor is tracking — either explicit manifest entries or auto-discovered
+// contexts. Foreign activity is ignored.
+bool BackfillIsTrackedContext(long magic, string symbol)
+{
+   if(magic <= 0) return false;
+   for(int c = 0; c < g_contextCount; c++)
+   {
+      if(g_contexts[c].magicNumber != magic) continue;
+      if(StringLen(g_contexts[c].symbol) > 0 && g_contexts[c].symbol != symbol) continue;
+      return true;
+   }
+   return false;
+}
+
+// Build one JSON trade object from an MT5 closing deal. Returns empty string
+// if the deal can't be inspected or is otherwise unusable. Caller MUST have
+// HistorySelect'd before calling.
+string BackfillBuildTradeJson(ulong dealTicket)
+{
+   if(!HistoryDealSelect(dealTicket)) return "";
+
+   long   magic       = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
+   string symbol      = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+   double closePrice  = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+   double profit      = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+   double lots        = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+   datetime closeTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+   long   dealType    = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+
+   // Position id links back to the opening deal — use it as the ticket so
+   // this row can later merge with a live TRADE_OPEN/TRADE_CLOSE pair that
+   // also keys off posId (see SendTradeClose).
+   long posId = (long)HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+
+   // Find matching opening deal to recover openPrice + openTime
+   double openPrice = closePrice;
+   datetime openTime = closeTime;
+   int total = HistoryDealsTotal();
+   for(int j = 0; j < total; j++)
+   {
+      ulong oTicket = HistoryDealGetTicket(j);
+      if(oTicket == 0) continue;
+      if((long)HistoryDealGetInteger(oTicket, DEAL_POSITION_ID) != posId) continue;
+      if(HistoryDealGetInteger(oTicket, DEAL_ENTRY) != DEAL_ENTRY_IN) continue;
+      openPrice = HistoryDealGetDouble(oTicket, DEAL_PRICE);
+      openTime  = (datetime)HistoryDealGetInteger(oTicket, DEAL_TIME);
+      break;
+   }
+
+   // Direction is inverse of the closing deal type (close of BUY = SELL deal)
+   string direction = (dealType == DEAL_TYPE_BUY) ? "SELL" : "BUY";
+
+   ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+   string accMode = (tradeMode == ACCOUNT_TRADE_MODE_DEMO || tradeMode == ACCOUNT_TRADE_MODE_CONTEST)
+                    ? "PAPER" : "LIVE";
+
+   return "{"
+      + JStr("ticket", IntegerToString(posId)) + ","
+      + JStr("symbol", symbol) + ","
+      + JStr("type", direction) + ","
+      + JPrice("openPrice", openPrice) + ","
+      + JPrice("closePrice", closePrice) + ","
+      + JMoney("lots", lots) + ","
+      + JMoney("profit", profit) + ","
+      + JLong("openTime", (long)openTime) + ","
+      + JLong("closeTime", (long)closeTime) + ","
+      + JInt("magicNumber", (int)magic) + ","
+      + JStr("mode", accMode)
+      + "}";
+}
+
+// Main backfill entry point. Called from OnTimer once per tick; internal
+// guards ensure it only does work on first eligible call.
+void BackfillHistoryIfNeeded()
+{
+   if(BackfillAlreadyDone()) return;
+   if(g_contextCount == 0) return; // Nothing to attribute trades to yet.
+
+   // Must have at least one context with an assigned instanceId — otherwise
+   // server-side deployments haven't registered yet and attribution will fail.
+   bool anyContextReady = false;
+   for(int c = 0; c < g_contextCount; c++)
+   {
+      if(StringLen(g_contexts[c].instanceId) > 0) { anyContextReady = true; break; }
+   }
+   if(!anyContextReady) return;
+
+   HistorySelect(0, TimeCurrent());
+   int totalDeals = HistoryDealsTotal();
+   if(totalDeals == 0)
+   {
+      MarkBackfillDone();
+      return;
+   }
+
+   Print("AlgoStudio Monitor: history backfill starting — scanning ",
+         totalDeals, " historical deals.");
+
+   // Collect eligible deal tickets first so we can batch them.
+   ulong eligible[];
+   int eligibleCount = 0;
+   ArrayResize(eligible, MathMin(totalDeals, BACKFILL_MAX_DEALS));
+
+   for(int i = 0; i < totalDeals && eligibleCount < BACKFILL_MAX_DEALS; i++)
+   {
+      ulong dTicket = HistoryDealGetTicket(i);
+      if(dTicket == 0) continue;
+      if(HistoryDealGetInteger(dTicket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+
+      long   magic  = (long)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
+      string symbol = HistoryDealGetString(dTicket, DEAL_SYMBOL);
+      if(!BackfillIsTrackedContext(magic, symbol)) continue;
+
+      eligible[eligibleCount++] = dTicket;
+   }
+
+   if(eligibleCount == 0)
+   {
+      Print("AlgoStudio Monitor: history backfill — no eligible deals, skipping.");
+      MarkBackfillDone();
+      return;
+   }
+
+   // Send in batches of BACKFILL_BATCH_SIZE.
+   int sent = 0;
+   int sendFailures = 0;
+   for(int batchStart = 0; batchStart < eligibleCount; batchStart += BACKFILL_BATCH_SIZE)
+   {
+      int batchEnd = MathMin(batchStart + BACKFILL_BATCH_SIZE, eligibleCount);
+      string tradesJson = "[";
+      int tradesInBatch = 0;
+      for(int k = batchStart; k < batchEnd; k++)
+      {
+         string tradeJson = BackfillBuildTradeJson(eligible[k]);
+         if(StringLen(tradeJson) == 0) continue;
+         if(tradesInBatch > 0) tradesJson += ",";
+         tradesJson += tradeJson;
+         tradesInBatch++;
+      }
+      tradesJson += "]";
+
+      if(tradesInBatch == 0) continue;
+
+      string body = "{\"trades\":" + tradesJson + "}";
+      string response = "";
+      int status = HttpPostCore("/api/telemetry/terminal/history-backfill", body, response);
+      if(status >= 200 && status < 300)
+      {
+         sent += tradesInBatch;
+      }
+      else
+      {
+         sendFailures++;
+         Print("AlgoStudio Monitor: history backfill batch failed — status=", status,
+               " response=", StringSubstr(response, 0, 200));
+         // Bail on first failure — will retry on next timer tick. Do NOT set
+         // the done marker so a transient error doesn't permanently skip.
+         return;
+      }
+   }
+
+   Print("AlgoStudio Monitor: history backfill complete — ",
+         sent, " deal(s) uploaded across ",
+         (eligibleCount + BACKFILL_BATCH_SIZE - 1) / BACKFILL_BATCH_SIZE, " batch(es).");
+   MarkBackfillDone();
+}
+
 //+------------------------------------------------------------------+
