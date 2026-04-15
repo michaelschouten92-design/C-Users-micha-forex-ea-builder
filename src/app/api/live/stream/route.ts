@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { ORPHAN_EATRADE_SYMBOL } from "@/lib/track-record/mirror-to-eatrade";
 
 import { sseConnectionRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
@@ -107,11 +108,14 @@ export async function GET(request: Request): Promise<Response> {
             }
           }
 
-          // Check for new trades
+          // Check for new trades. Orphan placeholder rows (no matching open)
+          // would surface as empty-symbol trades in the live activity feed,
+          // so they are excluded here; aggregates still include them.
           const newTrades = await prisma.eATrade.findMany({
             where: {
               instanceId: { in: instanceIds },
               createdAt: { gt: since },
+              symbol: { not: ORPHAN_EATRADE_SYMBOL },
             },
             orderBy: { createdAt: "asc" },
             take: 100,

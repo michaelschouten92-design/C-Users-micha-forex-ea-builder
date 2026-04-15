@@ -91,7 +91,14 @@ async function handleCleanup(request: NextRequest) {
       batchDelete(prisma.passwordResetToken, { expiresAt: { lt: new Date() } }),
       batchDelete(prisma.emailVerificationToken, { expiresAt: { lt: new Date() } }),
       batchDelete(prisma.adminOtp, { expiresAt: { lt: new Date() } }),
-      batchDelete(prisma.webhookEvent, { processedAt: { lt: ninetyDaysAgo } }),
+      // Only delete webhook events whose handler ran to completion. Rows
+      // with completedAt=null are partial-failure claims that must persist
+      // so future Stripe replays of the same eventId are detected as
+      // duplicates instead of double-mutating subscriptions.
+      batchDelete(prisma.webhookEvent, {
+        processedAt: { lt: ninetyDaysAgo },
+        completedAt: { not: null },
+      }),
       batchDelete(prisma.auditLog, { createdAt: { lt: oneYearAgo } }),
     ]);
 

@@ -106,19 +106,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Idempotency: try to claim this event first (prevents race conditions)
+  // Idempotency with retry support:
+  //   - First attempt: create row (processedAt=now, completedAt=null).
+  //   - On duplicate: if completedAt is set the event is already done → skip.
+  //     If completedAt is null the previous attempt crashed mid-flight and
+  //     handlers (which are designed to be idempotent) may run again.
+  //   - On handler success: set completedAt so future retries become no-ops.
+  //   - On handler failure: leave completedAt null and return 500 so Stripe
+  //     retries. We do NOT delete the row — deleting allowed retries to
+  //     re-run handlers that had already partially committed.
   try {
     await prisma.webhookEvent.create({
       data: { eventId: event.id, type: event.type },
     });
   } catch (err) {
-    // Only treat unique constraint violations (P2002) as duplicates
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      log.info({ eventId: event.id }, "Duplicate webhook event, skipping");
-      return NextResponse.json({ received: true });
+      const existing = await prisma.webhookEvent.findUnique({
+        where: { eventId: event.id },
+        select: { completedAt: true, failureCount: true },
+      });
+      if (existing?.completedAt) {
+        log.info({ eventId: event.id }, "Duplicate webhook event already completed, skipping");
+        return NextResponse.json({ received: true });
+      }
+      log.warn(
+        { eventId: event.id, failureCount: existing?.failureCount ?? 0 },
+        "Retrying webhook event whose previous attempt did not complete"
+      );
+    } else {
+      throw err;
     }
-    // Re-throw other errors (DB down, etc.) so Stripe retries
-    throw err;
   }
 
   try {
@@ -222,21 +239,45 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Mark the claim as completed so future retries of this eventId are
+    // treated as no-ops — handlers have fully committed their side-effects.
+    await prisma.webhookEvent
+      .update({
+        where: { eventId: event.id },
+        data: { completedAt: new Date() },
+      })
+      .catch((updateErr) => {
+        log.error(
+          { err: updateErr, eventId: event.id },
+          "Failed to mark webhook idempotency record as completed"
+        );
+      });
     log.info({ eventType: event.type, eventId: event.id }, "Webhook processed successfully");
     return NextResponse.json({ received: true });
   } catch (error) {
-    // Remove idempotency claim so Stripe can retry this event
-    await prisma.webhookEvent.delete({ where: { eventId: event.id } }).catch((deleteErr) => {
-      log.error(
-        { err: deleteErr, eventId: event.id },
-        "Failed to clean up webhook idempotency record"
-      );
-    });
+    // Keep the idempotency claim (do NOT delete) — handler failure means
+    // partial side-effects may have committed; a blind retry would double-
+    // mutate. The claim stays with completedAt=null so we can track repeated
+    // failures and an admin can resolve them manually. Stripe will retry on
+    // its own schedule; handlers should be idempotent so retries after a
+    // partial failure complete the remaining work.
+    const errDetails = extractErrorDetails(error);
+    await prisma.webhookEvent
+      .update({
+        where: { eventId: event.id },
+        data: {
+          failureCount: { increment: 1 },
+          lastFailure: JSON.stringify(errDetails).slice(0, 2000),
+        },
+      })
+      .catch((updateErr) => {
+        log.error(
+          { err: updateErr, eventId: event.id },
+          "Failed to record webhook failure on idempotency record"
+        );
+      });
 
-    log.error(
-      { error: extractErrorDetails(error), eventType: event.type },
-      "Webhook handler error"
-    );
+    log.error({ error: errDetails, eventType: event.type }, "Webhook handler error");
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

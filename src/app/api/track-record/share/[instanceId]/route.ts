@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateProofBundle } from "@/lib/track-record/proof-bundle";
@@ -46,23 +47,40 @@ export async function POST(request: NextRequest, { params }: Props) {
   // Generate proof bundle
   const bundle = await generateProofBundle(instanceId);
 
-  // Create shared bundle with 30-day expiry
+  // Create shared bundle with 30-day expiry. The unique index on
+  // (instanceId, userId) prevents duplicates when two POSTs race past the
+  // findFirst above — the loser catches P2002 and returns the winner's row.
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30);
 
-  const shared = await prisma.sharedProofBundle.create({
-    data: {
-      instanceId,
-      userId: session.user.id,
-      bundleJson: JSON.parse(JSON.stringify(bundle)),
-      expiresAt,
-    },
-  });
-
-  return NextResponse.json({
-    token: shared.token,
-    shareUrl: `/verify/${shared.token}`,
-  });
+  try {
+    const shared = await prisma.sharedProofBundle.create({
+      data: {
+        instanceId,
+        userId: session.user.id,
+        bundleJson: JSON.parse(JSON.stringify(bundle)),
+        expiresAt,
+      },
+    });
+    return NextResponse.json({
+      token: shared.token,
+      shareUrl: `/verify/${shared.token}`,
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const winner = await prisma.sharedProofBundle.findFirst({
+        where: { instanceId, userId: session.user.id },
+        select: { token: true },
+      });
+      if (winner) {
+        return NextResponse.json({
+          token: winner.token,
+          shareUrl: `/verify/${winner.token}`,
+        });
+      }
+    }
+    throw err;
+  }
 }
 
 // DELETE /api/track-record/share/[instanceId] — revoke shared bundle

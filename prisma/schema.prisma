@@ -318,12 +318,16 @@ model AuditLog {
 }
 
 model WebhookEvent {
-  id          String   @id @default(cuid())
-  eventId     String   @unique // Stripe event ID
-  type        String
-  processedAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  eventId      String    @unique // Stripe event ID
+  type         String
+  processedAt  DateTime  @default(now()) // first claim time
+  completedAt  DateTime? // set when handler succeeds; null = in-flight or failed
+  failureCount Int       @default(0)
+  lastFailure  String?   @db.Text
 
   @@index([processedAt])
+  @@index([completedAt])
 }
 
 model UserTemplate {
@@ -949,6 +953,7 @@ model SharedProofBundle {
   instance LiveEAInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([instanceId, userId])
   @@index([instanceId])
 }
 

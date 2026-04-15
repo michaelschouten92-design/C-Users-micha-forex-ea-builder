@@ -9,7 +9,7 @@ import { AppBreadcrumbs } from "@/components/app/app-breadcrumbs";
 import { AppNav } from "@/components/app/app-nav";
 import { LiveDashboardClient } from "./live-dashboard-client";
 import { loadMonitorData } from "./load-monitor-data";
-import { computeEdgeScore } from "@/domain/monitoring/edge-score";
+import { serializeLiveInstance } from "@/lib/live/serialize-live-instance";
 import { ActivationPanel } from "@/components/onboarding/ActivationPanel";
 import { resolveTier } from "@/lib/plan-limits";
 
@@ -67,136 +67,9 @@ function renderDashboard(
 ) {
   const { eaInstances, tradeAggregates, recentTrades } = data;
 
-  // ── Serialize dates for client component ──
-  const serializedInstances = eaInstances.map((ea) => ({
-    id: ea.id,
-    createdAt: ea.createdAt.toISOString(),
-    eaName: ea.eaName,
-    symbol: ea.symbol,
-    timeframe: ea.timeframe,
-    broker: ea.broker,
-    accountNumber: ea.accountNumber,
-    status: ea.status,
-    tradingState: ea.tradingState,
-    lastHeartbeat: ea.lastHeartbeat?.toISOString() ?? null,
-    lastError: ea.lastError,
-    balance: ea.balance,
-    equity: ea.equity,
-    openTrades: ea.openTrades,
-    totalTrades: ea.totalTrades,
-    totalProfit: ea.totalProfit,
-    sortOrder: ea.sortOrder ?? 0,
-    strategyStatus: ea.strategyStatus ?? "MONITORING",
-    operatorHold: ea.operatorHold ?? "NONE",
-    mode: ea.mode === "PAPER" ? ("PAPER" as const) : ("LIVE" as const),
-    parentInstanceId: ea.parentInstanceId ?? null,
-    lifecycleState: ea.lifecycleState ?? null,
-    apiKeySuffix: ea.apiKeySuffix ?? null,
-    trackRecordToken: ea.accountTrackRecordShares?.[0]?.token ?? null,
-    healthStatus: ea.healthSnapshots?.[0]?.status ?? null,
-    isExternal: ea.exportJobId === null,
-    isAutoDiscovered: ea.isAutoDiscovered,
-    relinkRequired: ea.terminalDeployments.some(
-      (d: { baselineStatus: string }) => d.baselineStatus === "RELINK_REQUIRED"
-    ),
-    monitoringReasons: Array.isArray(ea.incidents?.[0]?.reasonCodes)
-      ? (ea.incidents[0].reasonCodes as string[]).filter((r) => typeof r === "string")
-      : [],
-    monitoringSuppressedUntil: ea.monitoringSuppressedUntil?.toISOString() ?? null,
-    baseline: (() => {
-      const bl = ea.strategyVersion?.backtestBaseline as
-        | {
-            winRate: number | null;
-            profitFactor: number | null;
-            totalTrades: number | null;
-            maxDrawdownPct: number | null;
-            sharpeRatio: number | null;
-          }
-        | undefined;
-      return bl
-        ? {
-            winRate: bl.winRate,
-            profitFactor: bl.profitFactor,
-            totalTrades: bl.totalTrades,
-            maxDrawdownPct: bl.maxDrawdownPct,
-            sharpeRatio: bl.sharpeRatio,
-          }
-        : null;
-    })(),
-    trades: recentTrades
-      .filter((t) => t.instanceId === ea.id)
-      .map((t) => ({
-        profit: t.profit,
-        closeTime: t.closeTime,
-        symbol: t.symbol,
-        magicNumber: t.magicNumber,
-      })),
-    heartbeats: [],
-    healthSnapshots: (ea.healthSnapshots ?? []).map((hs) => ({
-      driftDetected: hs.driftDetected,
-      driftSeverity: hs.driftSeverity,
-      status: hs.status,
-    })),
-    edgeScore: (() => {
-      const bl = ea.strategyVersion?.backtestBaseline as
-        | {
-            winRate: number | null;
-            profitFactor: number | null;
-            maxDrawdownPct: number | null;
-            netReturnPct: number | null;
-            initialDeposit: number | null;
-          }
-        | undefined;
-      if (!bl || bl.winRate == null || bl.profitFactor == null) return null;
-      const agg = tradeAggregates.get(ea.id);
-      if (!agg || agg.tradeCount === 0) {
-        // If the EA heartbeat reports trades but no EATrade rows have been
-        // ingested yet, the Monitor was attached mid-stream and missed the
-        // history. Surface this state honestly — "0/10 trades" reads as "EA
-        // isn't working" when the real issue is a backfill gap.
-        if (ea.totalTrades > 0) {
-          return {
-            phase: "AWAITING_HISTORY" as const,
-            score: null,
-            tradesCompleted: 0,
-            tradesRequired: 10,
-            reportedTrades: ea.totalTrades,
-          };
-        }
-        return {
-          phase: "COLLECTING" as const,
-          score: null,
-          tradesCompleted: 0,
-          tradesRequired: 10,
-        };
-      }
-      const result = computeEdgeScore(
-        {
-          totalTrades: agg.tradeCount,
-          winCount: agg.winCount,
-          lossCount: agg.lossCount,
-          grossProfit: agg.grossProfit,
-          grossLoss: agg.grossLoss,
-          maxDrawdownPct: 0, // per-instance DD not available from aggregates
-          totalProfit: ea.totalProfit,
-          balance: ea.balance ?? 0,
-        },
-        {
-          winRate: bl.winRate,
-          profitFactor: bl.profitFactor,
-          maxDrawdownPct: bl.maxDrawdownPct ?? 0,
-          netReturnPct: bl.netReturnPct ?? 0,
-          initialDeposit: bl.initialDeposit ?? 0,
-        }
-      );
-      return {
-        phase: result.phase,
-        score: result.score,
-        tradesCompleted: result.tradesCompleted,
-        tradesRequired: result.tradesRequired,
-      };
-    })(),
-  }));
+  const serializedInstances = eaInstances.map((ea) =>
+    serializeLiveInstance(ea, tradeAggregates, recentTrades)
+  );
 
   const relinkInstanceId = params.relink ?? null;
 

@@ -71,13 +71,18 @@ export async function mirrorTradeEventToEATrade(
 
   const existing = await prisma.eATrade.findUnique({
     where: { instanceId_ticket: { instanceId, ticket } },
-    select: { id: true },
+    select: { id: true, openPrice: true },
   });
   if (existing) {
+    // DB invariant (EATrade_closed_requires_price): a closed row must have
+    // a closePrice. If the EA didn't send one, fall back to openPrice — the
+    // P&L from the payload is authoritative anyway, so price-diff display
+    // is the only consumer that cares and it's better than rejecting the
+    // close (which would lose the P&L mirror entirely).
     await prisma.eATrade.update({
       where: { instanceId_ticket: { instanceId, ticket } },
       data: {
-        closePrice: p.closePrice ?? null,
+        closePrice: p.closePrice ?? existing.openPrice,
         profit: p.profit ?? 0,
         closeTime: at,
       },
@@ -85,11 +90,36 @@ export async function mirrorTradeEventToEATrade(
     return;
   }
 
-  // No matching TRADE_OPEN means we can't produce a row with a real symbol
-  // (TRADE_CLOSE payload has no symbol field — the EA relies on chain state
-  // to know what was closed). Creating an "UNKNOWN" placeholder row surfaces
-  // as garbage cards in the strategy list, so we skip instead. The event is
-  // still recorded in TrackRecordEvent — edge-score loses the aggregate, but
-  // the proof layer is intact. The proper fix for history gaps is an EA-side
-  // initial-history upload (tracked as Bug B).
+  // Orphaned TRADE_CLOSE: no matching TRADE_OPEN (Monitor attached mid-trade,
+  // so we don't know the symbol). Write a placeholder row marked with the
+  // sentinel symbol "__ORPHAN__" so edge-score and P&L aggregates include
+  // the closed P&L. UI surfaces that filter on real symbols must exclude
+  // this sentinel (see isOrphanEATrade). The proof chain still has the
+  // authoritative record in TrackRecordEvent.
+  await prisma.eATrade.create({
+    data: {
+      instanceId,
+      ticket,
+      symbol: ORPHAN_EATRADE_SYMBOL,
+      type: "BUY",
+      openPrice: 0,
+      closePrice: p.closePrice ?? null,
+      lots: 0,
+      profit: p.profit ?? 0,
+      openTime: at,
+      closeTime: at,
+      magicNumber: p.magicNumber ?? null,
+    },
+  });
+}
+
+/**
+ * Sentinel symbol used for orphaned TRADE_CLOSE rows. Aggregates include
+ * these, card-per-strategy UI filters must exclude them.
+ */
+export const ORPHAN_EATRADE_SYMBOL = "__ORPHAN__";
+
+/** True when an EATrade row is a mirror-created orphan (no matching open). */
+export function isOrphanEATrade(row: { symbol: string }): boolean {
+  return row.symbol === ORPHAN_EATRADE_SYMBOL;
 }

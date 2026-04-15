@@ -16,12 +16,12 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-const mockUpdate = vi.fn().mockResolvedValue({});
+const mockUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     notificationOutbox: {
-      update: (...args: unknown[]) => mockUpdate(...args),
+      updateMany: (...args: unknown[]) => mockUpdateMany(...args),
     },
   },
 }));
@@ -39,10 +39,10 @@ describe("outbox state machine transitions", () => {
 
       await transitionOutboxEntry("outbox_abc", "PROCESSING", "SENT", "delivery_success");
 
-      // Verify DB update
-      expect(mockUpdate).toHaveBeenCalledOnce();
-      expect(mockUpdate).toHaveBeenCalledWith({
-        where: { id: "outbox_abc" },
+      // Verify DB update with compare-and-swap on expected from-state
+      expect(mockUpdateMany).toHaveBeenCalledOnce();
+      expect(mockUpdateMany).toHaveBeenCalledWith({
+        where: { id: "outbox_abc", status: "PROCESSING" },
         data: { status: "SENT" },
       });
 
@@ -62,8 +62,8 @@ describe("outbox state machine transitions", () => {
         nextRetryAt: new Date("2026-01-01"),
       });
 
-      expect(mockUpdate).toHaveBeenCalledWith({
-        where: { id: "outbox_def" },
+      expect(mockUpdateMany).toHaveBeenCalledWith({
+        where: { id: "outbox_def", status: "PROCESSING" },
         data: {
           status: "FAILED",
           attempts: 3,
@@ -98,7 +98,7 @@ describe("outbox state machine transitions", () => {
     });
 
     it("does not log if DB update throws", async () => {
-      mockUpdate.mockRejectedValueOnce(new Error("DB down"));
+      mockUpdateMany.mockRejectedValueOnce(new Error("DB down"));
       const { transitionOutboxEntry } = await import("./route");
 
       await expect(
@@ -130,7 +130,7 @@ describe("outbox state machine transitions", () => {
       ];
 
       for (const [from, to, reason] of transitions) {
-        mockUpdate.mockResolvedValueOnce({});
+        mockUpdateMany.mockResolvedValueOnce({ count: 1 });
         await transitionOutboxEntry(
           `test_${from}_${to}`,
           from as "PROCESSING",

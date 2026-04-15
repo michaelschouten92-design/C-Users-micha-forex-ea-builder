@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { ORPHAN_EATRADE_SYMBOL } from "@/lib/track-record/mirror-to-eatrade";
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -41,9 +42,14 @@ export async function GET(
   );
   const skip = (page - 1) * pageSize;
 
+  // Exclude orphaned TRADE_CLOSE placeholder rows from the user-visible
+  // trade list (they have no real symbol/direction). Aggregates elsewhere
+  // still include them so totals stay correct.
+  const visibleWhere = { instanceId, symbol: { not: ORPHAN_EATRADE_SYMBOL } };
+
   const [trades, totalCount] = await Promise.all([
     prisma.eATrade.findMany({
-      where: { instanceId },
+      where: visibleWhere,
       orderBy: { openTime: "desc" },
       skip,
       take: pageSize,
@@ -61,7 +67,7 @@ export async function GET(
         mode: true,
       },
     }),
-    prisma.eATrade.count({ where: { instanceId } }),
+    prisma.eATrade.count({ where: visibleWhere }),
   ]);
 
   const data = trades.map((t) => ({

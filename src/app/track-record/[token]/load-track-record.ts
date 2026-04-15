@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { ORPHAN_EATRADE_SYMBOL } from "@/lib/track-record/mirror-to-eatrade";
 
 export interface TrackRecordData {
   account: {
@@ -224,11 +225,14 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
       };
     });
   } else {
-    // Fallback: legacy EATrade table
+    // Fallback: legacy EATrade table. Exclude orphan placeholder rows
+    // (TRADE_CLOSE without a matching open) — they have no real symbol
+    // and would surface as garbage trades on the public track record.
     const allTradesRaw = await prisma.eATrade.findMany({
       where: {
         instanceId: { in: allInstanceIds },
         closeTime: { not: null },
+        symbol: { not: ORPHAN_EATRADE_SYMBOL },
       },
       orderBy: { closeTime: "desc" },
       take: 500,

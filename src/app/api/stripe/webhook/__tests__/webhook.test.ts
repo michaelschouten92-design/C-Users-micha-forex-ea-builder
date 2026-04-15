@@ -18,6 +18,8 @@ vi.mock("@/lib/stripe", () => ({
 
 const mockWebhookEventCreate = vi.fn();
 const mockWebhookEventDelete = vi.fn();
+const mockWebhookEventUpdate = vi.fn();
+const mockWebhookEventFindUnique = vi.fn();
 const mockQueryRaw = vi.fn();
 const mockSubscriptionUpdate = vi.fn();
 const mockSubscriptionUpdateMany = vi.fn();
@@ -30,6 +32,8 @@ vi.mock("@/lib/prisma", () => ({
     webhookEvent: {
       create: (...args: unknown[]) => mockWebhookEventCreate(...args),
       delete: (...args: unknown[]) => mockWebhookEventDelete(...args),
+      update: (...args: unknown[]) => mockWebhookEventUpdate(...args),
+      findUnique: (...args: unknown[]) => mockWebhookEventFindUnique(...args),
     },
     $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
       fn({
@@ -159,6 +163,8 @@ describe("Stripe Webhook Handler", () => {
     // Default: idempotency claim succeeds
     mockWebhookEventCreate.mockResolvedValue({ eventId: "evt_test_123" });
     mockWebhookEventDelete.mockResolvedValue(undefined);
+    mockWebhookEventUpdate.mockResolvedValue(undefined);
+    mockWebhookEventFindUnique.mockResolvedValue(null);
     mockUserFindUnique.mockResolvedValue({ email: "test@example.com" });
     // Re-import to get fresh module
     const mod = await import("../route");
@@ -229,7 +235,7 @@ describe("Stripe Webhook Handler", () => {
       await expect(POST(makeRequest())).rejects.toThrow("DB connection lost");
     });
 
-    it("removes idempotency claim on handler error", async () => {
+    it("preserves idempotency claim on handler error and records failure", async () => {
       const event = makeStripeEvent("invoice.payment_succeeded", {
         subscription: "sub_test",
         customer: "cus_test",
@@ -242,10 +248,19 @@ describe("Stripe Webhook Handler", () => {
       const response = await POST(makeRequest());
       expect(response.status).toBe(500);
 
-      // Verify idempotency claim was deleted
-      expect(mockWebhookEventDelete).toHaveBeenCalledWith({
-        where: { eventId: "evt_test_123" },
-      });
+      // Claim must NOT be deleted — that allowed Stripe replays to re-run
+      // handlers that had partially committed. Instead, failureCount is
+      // incremented and the row stays so duplicate retries can detect prior
+      // attempts.
+      expect(mockWebhookEventDelete).not.toHaveBeenCalled();
+      expect(mockWebhookEventUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { eventId: "evt_test_123" },
+          data: expect.objectContaining({
+            failureCount: { increment: 1 },
+          }),
+        })
+      );
     });
   });
 
@@ -351,10 +366,15 @@ describe("Stripe Webhook Handler", () => {
       // Should return 500 because the handler throws, which triggers error recovery
       expect(response.status).toBe(500);
 
-      // Verify idempotency claim was cleaned up for retry
-      expect(mockWebhookEventDelete).toHaveBeenCalledWith({
-        where: { eventId: "evt_test_123" },
-      });
+      // Claim is preserved; failureCount is incremented so the next replay
+      // can detect prior failure rather than re-running side-effects blindly.
+      expect(mockWebhookEventDelete).not.toHaveBeenCalled();
+      expect(mockWebhookEventUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { eventId: "evt_test_123" },
+          data: expect.objectContaining({ failureCount: { increment: 1 } }),
+        })
+      );
     });
   });
 

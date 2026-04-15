@@ -44,13 +44,9 @@ export interface LiveInstanceBaseline {
 }
 
 export interface LiveInstanceDeployment {
-  id: string;
   symbol: string;
   magicNumber: number;
-  eaName: string;
-  timeframe: string;
   baselineStatus: string;
-  strategyVersionId: string | null;
 }
 
 // ── Main DTO ─────────────────────────────────────────────

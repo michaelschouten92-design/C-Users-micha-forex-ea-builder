@@ -30,6 +30,12 @@ export type OutboxStatus = "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "DEAD"
 /**
  * Centralized single-entry transition: update status + log in one call.
  * Every outbox state change for a known entry goes through here.
+ *
+ * Uses compare-and-swap semantics (WHERE status = from) to prevent clobbering
+ * transitions done concurrently by the timeout-release or stuck-recovery
+ * paths. If the row's status no longer matches `from`, the update is a no-op
+ * and this returns false so callers can log/ignore the stale transition
+ * without double-delivering.
  */
 export async function transitionOutboxEntry(
   entryId: string,
@@ -37,12 +43,20 @@ export async function transitionOutboxEntry(
   to: OutboxStatus,
   reason: string,
   extraData?: Record<string, unknown>
-): Promise<void> {
-  await prisma.notificationOutbox.update({
-    where: { id: entryId },
+): Promise<boolean> {
+  const result = await prisma.notificationOutbox.updateMany({
+    where: { id: entryId, status: from },
     data: { status: to, ...extraData },
   });
+  if (result.count === 0) {
+    log.warn(
+      { outboxId: entryId, expectedFrom: from, to, reason },
+      "Outbox transition skipped — row not in expected state (likely concurrent timeout/recovery release)"
+    );
+    return false;
+  }
   log.info({ outboxId: entryId, from, to, reason }, "Outbox status transition");
+  return true;
 }
 
 /**

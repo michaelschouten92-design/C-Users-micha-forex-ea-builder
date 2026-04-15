@@ -204,6 +204,7 @@ string   g_deployFingerprint = "";  // SHA-256 of material config fields
 StrategyContext g_contexts[];
 int    g_contextCount = 0;
 bool   g_manifestMode = false;
+datetime g_backfillFirstAttempt = 0; // First time backfill saw partially-ready contexts; gate for fallback timeout
 datetime g_lastRediscovery = 0;           // Rate-limit auto-discovery re-scans
 datetime g_lastIncrementalDiscovery = 0; // Rate-limit incremental re-discovery scans
 bool     g_chainSyncPending = false;     // True when SyncChainState failed — retried in OnTimer
@@ -1693,23 +1694,25 @@ bool SendTrackRecordEvent(string eventType, string payloadJson, string &payloadP
 
    bool sent = HttpPost("/api/track-record/ingest", json);
 
-   // Advance chain state regardless of send outcome.
-   // Enqueue = local commit: queued events are part of the local chain,
-   // so subsequent events chain correctly off them.
+   // Chain state is local-commit semantics: queued events are part of the
+   // local chain so subsequent events chain correctly off them. Only advance
+   // if the event was either accepted by the server OR safely persisted in
+   // the offline queue — otherwise the local chain would diverge from the
+   // server's view with no way to reconcile.
+   if(!sent)
+   {
+      if(!EnqueueEvent(json))
+      {
+         g_panelError = "Offline queue persist failed — chain paused";
+         g_chainDegraded = true;
+         Print("AlgoStudio Monitor: EnqueueEvent failed — NOT advancing chain state.");
+         return false;
+      }
+   }
+
    g_seqNo = nextSeq;
    g_lastHash = eventHash;
-
-   if(sent)
-   {
-      SaveState();
-   }
-   else
-   {
-      // Queue for later — state already advanced
-      EnqueueEvent(json);
-      SaveState();
-   }
-
+   SaveState();
    return sent;
 }
 
@@ -1776,13 +1779,23 @@ bool SendContextTrackRecordEvent(int ctxIdx, string eventType,
 
    bool sent = HttpPost("/api/track-record/ingest", json);
 
-   // Advance context chain state regardless of send outcome
+   // Only advance the per-context chain state when the event is safely
+   // committed locally (sent or queued). A failed enqueue would otherwise
+   // leave the local chain ahead of what ever reaches the server.
+   if(!sent)
+   {
+      if(!EnqueueEvent(json))
+      {
+         g_panelError = "Offline queue persist failed — chain paused";
+         g_chainDegraded = true;
+         Print("AlgoStudio Monitor: EnqueueEvent failed for context ",
+               ctxIdx, " — NOT advancing chain state.");
+         return false;
+      }
+   }
+
    g_contexts[ctxIdx].seqNo = nextSeq;
    g_contexts[ctxIdx].lastHash = eventHash;
-
-   if(!sent)
-      EnqueueEvent(json);
-
    SaveState();
    return sent;
 }
@@ -2805,8 +2818,13 @@ bool SyncContextChainState(int ctxIdx)
 
 //+------------------------------------------------------------------+
 //| OFFLINE QUEUE — store events when network fails                  |
+//| Returns true when the event is safely queued. Returns false if   |
+//| the queue was full and the ArrayResize to add the new slot       |
+//| itself failed — callers must treat this as an un-persisted       |
+//| event and avoid advancing chain state, otherwise the local chain |
+//| drifts from the server's.                                        |
 //+------------------------------------------------------------------+
-void EnqueueEvent(string json)
+bool EnqueueEvent(string json)
 {
    if(g_queueCount >= MAX_QUEUE_SIZE)
    {
@@ -2822,12 +2840,13 @@ void EnqueueEvent(string json)
       g_queueCount--;
    }
 
-   ArrayResize(g_offlineQueue, g_queueCount + 1);
-   ArrayResize(g_queueRetryCount, g_queueCount + 1);
+   if(ArrayResize(g_offlineQueue, g_queueCount + 1) < 0) return false;
+   if(ArrayResize(g_queueRetryCount, g_queueCount + 1) < 0) return false;
    g_offlineQueue[g_queueCount] = json;
    g_queueRetryCount[g_queueCount] = 0;
    g_queueCount++;
    g_queueDirty = true;
+   return true;
 }
 
 void FlushOfflineQueue()
@@ -3564,14 +3583,19 @@ void MarkBackfillDone()
 
 // Returns true if the given (magic, symbol) pair matches one of the contexts
 // the Monitor is tracking — either explicit manifest entries or auto-discovered
-// contexts. Foreign activity is ignored.
-bool BackfillIsTrackedContext(long magic, string symbol)
+// contexts. Foreign activity is ignored. When `requireReady` is true, only
+// contexts whose instanceId has been assigned by the server are considered
+// (used by the backfill fallback path so we don't ship deals for contexts
+// whose server-side deployment doesn't exist yet — those would be silently
+// dropped by attribution and lost forever after MarkBackfillDone).
+bool BackfillIsTrackedContext(long magic, string symbol, bool requireReady = false)
 {
    if(magic <= 0) return false;
    for(int c = 0; c < g_contextCount; c++)
    {
       if(g_contexts[c].magicNumber != magic) continue;
       if(StringLen(g_contexts[c].symbol) > 0 && g_contexts[c].symbol != symbol) continue;
+      if(requireReady && StringLen(g_contexts[c].instanceId) == 0) continue;
       return true;
    }
    return false;
@@ -3634,6 +3658,11 @@ string BackfillBuildTradeJson(ulong dealTicket)
       + "}";
 }
 
+// Max time to wait for ALL contexts to register before falling back to
+// "backfill with whatever contexts are ready". 5 minutes is generous —
+// a healthy heartbeat cycle assigns instanceId on the first response.
+#define BACKFILL_CONTEXT_WAIT_SECONDS 300
+
 // Main backfill entry point. Called from OnTimer once per tick; internal
 // guards ensure it only does work on first eligible call.
 void BackfillHistoryIfNeeded()
@@ -3641,14 +3670,30 @@ void BackfillHistoryIfNeeded()
    if(BackfillAlreadyDone()) return;
    if(g_contextCount == 0) return; // Nothing to attribute trades to yet.
 
-   // Must have at least one context with an assigned instanceId — otherwise
-   // server-side deployments haven't registered yet and attribution will fail.
-   bool anyContextReady = false;
+   // All contexts must have an assigned instanceId before we mark backfill
+   // done. Server-side attribution resolves each trade via a TerminalDeployment
+   // row (symbol, magicNumber) — if a context hasn't heartbeated yet, its
+   // deployment doesn't exist yet and its deals get silently skipped. Since
+   // backfill is one-shot (MarkBackfillDone), those deals would be lost
+   // forever. Waiting on every context guarantees all deployments are
+   // registered before we commit to the single-pass upload.
+   //
+   // Fallback: after BACKFILL_CONTEXT_WAIT_SECONDS we proceed with whatever
+   // contexts are ready. Otherwise a single misconfigured/offline context
+   // would block backfill indefinitely for all others.
+   bool allReady = true;
    for(int c = 0; c < g_contextCount; c++)
    {
-      if(StringLen(g_contexts[c].instanceId) > 0) { anyContextReady = true; break; }
+      if(StringLen(g_contexts[c].instanceId) == 0) { allReady = false; break; }
    }
-   if(!anyContextReady) return;
+   if(!allReady)
+   {
+      datetime now = TimeCurrent();
+      if(g_backfillFirstAttempt == 0) g_backfillFirstAttempt = now;
+      if((long)(now - g_backfillFirstAttempt) < BACKFILL_CONTEXT_WAIT_SECONDS) return;
+      Print("AlgoStudio Monitor: history backfill — proceeding after ",
+            BACKFILL_CONTEXT_WAIT_SECONDS, "s wait; some contexts still lack instanceId.");
+   }
 
    HistorySelect(0, TimeCurrent());
    int totalDeals = HistoryDealsTotal();
@@ -3666,6 +3711,9 @@ void BackfillHistoryIfNeeded()
    int eligibleCount = 0;
    ArrayResize(eligible, MathMin(totalDeals, BACKFILL_MAX_DEALS));
 
+   // In fallback mode (allReady == false) only ship deals for contexts
+   // that already have an instanceId — otherwise the server can't attribute
+   // them and we'd MarkBackfillDone with permanent silent loss.
    for(int i = 0; i < totalDeals && eligibleCount < BACKFILL_MAX_DEALS; i++)
    {
       ulong dTicket = HistoryDealGetTicket(i);
@@ -3674,7 +3722,7 @@ void BackfillHistoryIfNeeded()
 
       long   magic  = (long)HistoryDealGetInteger(dTicket, DEAL_MAGIC);
       string symbol = HistoryDealGetString(dTicket, DEAL_SYMBOL);
-      if(!BackfillIsTrackedContext(magic, symbol)) continue;
+      if(!BackfillIsTrackedContext(magic, symbol, !allReady)) continue;
 
       eligible[eligibleCount++] = dTicket;
    }

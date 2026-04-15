@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import type { HeartbeatAnalyticsResult } from "@/domain/heartbeat/heartbeat-analytics";
 import type { AuthorityBlockReason } from "@/domain/heartbeat/authority-readiness";
 import { computeEdgeScore } from "@/domain/monitoring/edge-score";
+import { ORPHAN_EATRADE_SYMBOL } from "@/lib/track-record/mirror-to-eatrade";
 
 const log = logger.child({ page: "/app/monitor" });
 
@@ -465,8 +466,15 @@ export async function loadMonitorData(userId: string): Promise<MonitorData | nul
     const allIds = eaInstances.map((ea) => ea.id);
     if (allIds.length > 0) {
       try {
+        // Exclude orphan placeholder rows from the activity feed — they
+        // have no real symbol. Aggregates used for edge-score/totals still
+        // include orphans (see rawStats query above).
         const trades = await prisma.eATrade.findMany({
-          where: { instanceId: { in: allIds }, closeTime: { not: null } },
+          where: {
+            instanceId: { in: allIds },
+            closeTime: { not: null },
+            symbol: { not: ORPHAN_EATRADE_SYMBOL },
+          },
           orderBy: { closeTime: "desc" },
           take: 15,
           select: {
