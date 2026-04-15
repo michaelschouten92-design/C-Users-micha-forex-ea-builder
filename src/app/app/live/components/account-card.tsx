@@ -686,9 +686,17 @@ export function AccountCard({
 
       {/* Strategies — always visible */}
       <div className="mx-5 mb-4 mt-1 border-t border-[#1E293B]/40 pt-3">
-        <p className="text-[11px] font-medium text-[#64748B] mb-2">
-          Strategies ({strategyGroups.length})
-        </p>
+        <div className="flex items-center gap-1.5 mb-2">
+          <p className="text-[11px] font-medium text-[#64748B]">
+            Strategies ({strategyGroups.length})
+          </p>
+          <span
+            className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[#1E293B] text-[9px] text-[#64748B] cursor-help"
+            title="Historical trades imported from MT5 on first attach appear on this dashboard. Only trades captured live by the Monitor EA are included in your shareable, cryptographically verified track record."
+          >
+            i
+          </span>
+        </div>
         <div className="space-y-1">
           {strategyGroups.length === 0 ? (
             <div className="px-3 py-3">
