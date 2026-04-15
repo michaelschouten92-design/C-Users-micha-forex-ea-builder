@@ -298,6 +298,15 @@ providers.push(
             throw new InvalidCredentialsError();
           }
 
+          // Reject suspended accounts before issuing a session. The JWT
+          // callback would catch this on next refresh, but doing it here
+          // avoids the small window of "looks like login worked" UX and
+          // keeps audit logs cleaner. Generic error to prevent suspension
+          // enumeration (attacker shouldn't learn account status from this).
+          if (existingUser.suspended) {
+            throw new InvalidCredentialsError();
+          }
+
           // Rehash password if bcrypt rounds have been upgraded
           const hashRounds = bcrypt.getRounds(existingUser.passwordHash);
           if (hashRounds < SALT_ROUNDS) {

@@ -43,10 +43,14 @@ export async function POST(request: Request) {
     // Hash the incoming token to compare with stored hash
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Rate limit by token hash to prevent brute-force attempts
-    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, `reset:${tokenHash}`);
+    // Rate-limit per IP rather than per token-hash. With per-token keys
+    // an attacker generating many tokens (one per email enumeration round)
+    // would get a fresh bucket each time. Per-IP caps the total brute-force
+    // budget regardless of how many tokens an attacker accumulates.
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const rateLimitResult = await checkRateLimit(passwordResetRateLimiter, `reset-ip:${ip}`);
     if (!rateLimitResult.success) {
-      log.warn("Reset password rate limit exceeded");
+      log.warn({ ip }, "Reset password rate limit exceeded");
       return NextResponse.json(
         { error: formatRateLimitError(rateLimitResult) },
         { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
