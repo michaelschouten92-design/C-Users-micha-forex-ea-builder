@@ -50,6 +50,15 @@ export async function GET() {
             emailVerifiedAt: true,
             createdAt: true,
             updatedAt: true,
+            // Third-party identifiers — required for Art. 15 (right to access).
+            // The user must be able to verify which external accounts /
+            // notification channels we have on file for them.
+            referralCode: true,
+            referredBy: true,
+            discordId: true,
+            telegramChatId: true,
+            slackWebhookUrl: true,
+            webhookUrl: true,
           },
         }),
         prisma.subscription.findUnique({
@@ -123,10 +132,34 @@ export async function GET() {
         }),
       ]);
 
+    // Partner record (if any). IBAN is masked to last 4 chars — the user
+    // already knows their own IBAN; the export is for verification of what
+    // we hold, not a replay of secrets.
+    const referralPartner = await prisma.referralPartner.findUnique({
+      where: { userId },
+      select: {
+        commissionBps: true,
+        status: true,
+        payoutEmail: true,
+        payoutIban: true,
+        payoutAccountHolder: true,
+        createdAt: true,
+      },
+    });
+    const referralPartnerExport = referralPartner
+      ? {
+          ...referralPartner,
+          payoutIban: referralPartner.payoutIban
+            ? `****${referralPartner.payoutIban.slice(-4)}`
+            : null,
+        }
+      : null;
+
     const exportData = {
       exportedAt: new Date().toISOString(),
       user,
       subscription,
+      referralPartner: referralPartnerExport,
       projects: projects.map((p) => ({
         id: p.id,
         name: p.name,

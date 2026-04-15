@@ -99,6 +99,13 @@ async function handleCleanup(request: NextRequest) {
         processedAt: { lt: ninetyDaysAgo },
         completedAt: { not: null },
       }),
+      // AuditLog: 365-day retention. Operational audit data is kept for one
+      // year so disputes raised within a typical legal/refund window can be
+      // reconstructed (matches our terms of service). Beyond that the
+      // accountability value (Art. 5(2) GDPR) drops below the storage cost
+      // and erasure obligation (Art. 5(1)(e)). Financial records that
+      // require longer retention live in ReferralLedger / ReferralPayout
+      // (kept indefinitely under "legitimate interest" Art. 6(1)(f)).
       batchDelete(prisma.auditLog, { createdAt: { lt: oneYearAgo } }),
     ]);
 

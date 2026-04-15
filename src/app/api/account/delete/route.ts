@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { sendAccountDeletedEmail } from "@/lib/email";
+import { logAuditEvent } from "@/lib/audit";
+import { createHash } from "crypto";
 import { safeReadJson, checkContentType } from "@/lib/validations";
 import { validateCsrfToken } from "@/lib/csrf";
 import {
@@ -30,6 +32,19 @@ export async function DELETE(request: NextRequest) {
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Refuse account deletion while an admin is impersonating this user. The
+  // delete would otherwise be attributed to the user but actually executed
+  // by the admin — non-repudiation failure plus a coercion vector.
+  if (session.user.impersonatorId) {
+    return NextResponse.json(
+      {
+        error: "Stop impersonating this user before performing destructive actions.",
+        code: "IMPERSONATION_BLOCKED",
+      },
+      { status: 403 }
+    );
   }
 
   // Rate limit: 2 attempts per 24 hours
@@ -142,6 +157,32 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
+    // Delete the Stripe customer record so PII (billing address, payment
+    // methods, invoice history) doesn't linger at the processor after
+    // we confirm "account deleted". Stripe retains a tombstone for legal
+    // bookkeeping (PSD2 / anti-money-laundering retention typically
+    // 5-7 years) — that's outside our control and disclosed in the
+    // privacy policy. Our obligation is to stop being a controller.
+    if (subscription?.stripeCustomerId) {
+      try {
+        const { getStripe } = await import("@/lib/stripe");
+        await getStripe().customers.del(subscription.stripeCustomerId);
+      } catch (stripeError) {
+        const err = stripeError as { code?: string; statusCode?: number };
+        if (err.statusCode === 404 || err.code === "resource_missing") {
+          logger.warn(
+            { userId, stripeCustomerId: subscription.stripeCustomerId },
+            "Stripe customer already deleted, proceeding"
+          );
+        } else {
+          logger.error(
+            { error: stripeError, userId, stripeCustomerId: subscription.stripeCustomerId },
+            "Failed to delete Stripe customer — proceeding with DB deletion (manual cleanup required)"
+          );
+        }
+      }
+    }
+
     // Delete all user data in a transaction
     await prisma.$transaction(async (tx) => {
       // Delete tokens by email (not FK-based, won't cascade)
@@ -150,8 +191,15 @@ export async function DELETE(request: NextRequest) {
         await tx.emailVerificationToken.deleteMany({ where: { email: userRecord.email } });
       }
 
-      // Delete audit logs (no cascade FK)
-      await tx.auditLog.deleteMany({ where: { userId } });
+      // Anonymize audit logs instead of hard-deleting them. GDPR Art. 17
+      // requires erasure of personal data, not destruction of the
+      // accountability trail (Art. 5(2)). Setting userId/ipAddress/userAgent
+      // to null removes the link to the natural person while preserving
+      // the operational record (eventType, resourceType, resourceId).
+      await tx.auditLog.updateMany({
+        where: { userId },
+        data: { userId: null, ipAddress: null, userAgent: null },
+      });
 
       // Clear referral references from other users (GDPR right to erasure)
       const user = await tx.user.findUnique({
@@ -171,7 +219,25 @@ export async function DELETE(request: NextRequest) {
 
     logger.info({ userId }, "GDPR account deletion completed");
 
-    // Send confirmation email (fire-and-forget, after deletion)
+    // Persistent compliance trail of the erasure event itself, with NO PII
+    // (only an email-hash). The user-row is gone, so userId on this audit
+    // entry is null — but the event remains as evidence that we honoured
+    // the request even if the confirmation email below silently fails.
+    if (userRecord?.email) {
+      const emailHash = createHash("sha256").update(userRecord.email.toLowerCase()).digest("hex");
+      await logAuditEvent({
+        userId: null,
+        eventType: "account.deletion_requested",
+        resourceType: "user",
+        resourceId: userId,
+        metadata: { emailHash, completedAt: new Date().toISOString() },
+      }).catch((err) =>
+        logger.warn({ err }, "Failed to write account-deletion audit log (non-blocking)")
+      );
+    }
+
+    // Send confirmation email (fire-and-forget, after deletion). The audit
+    // entry above is the durable proof — this email is a courtesy.
     if (userRecord?.email) {
       sendAccountDeletedEmail(userRecord.email).catch((err) =>
         logger.warn({ error: err }, "Failed to send account deletion confirmation email")

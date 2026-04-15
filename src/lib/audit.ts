@@ -11,6 +11,8 @@ export type AuditEventType =
   | "auth.password_reset_request"
   | "auth.password_reset_complete"
   | "auth.oauth_link"
+  | "account.deletion_requested"
+  | "account.anonymized"
   // Projects
   | "project.create"
   | "project.update"
