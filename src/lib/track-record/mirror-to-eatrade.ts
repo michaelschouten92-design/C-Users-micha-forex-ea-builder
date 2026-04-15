@@ -85,21 +85,11 @@ export async function mirrorTradeEventToEATrade(
     return;
   }
 
-  // No matching TRADE_OPEN (e.g. trade opened before monitor was attached) —
-  // create a minimal row so edge-score still counts this trade. Per-trade
-  // duration/entry fidelity is lost; aggregate profit/win-loss is correct.
-  await prisma.eATrade.create({
-    data: {
-      instanceId,
-      ticket,
-      symbol: "UNKNOWN",
-      type: "BUY",
-      openPrice: p.closePrice ?? 0,
-      lots: 0,
-      profit: p.profit ?? 0,
-      openTime: at,
-      closeTime: at,
-      magicNumber: p.magicNumber ?? null,
-    },
-  });
+  // No matching TRADE_OPEN means we can't produce a row with a real symbol
+  // (TRADE_CLOSE payload has no symbol field — the EA relies on chain state
+  // to know what was closed). Creating an "UNKNOWN" placeholder row surfaces
+  // as garbage cards in the strategy list, so we skip instead. The event is
+  // still recorded in TrackRecordEvent — edge-score loses the aggregate, but
+  // the proof layer is intact. The proper fix for history gaps is an EA-side
+  // initial-history upload (tracked as Bug B).
 }

@@ -114,31 +114,18 @@ describe("mirrorTradeEventToEATrade", () => {
       expect(args.data.closeTime).toEqual(new Date(TIMESTAMP * 1000));
     });
 
-    it("creates a minimal row when no matching TRADE_OPEN was seen", async () => {
+    it("skips when no matching TRADE_OPEN was seen (no UNKNOWN placeholder)", async () => {
       mockFindUnique.mockResolvedValueOnce(null);
 
       await mirrorTradeEventToEATrade(fakePrisma, {
         instanceId: INSTANCE_ID,
         eventType: "TRADE_CLOSE",
         timestamp: TIMESTAMP,
-        payload: { ticket: "99", closePrice: 1.0, profit: -10, magicNumber: 55 },
+        payload: { ticket: "99", closePrice: 1.0, profit: -10 },
       });
 
       expect(mockUpdate).not.toHaveBeenCalled();
-      expect(mockCreate).toHaveBeenCalledTimes(1);
-      const data = mockCreate.mock.calls[0][0].data;
-      expect(data).toMatchObject({
-        instanceId: INSTANCE_ID,
-        ticket: "99",
-        symbol: "UNKNOWN",
-        type: "BUY",
-        openPrice: 1.0,
-        lots: 0,
-        profit: -10,
-        magicNumber: 55,
-      });
-      expect(data.openTime).toEqual(new Date(TIMESTAMP * 1000));
-      expect(data.closeTime).toEqual(new Date(TIMESTAMP * 1000));
+      expect(mockCreate).not.toHaveBeenCalled();
     });
 
     it("skips when ticket is missing", async () => {

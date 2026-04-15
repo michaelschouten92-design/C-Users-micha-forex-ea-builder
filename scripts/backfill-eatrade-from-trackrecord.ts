@@ -128,21 +128,9 @@ async function main() {
             });
             updated++;
           } else {
-            await prisma.eATrade.create({
-              data: {
-                instanceId: ea.id,
-                ticket,
-                symbol: "UNKNOWN",
-                type: "BUY",
-                openPrice: p.closePrice ?? 0,
-                lots: 0,
-                profit: p.profit ?? 0,
-                openTime: ev.timestamp,
-                closeTime: ev.timestamp,
-                magicNumber: p.magicNumber ?? null,
-              },
-            });
-            created++;
+            // No matching TRADE_OPEN — skip instead of creating an UNKNOWN
+            // placeholder (would surface as a garbage strategy card).
+            skipped++;
           }
         }
       }
