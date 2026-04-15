@@ -81,6 +81,10 @@ export function ReferralsClient({ referralCode }: { referralCode: string | null 
   const fetchData = useCallback(async () => {
     try {
       const partnerRes = await fetch("/api/referral/partner");
+      if (!partnerRes.ok) {
+        showError("Could not load partner status. Refresh the page or contact support.");
+        return;
+      }
       const partnerData = await partnerRes.json();
 
       if (partnerData.partner) {
@@ -92,15 +96,18 @@ export function ReferralsClient({ referralCode }: { referralCode: string | null 
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());
+        else showError("Could not load referral stats.");
         if (ledgerRes.ok) {
           const ledgerData = await ledgerRes.json();
           setLedger(ledgerData.data ?? []);
+        } else {
+          showError("Could not load commission ledger.");
         }
       } else {
         setPartnerStatus(null);
       }
     } catch {
-      // Silently fail
+      showError("Network error loading referral data.");
     } finally {
       setLoading(false);
     }

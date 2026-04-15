@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAdmin } from "@/lib/admin";
+import { auth } from "@/lib/auth";
+import { logAuditEvent, getAuditContext } from "@/lib/audit";
 
 /**
  * GET: List all referral partners with stats.
@@ -27,44 +29,54 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     },
   });
 
-  // Compute real balances from ledger for each partner
-  const data = await Promise.all(
-    partners.map(async (p) => {
-      const earned = await prisma.referralLedger.aggregate({
-        where: { partnerId: p.id, type: "COMMISSION_EARNED" },
-        _sum: { amountCents: true },
-      });
-      const reversed = await prisma.referralLedger.aggregate({
-        where: { partnerId: p.id, type: "COMMISSION_REVERSED" },
-        _sum: { amountCents: true },
-      });
-      const paid = await prisma.referralLedger.aggregate({
-        where: { partnerId: p.id, type: "PAYOUT_SENT" },
-        _sum: { amountCents: true },
-      });
+  // Single groupBy across all partners replaces the old per-partner triple
+  // aggregate (was 3×N round-trips for an admin list view).
+  const partnerIds = partners.map((p) => p.id);
+  const ledgerByType =
+    partnerIds.length === 0
+      ? []
+      : await prisma.referralLedger.groupBy({
+          by: ["partnerId", "type"],
+          where: { partnerId: { in: partnerIds } },
+          _sum: { amountCents: true },
+        });
 
-      const totalEarnedCents = earned._sum.amountCents ?? 0;
-      const totalReversedCents = Math.abs(reversed._sum.amountCents ?? 0);
-      const totalPaidCents = Math.abs(paid._sum.amountCents ?? 0);
-      const unpaidBalanceCents = totalEarnedCents - totalReversedCents - totalPaidCents;
+  // Per-partner buckets. `adjustment` carries any ADMIN_ADJUSTMENT entries —
+  // most importantly the positive credit written when a payout is cancelled,
+  // which would otherwise silently disappear from the displayed balance.
+  const sums = new Map<
+    string,
+    { earned: number; reversed: number; paid: number; adjustment: number }
+  >();
+  for (const id of partnerIds) sums.set(id, { earned: 0, reversed: 0, paid: 0, adjustment: 0 });
+  for (const row of ledgerByType) {
+    const cents = row._sum.amountCents ?? 0;
+    const bucket = sums.get(row.partnerId);
+    if (!bucket) continue;
+    if (row.type === "COMMISSION_EARNED") bucket.earned = cents;
+    else if (row.type === "COMMISSION_REVERSED") bucket.reversed = Math.abs(cents);
+    else if (row.type === "PAYOUT_SENT") bucket.paid = Math.abs(cents);
+    else if (row.type === "ADMIN_ADJUSTMENT") bucket.adjustment = cents; // signed
+  }
 
-      return {
-        id: p.id,
-        email: p.user.email,
-        referralCode: p.user.referralCode,
-        status: p.status,
-        commissionBps: p.commissionBps,
-        payoutEmail: p.payoutEmail,
-        clicks: p._count.clicks,
-        attributions: p._count.attributions,
-        totalEarnedCents,
-        totalReversedCents,
-        totalPaidCents,
-        unpaidBalanceCents,
-        createdAt: p.createdAt.toISOString(),
-      };
-    })
-  );
+  const data = partners.map((p) => {
+    const s = sums.get(p.id) ?? { earned: 0, reversed: 0, paid: 0, adjustment: 0 };
+    return {
+      id: p.id,
+      email: p.user.email,
+      referralCode: p.user.referralCode,
+      status: p.status,
+      commissionBps: p.commissionBps,
+      payoutEmail: p.payoutEmail,
+      clicks: p._count.clicks,
+      attributions: p._count.attributions,
+      totalEarnedCents: s.earned,
+      totalReversedCents: s.reversed,
+      totalPaidCents: s.paid,
+      unpaidBalanceCents: s.earned - s.reversed - s.paid + s.adjustment,
+      createdAt: p.createdAt.toISOString(),
+    };
+  });
 
   return NextResponse.json({ data });
 }
@@ -103,6 +115,12 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     newCommissionBps = Math.round(commissionPct * 100);
   }
 
+  // Snapshot prior values so the audit metadata captures the actual change.
+  const prior = await prisma.referralPartner.findUnique({
+    where: { id: partnerId },
+    select: { status: true, commissionBps: true },
+  });
+
   const partner = await prisma.referralPartner.update({
     where: { id: partnerId },
     data: {
@@ -112,6 +130,29 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     },
     select: { id: true, status: true, commissionBps: true, userId: true },
   });
+
+  const session = await auth();
+  const auditCtx = getAuditContext(request);
+  if (status && prior?.status !== status) {
+    await logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.partner_status_change",
+      resourceType: "referral_partner",
+      resourceId: partnerId,
+      metadata: { from: prior?.status ?? null, to: status, adminNotes: adminNotes ?? null },
+      ...auditCtx,
+    });
+  }
+  if (newCommissionBps !== undefined && prior?.commissionBps !== newCommissionBps) {
+    await logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.partner_commission_change",
+      resourceType: "referral_partner",
+      resourceId: partnerId,
+      metadata: { fromBps: prior?.commissionBps ?? null, toBps: newCommissionBps },
+      ...auditCtx,
+    });
+  }
 
   return NextResponse.json({
     partner: {

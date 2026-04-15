@@ -137,6 +137,17 @@ export const passwordResetRateLimiter = createRateLimiter({
 });
 
 /**
+ * Rate limiter for the public referral click endpoint, keyed by IP. Combined
+ * with the (partnerId, ipHash, day) DB dedup, this caps automated click
+ * stuffing at a single attribution per IP per day plus a small in-memory
+ * budget for legitimate retries.
+ */
+export const referralClickRateLimiter = createRateLimiter({
+  limit: 30,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+/**
  * Rate limiter for login attempts
  * Limits: 10 attempts per 15 minutes per IP
  */

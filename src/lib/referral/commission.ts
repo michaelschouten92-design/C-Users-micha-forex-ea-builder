@@ -72,8 +72,21 @@ export async function bookCommission(invoice: Stripe.Invoice, userId: string): P
   });
 
   if (!attribution) return; // No attribution → no commission
-  if (attribution.status === "REJECTED") return;
+  // Whitelist valid statuses so any future state added to the schema does
+  // not silently become commission-eligible by default.
+  if (attribution.status !== "PENDING" && attribution.status !== "CONFIRMED") return;
   if (attribution.partner.status !== "ACTIVE") return; // Partner must be ACTIVE
+
+  // Currency guard. The ledger is single-currency (EUR); a non-EUR invoice
+  // would be booked as if the cents were EUR — silently inflating or
+  // deflating commissions. Reject and alert instead of guessing a rate.
+  if (invoice.currency && invoice.currency.toLowerCase() !== REFERRAL_CURRENCY) {
+    log.error(
+      { invoiceId: invoice.id, invoiceCurrency: invoice.currency, expected: REFERRAL_CURRENCY },
+      "referral:commission-skipped-currency-mismatch"
+    );
+    return;
+  }
 
   const partner = attribution.partner;
   const invoiceId = invoice.id;

@@ -15,6 +15,7 @@ import {
 } from "@/lib/email";
 import { syncDiscordRoleForUser } from "@/lib/discord";
 import { mapStripeStatus, transitionSubscription } from "@/lib/subscription/transitions";
+import { suspendPartnerOnDowngrade } from "@/lib/referral/partner-lifecycle";
 import type Stripe from "stripe";
 import * as Sentry from "@sentry/nextjs";
 import { z } from "zod";
@@ -580,6 +581,10 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
     // Sync Discord role to FREE (fire-and-forget with retry)
     syncDiscordWithRetry(userId, "FREE");
+
+    // Referral partner: ACTIVE → SUSPENDED on downgrade to FREE so the user
+    // doesn't keep accruing commissions after their paid plan ends.
+    await suspendPartnerOnDowngrade(userId);
   }
 }
 
@@ -624,6 +629,7 @@ async function handleCustomerDeleted(customer: Stripe.Customer) {
       .subscriptionCancel(userId)
       .catch((err) => log.warn({ err }, "Audit log failed after customer.deleted"));
     syncDiscordWithRetry(userId, "FREE");
+    await suspendPartnerOnDowngrade(userId);
     log.warn(
       { userId, customerId: customer.id },
       "Stripe customer deleted — subscription orphaned and cancelled"

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { checkAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { logAuditEvent, getAuditContext } from "@/lib/audit";
 
 const log = logger.child({ module: "referral-override" });
 
@@ -16,7 +17,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const session = await auth();
   const body = await request.json();
-  const { referredUserId, newPartnerCode, reason } = body;
+  const { referredUserId, reason } = body;
+  const newPartnerCode: string | null =
+    typeof body.newPartnerCode === "string"
+      ? body.newPartnerCode.trim().toUpperCase()
+      : body.newPartnerCode === null
+        ? null
+        : null;
 
   if (!referredUserId || !reason) {
     return NextResponse.json({ error: "referredUserId and reason required" }, { status: 400 });
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     where: { referredUserId },
   });
 
-  if (existing && newPartnerId) {
+  if (existing && newPartnerId && newPartnerCode) {
     // Override: update existing row (@@unique(referredUserId) means one row per user)
     await prisma.referralAttribution.update({
       where: { id: existing.id },
@@ -62,7 +69,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         rejectedReason: reason,
       },
     });
-  } else if (!existing && newPartnerId) {
+  } else if (!existing && newPartnerId && newPartnerCode) {
     // Create new attribution
     await prisma.referralAttribution.create({
       data: {
@@ -84,6 +91,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     },
     "referral:attribution-overridden"
   );
+
+  await logAuditEvent({
+    userId: session?.user?.id ?? null,
+    eventType: "referral.attribution_override",
+    resourceType: "referral_attribution",
+    resourceId: referredUserId,
+    metadata: {
+      newPartnerCode,
+      newPartnerId,
+      previousPartnerId: existing?.partnerId ?? null,
+      reason,
+    },
+    ...getAuditContext(request),
+  });
 
   return NextResponse.json({ success: true });
 }

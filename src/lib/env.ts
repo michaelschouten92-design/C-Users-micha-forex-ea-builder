@@ -118,6 +118,12 @@ const envSchema = z.object({
 
   // Previous encryption salt for key rotation (optional — decrypts legacy ciphertext)
   ENCRYPTION_SALT_PREVIOUS: z.string().min(16).optional(),
+
+  // Referral click hashing secret. HMAC-keys ipHash/uaHash so a partner with
+  // DB read access cannot rainbow-table their own clicks. Falls back to
+  // ENCRYPTION_SALT in dev; required in production for partner-fraud
+  // resistance. Generate with: openssl rand -hex 32.
+  REFERRAL_HASH_SECRET: z.string().min(32).optional(),
 });
 
 // Refinements for conditional requirements

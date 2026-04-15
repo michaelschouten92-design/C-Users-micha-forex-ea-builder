@@ -1436,8 +1436,6 @@ model ReferralPartner {
   commissionBps    Int      @default(2000) // Basis points: 2000 = 20%
   status           String   @default("PENDING") // PENDING, ACTIVE, SUSPENDED, TERMINATED
   payoutEmail      String?
-  payoutMethod     String?  // "bank_transfer", "paypal"
-  payoutDetails    String?  @db.Text // Encrypted payout instructions (legacy — use iban/accountHolder)
   payoutIban       String?  // SEPA IBAN for quarterly payouts (per Terms §10.3)
   payoutAccountHolder String? // Account holder name, must match IBAN
   totalEarnedCents Int      @default(0) // Cached aggregate (ledger SUM is truth)
@@ -1473,7 +1471,7 @@ model ReferralAttribution {
   referredUserId    String    @unique // One attribution per customer
   partnerId         String
   referralCode      String    // Snapshot of the code used at signup
-  status            String    @default("PENDING") // PENDING, CONFIRMED, REJECTED, OVERRIDDEN
+  status            String    @default("PENDING") // PENDING, CONFIRMED, REJECTED  (override mutates the row in-place; previousPartnerId tracks the audit trail)
   confirmedAt       DateTime?
   rejectedAt        DateTime?
   rejectedReason    String?
@@ -1494,13 +1492,15 @@ model ReferralClick {
   id          String   @id @default(cuid())
   partnerId   String
   landingPath String
-  ipHash      String?  // SHA-256 of IP (privacy-safe)
-  uaHash      String?  // SHA-256 of User-Agent
+  ipHash      String?  // HMAC-SHA-256 of IP keyed by REFERRAL_HASH_SECRET
+  uaHash      String?  // HMAC-SHA-256 of User-Agent keyed by REFERRAL_HASH_SECRET
   referer     String?  // HTTP Referer header
+  dedupKey    String?  // HMAC of (partnerId, ipHash, uaHash, yyyy-mm-dd) for daily dedup
   createdAt   DateTime @default(now())
 
   partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
+  @@unique([dedupKey])
   @@index([partnerId, createdAt])
 }
 

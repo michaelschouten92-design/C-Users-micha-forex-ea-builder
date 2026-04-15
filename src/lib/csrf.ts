@@ -127,6 +127,7 @@ export const CSRF_EXCLUDED_ROUTES = [
   "/api/internal/notifications/", // Uses x-internal-api-key header auth, not session cookies
   "/api/internal/incidents/", // Uses x-internal-api-key header auth, not session cookies
   "/api/internal/integrity/", // Uses x-internal-api-key header auth, not session cookies
+  "/api/referral/click", // Public unauth endpoint called from any landing page; rate-limited + dedup'd
 ];
 
 /**

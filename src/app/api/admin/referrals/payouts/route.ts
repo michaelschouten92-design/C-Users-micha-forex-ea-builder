@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
-
-/**
- * Minimum payout threshold — matches Terms §10.3 (€50 minimum per SEPA
- * transfer). Prevents accidental micro-payouts that would cost more in
- * SEPA transfer fees than the amount itself.
- */
-const MINIMUM_PAYOUT_CENTS = 5000;
+import { logAuditEvent, getAuditContext } from "@/lib/audit";
+import { MIN_PAYOUT_CENTS } from "@/lib/referral/constants";
 
 /**
  * GET: List payouts (optionally filtered by status).
@@ -66,6 +61,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "partnerId required" }, { status: 400 });
   }
 
+  // Resolve session + audit context up-front so a post-commit failure here
+  // cannot turn a successfully-created payout into an HTTP 400 (which would
+  // tempt the caller to retry and double-create).
+  const session = await auth();
+  const auditCtxPost = getAuditContext(request);
+
   // Period is the previous calendar month, computed in UTC so the audit
   // trail stays stable regardless of the host timezone (Vercel defaults to
   // UTC today, but the previous implementation used server-local time which
@@ -86,9 +87,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (totalCents <= 0) {
         throw new Error("No positive balance to pay out");
       }
-      if (totalCents < MINIMUM_PAYOUT_CENTS) {
+      if (totalCents < MIN_PAYOUT_CENTS) {
         throw new Error(
-          `Below minimum payout threshold (€${(MINIMUM_PAYOUT_CENTS / 100).toFixed(2)}). Current balance: €${(totalCents / 100).toFixed(2)}. Wait until the partner accumulates at least the minimum before issuing a SEPA payout.`
+          `Below minimum payout threshold (€${(MIN_PAYOUT_CENTS / 100).toFixed(2)}). Current balance: €${(totalCents / 100).toFixed(2)}. Wait until the partner accumulates at least the minimum before issuing a SEPA payout.`
         );
       }
 
@@ -103,11 +104,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         },
       });
 
-      // Link unpaid entries (makes composition immutable)
-      await tx.referralLedger.updateMany({
-        where: { id: { in: unpaidEntries.map((e) => e.id) } },
+      // Link unpaid entries (makes composition immutable). The `payoutId:
+      // null` filter is the compare-and-swap that prevents a phantom payout
+      // when two POSTs race: the second tx will update 0 rows (entries are
+      // already claimed by the first tx) and we abort instead of creating an
+      // empty payout with a hanging PAYOUT_SENT entry.
+      const linked = await tx.referralLedger.updateMany({
+        where: { id: { in: unpaidEntries.map((e) => e.id) }, payoutId: null },
         data: { payoutId: payout.id },
       });
+      if (linked.count !== unpaidEntries.length) {
+        throw new Error(
+          `Concurrent payout detected: claimed ${linked.count}/${unpaidEntries.length} entries`
+        );
+      }
 
       // Create PAYOUT_SENT ledger entry
       await tx.referralLedger.create({
@@ -121,6 +131,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
       return payout.id;
+    });
+
+    // Audit is best-effort: the payout commit already happened, so we do
+    // NOT let an audit write turn the response into a 400.
+    void logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.payout_create",
+      resourceType: "referral_payout",
+      resourceId: payoutId,
+      metadata: {
+        partnerId,
+        periodStart: periodStart.toISOString(),
+        periodEnd: periodEnd.toISOString(),
+      },
+      ...auditCtxPost,
+    }).catch(() => {
+      // logAuditEvent already logs internally on failure
     });
 
     return NextResponse.json({ payoutId });
@@ -142,6 +169,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "payoutId and action required" }, { status: 400 });
   }
 
+  const auditCtx = getAuditContext(request);
+
   if (action === "approve") {
     await prisma.referralPayout.update({
       where: { id: payoutId },
@@ -151,61 +180,93 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
         approvedAt: new Date(),
       },
     });
+    await logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.payout_approve",
+      resourceType: "referral_payout",
+      resourceId: payoutId,
+      ...auditCtx,
+    });
   } else if (action === "pay") {
-    await prisma.referralPayout.update({
-      where: { id: payoutId },
+    // Compare-and-swap on prior status so concurrent PATCH "pay" calls don't
+    // both transition (and otherwise both increment counters). The
+    // `totalPaidCents` cached aggregate is intentionally NOT incremented
+    // here — every reader (admin GET, partner stats) recomputes from the
+    // ledger SUM, so the cache was unused and a source of drift.
+    const result = await prisma.referralPayout.updateMany({
+      where: { id: payoutId, status: { in: ["PENDING", "APPROVED"] } },
       data: {
         status: "PAID",
         paidAt: new Date(),
         paidReference: paidReference ?? null,
       },
     });
-
-    // Update cached aggregate on partner
-    const payout = await prisma.referralPayout.findUnique({
-      where: { id: payoutId },
-      select: { partnerId: true, amountCents: true },
-    });
-    if (payout) {
-      await prisma.referralPartner.update({
-        where: { id: payout.partnerId },
-        data: { totalPaidCents: { increment: payout.amountCents } },
-      });
-    }
-  } else if (action === "cancel") {
-    // Guard: only PENDING or APPROVED payouts can be cancelled
-    const existing = await prisma.referralPayout.findUnique({
-      where: { id: payoutId },
-      select: { status: true, amountCents: true, partnerId: true },
-    });
-    if (!existing || existing.status === "PAID" || existing.status === "CANCELLED") {
+    if (result.count === 0) {
       return NextResponse.json(
-        { error: `Cannot cancel a ${existing?.status ?? "unknown"} payout` },
-        { status: 400 }
+        { error: "Payout is not in a payable state (must be PENDING or APPROVED)" },
+        { status: 409 }
       );
     }
-
-    // Append-only: create a reversing PAYOUT_CANCELLED entry instead of deleting
-    await prisma.$transaction(async (tx) => {
-      // Unlink ledger entries so they re-enter the unpaid pool
-      await tx.referralLedger.updateMany({
-        where: { payoutId, type: { not: "PAYOUT_SENT" } },
-        data: { payoutId: null },
+    await logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.payout_pay",
+      resourceType: "referral_payout",
+      resourceId: payoutId,
+      metadata: { paidReference: paidReference ?? null },
+      ...auditCtx,
+    });
+  } else if (action === "cancel") {
+    // Append-only: reverse via ADMIN_ADJUSTMENT instead of deleting. The
+    // status flip is the compare-and-swap that prevents two concurrent
+    // cancels both writing reversing entries (which would credit the
+    // partner twice). We only know amountCents/partnerId after the CAS
+    // succeeds, so the read happens inside the transaction post-flip.
+    let cancelled = true;
+    try {
+      await prisma.$transaction(async (tx) => {
+        const flip = await tx.referralPayout.updateMany({
+          where: { id: payoutId, status: { in: ["PENDING", "APPROVED"] } },
+          data: { status: "CANCELLED" },
+        });
+        if (flip.count === 0) {
+          cancelled = false;
+          return;
+        }
+        const payout = await tx.referralPayout.findUniqueOrThrow({
+          where: { id: payoutId },
+          select: { amountCents: true, partnerId: true },
+        });
+        // Unlink ledger entries so they re-enter the unpaid pool
+        await tx.referralLedger.updateMany({
+          where: { payoutId, type: { not: "PAYOUT_SENT" } },
+          data: { payoutId: null },
+        });
+        // Add reversing entry (restores balance, preserves audit trail)
+        await tx.referralLedger.create({
+          data: {
+            partnerId: payout.partnerId,
+            type: "ADMIN_ADJUSTMENT",
+            payoutId,
+            amountCents: payout.amountCents,
+            description: `Payout ${payoutId} cancelled`,
+          },
+        });
       });
-      // Add reversing entry (restores balance, preserves audit trail)
-      await tx.referralLedger.create({
-        data: {
-          partnerId: existing.partnerId,
-          type: "ADMIN_ADJUSTMENT",
-          payoutId,
-          amountCents: existing.amountCents, // positive: restores the deducted amount
-          description: `Payout ${payoutId} cancelled`,
-        },
-      });
-      await tx.referralPayout.update({
-        where: { id: payoutId },
-        data: { status: "CANCELLED" },
-      });
+    } catch (err) {
+      throw err;
+    }
+    if (!cancelled) {
+      return NextResponse.json(
+        { error: "Payout is not in a cancellable state (must be PENDING or APPROVED)" },
+        { status: 409 }
+      );
+    }
+    await logAuditEvent({
+      userId: session?.user?.id ?? null,
+      eventType: "referral.payout_cancel",
+      resourceType: "referral_payout",
+      resourceId: payoutId,
+      ...auditCtx,
     });
   }
 

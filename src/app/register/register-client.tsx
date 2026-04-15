@@ -14,9 +14,11 @@ import { trackEvent } from "@/lib/analytics";
 function RegisterFormInner({
   hasGoogle,
   captchaSiteKey,
+  referralCode,
 }: {
   hasGoogle: boolean;
   captchaSiteKey: string | null;
+  referralCode: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,11 +44,9 @@ function RegisterFormInner({
   const redirectTo =
     rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/app";
 
-  // Read referral code from cookie (set by middleware on ?ref= visits)
-  const referralCode =
-    typeof document !== "undefined"
-      ? document.cookie.match(/referral_code=([^;]+)/)?.[1] || ""
-      : "";
+  // referralCode comes from the page server component via cookies() — the
+  // middleware writes the cookie as httpOnly, so document.cookie cannot see
+  // it. Reading it client-side here would silently always be "".
 
   const renderCaptcha = useCallback(() => {
     if (!captchaSiteKey || !captchaContainerRef.current) return;
@@ -577,9 +577,11 @@ function RegisterFormInner({
 export function RegisterPageClient({
   hasGoogle,
   captchaSiteKey,
+  referralCode,
 }: {
   hasGoogle: boolean;
   captchaSiteKey: string | null;
+  referralCode: string;
 }) {
   return (
     <div id="main-content" className="min-h-screen flex items-center justify-center">
@@ -593,7 +595,11 @@ export function RegisterPageClient({
           </div>
         }
       >
-        <RegisterFormInner hasGoogle={hasGoogle} captchaSiteKey={captchaSiteKey} />
+        <RegisterFormInner
+          hasGoogle={hasGoogle}
+          captchaSiteKey={captchaSiteKey}
+          referralCode={referralCode}
+        />
       </Suspense>
     </div>
   );

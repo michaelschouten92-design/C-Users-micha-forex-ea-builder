@@ -52,7 +52,15 @@ export type AuditEventType =
   | "admin.bootstrap_promotion"
   | "admin.downgrade_warning"
   | "admin.incident_create"
-  | "admin.incident_update";
+  | "admin.incident_update"
+  // Referral program admin actions
+  | "referral.partner_status_change"
+  | "referral.partner_commission_change"
+  | "referral.attribution_override"
+  | "referral.payout_create"
+  | "referral.payout_approve"
+  | "referral.payout_pay"
+  | "referral.payout_cancel";
 
 interface AuditLogEntry {
   userId: string | null;

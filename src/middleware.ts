@@ -6,6 +6,7 @@ import {
   createCsrfErrorResponse,
   shouldProtectRoute,
 } from "@/lib/csrf";
+import { ATTRIBUTION_WINDOW_SECONDS } from "@/lib/referral/constants";
 
 /**
  * Session cookie names used by NextAuth v5.
@@ -85,7 +86,9 @@ export function middleware(request: NextRequest) {
   const refCode = request.nextUrl.searchParams.get("ref");
   if (refCode) {
     response.cookies.set("referral_code", refCode, {
-      maxAge: 60 * 86400, // 60 days — attribution window per Terms §10.2
+      // ATTRIBUTION_WINDOW_SECONDS is the single source of truth (Terms §10.2)
+      // — the cookie expires precisely when the attribution window does.
+      maxAge: ATTRIBUTION_WINDOW_SECONDS,
       path: "/",
       httpOnly: true, // Secure: not accessible to client-side JS; read server-side via cookies()
       sameSite: "lax",

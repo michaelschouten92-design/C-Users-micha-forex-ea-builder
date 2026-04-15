@@ -190,11 +190,16 @@ providers.push(
           const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
           // Generate unique referral code
-          const referralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
+          const referralCode = randomBytes(8).toString("hex").toUpperCase();
 
-          // Validate referral code from the referring user
+          // Validate referral code from the referring user. Normalize to
+          // uppercase since codes are stored uppercase and Postgres text
+          // comparison is case-sensitive — accepting mixed-case avoids
+          // silent attribution loss when users hand-type a referral code.
           let validatedReferredBy: string | undefined;
-          const incomingReferralCode = (credentials.referralCode as string) || "";
+          const incomingReferralCode = ((credentials.referralCode as string) || "")
+            .trim()
+            .toUpperCase();
           if (incomingReferralCode) {
             const referrer = await prisma.user.findFirst({
               where: { referralCode: incomingReferralCode },
@@ -371,14 +376,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return false;
           } else {
             // Generate unique referral code for new OAuth user
-            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
+            const oauthReferralCode = randomBytes(8).toString("hex").toUpperCase();
 
             // Read referral code from cookie (set by middleware)
             let oauthReferredBy: string | undefined;
             try {
               const { cookies: getCookies } = await import("next/headers");
               const cookieStore = await getCookies();
-              const refCookie = cookieStore.get("referral_code")?.value;
+              const refCookie = cookieStore.get("referral_code")?.value?.trim().toUpperCase();
               if (refCookie) {
                 const referrer = await prisma.user.findFirst({
                   where: { referralCode: refCookie },
@@ -466,13 +471,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
             return false;
           } else {
-            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
+            const oauthReferralCode = randomBytes(8).toString("hex").toUpperCase();
 
             let oauthReferredBy: string | undefined;
             try {
               const { cookies: getCookies } = await import("next/headers");
               const cookieStore = await getCookies();
-              const refCookie = cookieStore.get("referral_code")?.value;
+              const refCookie = cookieStore.get("referral_code")?.value?.trim().toUpperCase();
               if (refCookie) {
                 const referrer = await prisma.user.findFirst({
                   where: { referralCode: refCookie },
@@ -581,13 +586,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
             return false;
           } else {
-            const oauthReferralCode = randomBytes(6).toString("hex").slice(0, 8).toUpperCase();
+            const oauthReferralCode = randomBytes(8).toString("hex").toUpperCase();
 
             let oauthReferredBy: string | undefined;
             try {
               const { cookies: getCookies } = await import("next/headers");
               const cookieStore = await getCookies();
-              const refCookie = cookieStore.get("referral_code")?.value;
+              const refCookie = cookieStore.get("referral_code")?.value?.trim().toUpperCase();
               if (refCookie) {
                 const referrer = await prisma.user.findFirst({
                   where: { referralCode: refCookie },
