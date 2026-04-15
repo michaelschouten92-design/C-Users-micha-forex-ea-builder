@@ -30,6 +30,29 @@ const METRIC_TIPS: Record<keyof EdgeScoreBreakdown, string> = {
 };
 
 export function EdgeScorePanel({ edgeScore }: { edgeScore: EdgeScoreResult }) {
+  // AWAITING_HISTORY: heartbeat reports trades but EATrade ingest hasn't
+  // caught up. Surface the gap honestly instead of falling through to the
+  // score-render path (where score is null and would render as "0%").
+  if (edgeScore.phase === "AWAITING_HISTORY") {
+    return (
+      <div className="bg-[#111114] border border-[rgba(255,255,255,0.06)] rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[#FAFAFA]">
+            Edge Score
+            <InfoTooltip text="Compares your live trading performance against your backtest baseline. 100% means your live results match the backtest exactly." />
+          </h3>
+          <span className="text-[10px] text-[#F59E0B]">
+            {edgeScore.reportedTrades ?? 0} trades reported · history backfill pending
+          </span>
+        </div>
+        <div className="text-[11px] text-[#64748B]">
+          Your EA reports trades but they haven&apos;t been ingested yet. Edge score becomes
+          available once history catches up.
+        </div>
+      </div>
+    );
+  }
+
   if (edgeScore.phase === "COLLECTING") {
     const pct = (edgeScore.tradesCompleted / edgeScore.tradesRequired) * 100;
     return (

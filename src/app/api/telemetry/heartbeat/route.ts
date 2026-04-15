@@ -203,8 +203,17 @@ export async function POST(request: NextRequest) {
             `,
           ]
         : [
-            prisma.liveEAInstance.update({
-              where: { id: effectiveInstanceId },
+            // Legacy EAs (no session fields) still get a freshness guard:
+            // updateMany with `lastHeartbeat <= now` rejects buffered/queued
+            // heartbeats that arrive out of order. Without this a stale
+            // heartbeat could clobber equity/balance and revive an OFFLINE
+            // instance with old data.
+            prisma.liveEAInstance.updateMany({
+              where: {
+                id: effectiveInstanceId,
+                deletedAt: null,
+                OR: [{ lastHeartbeat: null }, { lastHeartbeat: { lt: now } }],
+              },
               data: {
                 status: "ONLINE",
                 lastHeartbeat: now,

@@ -128,11 +128,14 @@ export function applyHeartbeatPatch<T extends LiveInstanceDTO>(
   instance: T,
   patch: LiveHeartbeatPatch
 ): T {
-  // Freshness guard: ignore out-of-order (stale) patches
+  // Freshness guard: ignore strictly older patches. `<` (not `<=`) so a
+  // re-broadcast of the same heartbeat still applies idempotently — the
+  // EA samples seconds-resolution timestamps and may emit two snapshots
+  // with the same string, which is legitimate and should not freeze the UI.
   if (
     instance.lastHeartbeat &&
     patch.lastHeartbeat &&
-    patch.lastHeartbeat <= instance.lastHeartbeat
+    patch.lastHeartbeat < instance.lastHeartbeat
   ) {
     return instance;
   }

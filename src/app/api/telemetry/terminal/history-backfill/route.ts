@@ -70,8 +70,13 @@ function toDate(value: string | number): Date {
   return new Date(value < 1e12 ? value * 1000 : value);
 }
 
-/** Per-instance cap on backfilled rows — prevents a misbehaving EA from flooding EATrade. */
-const BACKFILL_ROW_CAP_PER_INSTANCE = 2000;
+/**
+ * Per-instance cap on backfilled rows — prevents a misbehaving EA from
+ * flooding EATrade. Bumped from 2_000 to 10_000 because long-running real
+ * accounts (5+ years of trading) can legitimately exceed the lower cap and
+ * silent skip beyond it was costing those users their entire history.
+ */
+const BACKFILL_ROW_CAP_PER_INSTANCE = 10_000;
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateTelemetry(request);
@@ -142,11 +147,20 @@ export async function POST(request: NextRequest) {
     if (outcome.status === "accepted") accepted++;
   }
 
+  // Surface row-cap pressure as a top-level signal so the EA can decide to
+  // stop sending more (and the admin sees it in monitoring). Without this
+  // the cap-skip was silent and large legacy accounts lost most of their
+  // historical data without warning.
+  const capSkipped = results.filter((r) => r.reason === "instance row cap reached").length;
+  const capReached = capSkipped > 0;
+
   log.info(
     {
       baseInstanceId: auth.instanceId,
       total: parsed.data.trades.length,
       accepted,
+      capSkipped,
+      capLimit: BACKFILL_ROW_CAP_PER_INSTANCE,
     },
     "History backfill batch processed"
   );
@@ -155,6 +169,8 @@ export async function POST(request: NextRequest) {
     success: true,
     accepted,
     rejected: parsed.data.trades.length - accepted,
+    capReached,
+    capLimit: BACKFILL_ROW_CAP_PER_INSTANCE,
     results,
   });
 }

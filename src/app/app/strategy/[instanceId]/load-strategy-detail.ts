@@ -314,6 +314,7 @@ export async function loadStrategyDetail(
         select: { strategyIdentity: { select: { strategyId: true } } },
       },
       balance: true,
+      totalTrades: true, // used as reportedTrades for AWAITING_HISTORY phase detection
       terminalDeployments: {
         where: { ignoredAt: null },
         select: { symbol: true, magicNumber: true, materialFingerprint: true },
@@ -622,7 +623,11 @@ export async function loadStrategyDetail(
         `,
       ]);
       const stats = tradeStats[0];
-      if (bl && stats && Number(stats.tradeCount) > 0) {
+      // Drop the `tradeCount > 0` guard so AWAITING_HISTORY can fire when
+      // the EA heartbeat reports trades but EATrade ingest hasn't caught
+      // up. computeEdgeScore handles the zero-trade branches (COLLECTING /
+      // AWAITING_HISTORY) internally.
+      if (bl && stats) {
         edgeScore = computeEdgeScore(
           {
             totalTrades: Number(stats.tradeCount),
@@ -640,7 +645,8 @@ export async function loadStrategyDetail(
             maxDrawdownPct: bl.maxDrawdownPct,
             netReturnPct: bl.netReturnPct,
             initialDeposit: bl.initialDeposit,
-          }
+          },
+          { reportedTrades: instance.totalTrades }
         );
       }
     } catch {

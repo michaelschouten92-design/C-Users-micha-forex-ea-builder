@@ -110,6 +110,13 @@ export async function POST(request: NextRequest) {
       magicNumber ?? null
     );
 
+    // DB invariant (EATrade_closed_requires_price): a closed row must have
+    // a closePrice. If the EA omits closePrice on a TRADE_CLOSE we fall back
+    // to openPrice so the constraint is satisfied. The payload's profit is
+    // authoritative anyway — only price-diff display would notice.
+    const closeTimeDate = closeTime ? toDate(closeTime) : null;
+    const safeClosePrice = closeTimeDate ? (closePrice ?? openPrice) : (closePrice ?? null);
+
     // Upsert trade based on unique [instanceId, ticket]
     await prisma.eATrade.upsert({
       where: {
@@ -124,19 +131,22 @@ export async function POST(request: NextRequest) {
         symbol,
         type,
         openPrice,
-        closePrice: closePrice ?? null,
+        closePrice: safeClosePrice,
         lots,
         profit,
         openTime: toDate(openTime),
-        closeTime: closeTime ? toDate(closeTime) : null,
+        closeTime: closeTimeDate,
         mode: parsed.data.mode ?? null,
         magicNumber: magicNumber ?? null,
         terminalDeploymentId: attribution.terminalDeploymentId,
       },
       update: {
-        closePrice: closePrice != null ? closePrice : undefined,
+        // On update we only override closePrice when payload provides one,
+        // OR when the close completes a previously-open row (closeTime
+        // becoming non-null requires closePrice per the CHECK constraint).
+        closePrice: closePrice != null ? closePrice : closeTimeDate != null ? openPrice : undefined,
         profit,
-        closeTime: closeTime ? toDate(closeTime) : undefined,
+        closeTime: closeTimeDate ?? undefined,
         mode: parsed.data.mode ?? undefined,
       },
     });

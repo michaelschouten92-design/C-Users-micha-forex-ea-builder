@@ -165,4 +165,54 @@ describe("computeEdgeScore", () => {
       expect(result.breakdown!.winRate.baseline).toBe(0.6);
     });
   });
+
+  describe("AWAITING_HISTORY phase", () => {
+    it("returns AWAITING_HISTORY when ingested=0 but reportedTrades>0", () => {
+      const live = makeLive({
+        totalTrades: 0,
+        winCount: 0,
+        lossCount: 0,
+        grossProfit: 0,
+        grossLoss: 0,
+      });
+      const result = computeEdgeScore(live, baseline, { reportedTrades: 25 });
+      expect(result.phase).toBe("AWAITING_HISTORY");
+      expect(result.score).toBeNull();
+      expect(result.breakdown).toBeNull();
+      expect(result.reportedTrades).toBe(25);
+      expect(result.tradesCompleted).toBe(0);
+    });
+
+    it("falls back to COLLECTING when both ingested and reportedTrades are 0", () => {
+      const live = makeLive({
+        totalTrades: 0,
+        winCount: 0,
+        lossCount: 0,
+        grossProfit: 0,
+        grossLoss: 0,
+      });
+      const result = computeEdgeScore(live, baseline, { reportedTrades: 0 });
+      expect(result.phase).toBe("COLLECTING");
+    });
+
+    it("ignores reportedTrades once ingested trades exist (no regression to AWAITING_HISTORY)", () => {
+      const live = makeLive({ totalTrades: 5, winCount: 3, lossCount: 2 });
+      const result = computeEdgeScore(live, baseline, { reportedTrades: 100 });
+      // 5 trades < COLLECTING_THRESHOLD (10) so still COLLECTING — but never AWAITING_HISTORY
+      expect(result.phase).toBe("COLLECTING");
+      expect(result.reportedTrades).toBeUndefined();
+    });
+
+    it("backward compatible: omitting options behaves like before (no AWAITING_HISTORY)", () => {
+      const live = makeLive({
+        totalTrades: 0,
+        winCount: 0,
+        lossCount: 0,
+        grossProfit: 0,
+        grossLoss: 0,
+      });
+      const result = computeEdgeScore(live, baseline);
+      expect(result.phase).toBe("COLLECTING");
+    });
+  });
 });

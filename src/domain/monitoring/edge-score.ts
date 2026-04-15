@@ -28,7 +28,7 @@ export interface EdgeScoreBaselineInput {
   initialDeposit: number;
 }
 
-export type EdgePhase = "COLLECTING" | "EARLY" | "FULL";
+export type EdgePhase = "COLLECTING" | "EARLY" | "FULL" | "AWAITING_HISTORY";
 
 export interface MetricRatio {
   live: number;
@@ -46,10 +46,12 @@ export interface EdgeScoreBreakdown {
 
 export interface EdgeScoreResult {
   phase: EdgePhase;
-  score: number | null; // null when COLLECTING
+  score: number | null; // null when COLLECTING / AWAITING_HISTORY
   tradesCompleted: number;
   tradesRequired: number;
-  breakdown: EdgeScoreBreakdown | null; // null when COLLECTING
+  breakdown: EdgeScoreBreakdown | null; // null when COLLECTING / AWAITING_HISTORY
+  /** Trade count the EA heartbeat reports — set in AWAITING_HISTORY. */
+  reportedTrades?: number;
 }
 
 // ── Constants ──────────────────────────────────────────────
@@ -95,9 +97,26 @@ function lowerIsBetter(live: number, baseline: number): number | null {
 
 export function computeEdgeScore(
   live: EdgeScoreLiveInput,
-  baseline: EdgeScoreBaselineInput
+  baseline: EdgeScoreBaselineInput,
+  options: { reportedTrades?: number } = {}
 ): EdgeScoreResult {
   const tradesCompleted = live.totalTrades;
+
+  // Phase: AWAITING_HISTORY — EA heartbeat says it has trades but EATrade
+  // ingest hasn't caught up (Monitor was attached mid-stream and missed
+  // the history). Surface this honestly so "0/10 trades" doesn't read as
+  // "EA isn't working" when the real issue is a backfill gap.
+  const reportedTrades = options.reportedTrades ?? 0;
+  if (tradesCompleted === 0 && reportedTrades > 0) {
+    return {
+      phase: "AWAITING_HISTORY",
+      score: null,
+      tradesCompleted: 0,
+      tradesRequired: COLLECTING_THRESHOLD,
+      breakdown: null,
+      reportedTrades,
+    };
+  }
 
   // Phase: COLLECTING — not enough trades for any score
   if (tradesCompleted < COLLECTING_THRESHOLD) {

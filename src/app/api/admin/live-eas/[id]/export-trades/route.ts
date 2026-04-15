@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
 import { checkAdmin } from "@/lib/admin";
+import { ORPHAN_EATRADE_SYMBOL } from "@/lib/track-record/mirror-to-eatrade";
 
 // GET /api/admin/live-eas/[id]/export-trades - Export trade history as CSV
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,8 +16,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "10000"), 10_000);
 
+    // Exclude orphan placeholder rows from CSV — they have no real symbol
+    // and would surface as `__ORPHAN__` in the export. Aggregates elsewhere
+    // still include them so totals stay correct.
     const trades = await prisma.eATrade.findMany({
-      where: { instanceId: id },
+      where: { instanceId: id, symbol: { not: ORPHAN_EATRADE_SYMBOL } },
       orderBy: { openTime: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,

@@ -170,27 +170,17 @@ function computeInstanceEdgeScore(
 ): LiveInstanceDTO["edgeScore"] {
   if (!bl || bl.winRate == null || bl.profitFactor == null) return null;
 
-  const agg = tradeAggregates.get(ea.id);
-  if (!agg || agg.tradeCount === 0) {
-    // EA heartbeat reports trades but no EATrade rows ingested yet → backfill
-    // gap. Surface the state honestly so "0/10 trades" doesn't read as broken.
-    if (ea.totalTrades > 0) {
-      return {
-        phase: "AWAITING_HISTORY" as const,
-        score: null,
-        tradesCompleted: 0,
-        tradesRequired: 10,
-        reportedTrades: ea.totalTrades,
-      };
-    }
-    return {
-      phase: "COLLECTING" as const,
-      score: null,
-      tradesCompleted: 0,
-      tradesRequired: 10,
-    };
-  }
+  const agg = tradeAggregates.get(ea.id) ?? {
+    winCount: 0,
+    lossCount: 0,
+    grossProfit: 0,
+    grossLoss: 0,
+    tradeCount: 0,
+  };
 
+  // computeEdgeScore is the single source of truth for phase classification
+  // (COLLECTING / EARLY / FULL / AWAITING_HISTORY). reportedTrades surfaces
+  // the heartbeat-vs-ingest gap as AWAITING_HISTORY when applicable.
   const result = computeEdgeScore(
     {
       totalTrades: agg.tradeCount,
@@ -208,7 +198,8 @@ function computeInstanceEdgeScore(
       maxDrawdownPct: bl.maxDrawdownPct ?? 0,
       netReturnPct: bl.netReturnPct ?? 0,
       initialDeposit: bl.initialDeposit ?? 0,
-    }
+    },
+    { reportedTrades: ea.totalTrades }
   );
 
   return {
@@ -216,5 +207,6 @@ function computeInstanceEdgeScore(
     score: result.score,
     tradesCompleted: result.tradesCompleted,
     tradesRequired: result.tradesRequired,
+    ...(result.reportedTrades !== undefined ? { reportedTrades: result.reportedTrades } : {}),
   };
 }
