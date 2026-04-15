@@ -126,6 +126,33 @@ async function main() {
   }
   console.log();
 
+  // TerminalDeployment check — the history-backfill endpoint resolves trades
+  // via (symbol, magicNumber) → TerminalDeployment → instanceId. Missing rows
+  // here = backfilled trades get "no owned deployment" skipped.
+  const deployments = await prisma.terminalDeployment.findMany({
+    where: { instanceId: { in: instanceIds } },
+    select: {
+      instanceId: true,
+      symbol: true,
+      magicNumber: true,
+      eaName: true,
+      baselineStatus: true,
+    },
+  });
+
+  console.log(`TerminalDeployment rows (used for backfill attribution):\n`);
+  if (deployments.length === 0) {
+    console.log(`  ⚠️  None — backfill endpoint will skip all trades!`);
+  } else {
+    for (const d of deployments) {
+      const ea = instances.find((i) => i.id === d.instanceId);
+      console.log(
+        `  ${d.symbol} / magic=${d.magicNumber} / ${d.eaName} → ${ea?.eaName ?? "?"} [status=${d.baselineStatus}]`
+      );
+    }
+  }
+  console.log();
+
   // TrackRecordEvent check — Monitor EA writes TRADE_CLOSE events here
   const trackRecordStats: Array<{
     instanceId: string;

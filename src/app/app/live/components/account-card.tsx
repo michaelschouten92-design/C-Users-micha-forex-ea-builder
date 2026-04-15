@@ -123,8 +123,18 @@ export function AccountCard({
     // Manifest/auto-discovered mode: add context instances (non-primary, with symbol set)
     // as strategy rows so strategies appear immediately after the first heartbeat, before
     // any trades. Resolve magicNumber from the instance's deployment if available.
+    //
+    // Dedupe: skip contexts that already have a trade-based entry pointing at
+    // them. Without this guard, instances with trades show twice — once as
+    // "USDJPY|<magic>" (from trade grouping) and again as "ctx:<id>" (from
+    // this loop) — because the keys differ but represent the same strategy.
+    const instanceIdsWithTradeEntries = new Set<string>();
+    for (const [, group] of map) {
+      if (group.instanceId) instanceIdsWithTradeEntries.add(group.instanceId);
+    }
     for (const ctx of instances) {
       if (ctx.id === primary.id || !ctx.symbol) continue;
+      if (instanceIdsWithTradeEntries.has(ctx.id)) continue;
       const key = `ctx:${ctx.id}`;
       if (!map.has(key)) {
         const dep = ctx.deployments?.find((d) => normSym(d.symbol) === normSym(ctx.symbol!));
