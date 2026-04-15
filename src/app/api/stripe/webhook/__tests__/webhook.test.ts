@@ -55,6 +55,18 @@ vi.mock("@/lib/prisma", () => ({
     user: {
       findUnique: mockUserFindUnique,
     },
+    // bookCommission / bookReversal look up referral attribution + write
+    // ledger entries. These mocks default to "no attribution for this
+    // user" so the commission booking is a no-op — the existing tests
+    // are not about referrals and should not fail on their absence.
+    referralAttribution: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+    referralLedger: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({}),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { amountCents: 0 } }),
+    },
   },
 }));
 

@@ -26,6 +26,8 @@ export type AuditEventType =
   | "subscription.cancel"
   | "subscription.payment_success"
   | "subscription.payment_failed"
+  | "subscription.payment_action_required"
+  | "subscription.charge_refunded"
   // Live EA
   | "live.external_ea_registered"
   | "live.api_key_rotated"
@@ -316,6 +318,27 @@ export const audit = {
       userId,
       eventType: "subscription.payment_failed",
       resourceType: "payment",
+    }),
+
+  paymentActionRequired: (userId: string, invoiceId: string) =>
+    logAuditEvent({
+      userId,
+      eventType: "subscription.payment_action_required",
+      resourceType: "payment",
+      resourceId: invoiceId,
+    }),
+
+  chargeRefunded: (
+    userId: string,
+    chargeId: string,
+    meta: { fullRefund: boolean; amountRefunded?: number }
+  ) =>
+    logAuditEvent({
+      userId,
+      eventType: "subscription.charge_refunded",
+      resourceType: "payment",
+      resourceId: chargeId,
+      metadata: meta,
     }),
 
   // Impersonation events

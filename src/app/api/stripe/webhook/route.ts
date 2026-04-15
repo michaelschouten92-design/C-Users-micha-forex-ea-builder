@@ -69,13 +69,27 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription): { start: Date
   };
 }
 
-// Optional IP allowlist for webhook endpoint (defense-in-depth)
+// Optional IP allowlist for webhook endpoint (defense-in-depth).
+// `STRIPE_WEBHOOK_IPS` present-but-empty is treated as a misconfiguration
+// rather than silently disabled — a zero-element env var nearly always
+// means the admin intended the allowlist but forgot to populate it, and
+// we'd rather 500 on startup than pretend the check is active.
+const STRIPE_WEBHOOK_IPS_RAW = process.env.STRIPE_WEBHOOK_IPS;
 const STRIPE_WEBHOOK_IPS =
-  process.env.STRIPE_WEBHOOK_IPS?.split(",")
+  STRIPE_WEBHOOK_IPS_RAW?.split(",")
     .map((s) => s.trim())
     .filter(Boolean) ?? [];
+const STRIPE_WEBHOOK_IPS_MISCONFIGURED =
+  STRIPE_WEBHOOK_IPS_RAW !== undefined && STRIPE_WEBHOOK_IPS.length === 0;
 
 export async function POST(request: NextRequest) {
+  if (STRIPE_WEBHOOK_IPS_MISCONFIGURED) {
+    log.error(
+      "STRIPE_WEBHOOK_IPS is set but empty — refusing to process webhooks until allowlist is populated or env var removed"
+    );
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
+
   // Optional IP allowlist check (only active when STRIPE_WEBHOOK_IPS env var is set)
   if (STRIPE_WEBHOOK_IPS.length > 0) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -89,6 +103,16 @@ export async function POST(request: NextRequest) {
   if (!signature) {
     log.error("Missing stripe-signature header");
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  }
+
+  // Reject oversized bodies before materialising them in memory. Stripe
+  // webhook payloads are <64KB in practice; anything above 1 MB is either
+  // a misconfigured test or a DoS attempt.
+  const MAX_WEBHOOK_BODY = 1_048_576; // 1 MB
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_WEBHOOK_BODY) {
+    log.error({ contentLength }, "Webhook body too large");
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
   }
 
   const body = await request.text();
@@ -263,20 +287,36 @@ export async function POST(request: NextRequest) {
     // its own schedule; handlers should be idempotent so retries after a
     // partial failure complete the remaining work.
     const errDetails = extractErrorDetails(error);
-    await prisma.webhookEvent
+    const updated = await prisma.webhookEvent
       .update({
         where: { eventId: event.id },
         data: {
           failureCount: { increment: 1 },
           lastFailure: JSON.stringify(errDetails).slice(0, 2000),
         },
+        select: { failureCount: true },
       })
       .catch((updateErr) => {
         log.error(
           { err: updateErr, eventId: event.id },
           "Failed to record webhook failure on idempotency record"
         );
+        return null;
       });
+
+    // Escalate to Sentry once the same event has failed repeatedly — before
+    // this, silent retries could continue for days without any alert.
+    if (updated && updated.failureCount >= 3) {
+      Sentry.captureMessage("Stripe webhook stuck failing", {
+        level: "error",
+        extra: {
+          eventId: event.id,
+          eventType: event.type,
+          failureCount: updated.failureCount,
+          lastFailure: JSON.stringify(errDetails).slice(0, 500),
+        },
+      });
+    }
 
     log.error({ error: errDetails, eventType: event.type }, "Webhook handler error");
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
@@ -702,14 +742,14 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       .paymentSuccess(userId)
       .catch((err) => log.warn({ err }, "Audit log failed but payment recorded"));
 
-    // Referral commission (awaited — errors are caught, not thrown, so this
-    // won't block subscription activation. Idempotent via ledger unique index.)
-    try {
-      const { bookCommission } = await import("@/lib/referral/commission");
-      await bookCommission(invoice, userId);
-    } catch (err) {
-      log.error({ err, invoiceId: invoice.id }, "referral:commission-booking-failed");
-    }
+    // Referral commission booking. `bookCommission` is idempotent (unique
+    // constraint on [stripeInvoiceId, type=COMMISSION_EARNED]) so we
+    // rethrow on failure — that lets the outer webhook handler return 500,
+    // leaves `WebhookEvent.completedAt` null, and Stripe's native retry
+    // schedule will reprocess the event. Silently swallowing the error
+    // would lose the commission forever on any transient DB failure.
+    const { bookCommission } = await import("@/lib/referral/commission");
+    await bookCommission(invoice, userId);
   }
 }
 
@@ -771,7 +811,7 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
   }
 
   // Lock the subscription row to prevent concurrent webhooks from sending duplicate emails.
-  const userEmail = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<Array<{ userId: string }>>`
       SELECT "userId" FROM "Subscription"
       WHERE "stripeCustomerId" = ${customerId}
@@ -783,16 +823,21 @@ async function handlePaymentActionRequired(invoice: Stripe.Invoice) {
       where: { id: rows[0].userId },
       select: { email: true },
     });
-    return user?.email ?? null;
+    return user?.email ? { userId: rows[0].userId, email: user.email } : null;
   });
 
-  if (!userEmail) return;
+  if (!result) return;
 
   const portalUrl = `${env.AUTH_URL}/app`;
-  sendPaymentActionRequiredEmail(userEmail, portalUrl).catch((err) =>
+  sendPaymentActionRequiredEmail(result.email, portalUrl).catch((err) =>
     log.error({ err }, "Payment action required email send failed")
   );
   log.info({ customerId, invoiceId: invoice.id }, "Payment action required email sent");
+
+  // Audit the SCA challenge so compliance can reconstruct when a user was
+  // asked to complete 3DS and whether they followed through.
+  const invoiceId = invoice.id ?? "unknown";
+  await audit.paymentActionRequired(result.userId, invoiceId);
 }
 
 async function handleTrialWillEnd(subscription: Stripe.Subscription) {
@@ -827,10 +872,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
-  // Log the refund but do NOT auto-downgrade the subscription.
-  // Stripe sends customer.subscription.deleted when a subscription is actually cancelled.
-  // A refund on a single charge (e.g. customer service goodwill) should not kill the subscription.
-  // Amount intentionally excluded — lookup in Stripe dashboard via chargeId if needed.
+  // Look up the user so we can write a compliance audit event. A refund is
+  // a financial event that must be traceable independently of the referral
+  // ledger — support and legal need to reconstruct "what happened to this
+  // charge" without joining across tables.
+  const sub = await prisma.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+    select: { userId: true },
+  });
+
   log.info(
     {
       chargeId: charge.id,
@@ -840,13 +890,18 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     "Charge refunded — subscription unchanged (cancellation handled by subscription.deleted)"
   );
 
-  // Referral commission reversal (awaited, errors caught)
-  try {
-    const { bookReversal } = await import("@/lib/referral/commission");
-    await bookReversal(charge);
-  } catch (err) {
-    log.error({ err, chargeId: charge.id }, "referral:reversal-booking-failed");
+  if (sub?.userId) {
+    await audit.chargeRefunded(sub.userId, charge.id, {
+      fullRefund: charge.refunded,
+      amountRefunded: charge.amount_refunded,
+    });
   }
+
+  // Referral commission reversal. Same idempotency + retry argument as
+  // bookCommission above — rethrow on transient failure so Stripe retries
+  // the whole webhook instead of silently losing the reversal.
+  const { bookReversal } = await import("@/lib/referral/commission");
+  await bookReversal(charge);
 }
 
 async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
@@ -1007,6 +1062,19 @@ async function handleDisputeClosed(dispute: Stripe.Dispute) {
         { err: extractErrorDetails(err), disputeId: dispute.id, chargeId },
         "Dispute lost but charge retrieval failed — manual review required"
       );
+      // A lost dispute with an unretrievable charge is a high-impact gap:
+      // user keeps paid tier AND partner keeps commission, both without
+      // any human noticing. Force an operator alert so compliance can
+      // manually reconcile via the Stripe dashboard.
+      Sentry.captureMessage("Dispute lost but charge unretrievable — manual reconciliation", {
+        level: "error",
+        extra: {
+          disputeId: dispute.id,
+          chargeId,
+          disputeAmount: dispute.amount,
+          disputeReason: dispute.reason,
+        },
+      });
       return;
     }
     const customerId = getStringId(charge.customer);
