@@ -45,7 +45,16 @@ const STRIPE_STATUS_MAP: Record<string, SubscriptionStatus> = {
 };
 
 export function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
-  return STRIPE_STATUS_MAP[stripeStatus] ?? "active";
+  const mapped = STRIPE_STATUS_MAP[stripeStatus];
+  if (mapped) return mapped;
+  // Fail-closed: an unknown Stripe status (future-API or typo) must NOT
+  // silently grant ACTIVE access. Map to `unpaid` so downstream resolveTier
+  // downgrades to FREE until we explicitly handle the new status.
+  log.error(
+    { stripeStatus },
+    "mapStripeStatus: unknown Stripe status — mapped to 'unpaid' (fail-closed)"
+  );
+  return "unpaid";
 }
 
 // ---------------------------------------------------------------------------

@@ -9,12 +9,29 @@ import {
   transitionSubscription,
   logSubscriptionTransition,
 } from "@/lib/subscription/transitions";
-import type { SubscriptionStatus } from "@prisma/client";
+import type { PlanTier, SubscriptionStatus } from "@prisma/client";
 import type Stripe from "stripe";
 
 const log = logger.child({ route: "/api/cron/reconcile-subscriptions" });
 
 const PRICE_TO_TIER: Record<string, "PRO" | "ELITE" | "INSTITUTIONAL"> = {};
+
+/**
+ * Stripe statuses we know how to map. Used as an allow-list before calling
+ * `mapStripeStatus`, which fail-closes to "unpaid" on unknown values.
+ * Without the allow-list a future Stripe-API addition would silently
+ * downgrade every affected subscription on the next cron run.
+ */
+const STRIPE_STATUS_KNOWN = new Set([
+  "active",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "past_due",
+  "paused",
+  "trialing",
+  "unpaid",
+]);
 
 function buildPriceTierMap() {
   if (Object.keys(PRICE_TO_TIER).length > 0) return;
@@ -119,7 +136,18 @@ async function handleReconcile(request: NextRequest) {
             throw err;
           }
 
-          // Compare status
+          // Compare status. mapStripeStatus fails closed to "unpaid" on
+          // unknown values — if Stripe ever introduces a new status the
+          // cron must NOT mass-downgrade everyone via that fallback.
+          // Skip the row entirely so a human can investigate the unknown
+          // value before we touch user state.
+          if (!STRIPE_STATUS_KNOWN.has(stripeSub.status)) {
+            log.warn(
+              { userId: sub.userId, stripeStatus: stripeSub.status },
+              "Reconcile: unknown Stripe status, skipping row"
+            );
+            return { mismatch: false };
+          }
           const expectedStatus = mapStripeStatus(stripeSub.status);
           const priceId = stripeSub.items.data[0]?.price.id;
           const expectedTier = priceId ? PRICE_TO_TIER[priceId] : undefined;
@@ -142,21 +170,23 @@ async function handleReconcile(request: NextRequest) {
           if (expectedTier && sub.tier !== expectedTier) {
             updates.tier = expectedTier;
           }
+          // Period dates are second-resolution Unix timestamps from Stripe;
+          // when they differ, sync exactly. Any non-zero drift is real
+          // (missed webhook, manual edit) and would otherwise expire-detect
+          // a day late. The previous 60s threshold masked legitimate drift
+          // that resolveTier needs to know about right now.
           if (startRaw) {
             const expectedStart = new Date(startRaw * 1000);
             if (
               !sub.currentPeriodStart ||
-              Math.abs(sub.currentPeriodStart.getTime() - expectedStart.getTime()) > 60000
+              sub.currentPeriodStart.getTime() !== expectedStart.getTime()
             ) {
               updates.currentPeriodStart = expectedStart;
             }
           }
           if (endRaw) {
             const expectedEnd = new Date(endRaw * 1000);
-            if (
-              !sub.currentPeriodEnd ||
-              Math.abs(sub.currentPeriodEnd.getTime() - expectedEnd.getTime()) > 60000
-            ) {
+            if (!sub.currentPeriodEnd || sub.currentPeriodEnd.getTime() !== expectedEnd.getTime()) {
               updates.currentPeriodEnd = expectedEnd;
             }
           }
@@ -166,9 +196,13 @@ async function handleReconcile(request: NextRequest) {
               { userId: sub.userId, stripeSubId: sub.stripeSubId, updates },
               "Reconciliation mismatch — updating DB"
             );
-            const toState: { status?: SubscriptionStatus; tier?: "PRO" | "ELITE" } = {};
+            // Use the full PlanTier union, NOT a hardcoded subset — the
+            // previous "PRO" | "ELITE" cast silently discarded INSTITUTIONAL
+            // updates and made it impossible for the reconcile cron to ever
+            // restore a missed-webhook INSTITUTIONAL upgrade.
+            const toState: { status?: SubscriptionStatus; tier?: PlanTier } = {};
             if (updates.status) toState.status = updates.status as SubscriptionStatus;
-            if (updates.tier) toState.tier = updates.tier as "PRO" | "ELITE";
+            if (updates.tier) toState.tier = updates.tier as PlanTier;
             const { status: _s, tier: _t, ...periodUpdates } = updates;
             await transitionSubscription(
               prisma,

@@ -10,6 +10,7 @@ import {
   checkContentType,
 } from "@/lib/validations";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
+import { audit } from "@/lib/audit";
 import {
   apiRateLimiter,
   checkRateLimit,
@@ -98,7 +99,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (!subscription?.stripeSubId) {
-      return NextResponse.json({ error: "No active subscription to change" }, { status: 400 });
+      // Admin-upgraded subscriptions intentionally have no Stripe link so a
+      // generic "No active subscription" message is misleading. If the
+      // user holds a paid tier without a Stripe subscription, point them to
+      // support; only show the no-subscription message for actual FREE users.
+      const message =
+        subscription && subscription.tier !== "FREE"
+          ? "Your subscription is managed by our team. Contact support to change your plan."
+          : "No active subscription to change";
+      return NextResponse.json(
+        {
+          error: message,
+          code: subscription && subscription.tier !== "FREE" ? "ADMIN_MANAGED" : "NO_SUBSCRIPTION",
+        },
+        { status: 400 }
+      );
     }
 
     const currentTier = subscription.tier as keyof typeof TIER_ORDER;
@@ -174,17 +189,39 @@ export async function POST(request: NextRequest) {
       const periodStart = subRaw.current_period_start as number;
       const periodEnd = subRaw.current_period_end as number;
 
-      // Safety: refuse to schedule a downgrade if the period has already ended
-      // (webhook delay / stale Stripe data) — otherwise we'd create a schedule
-      // with invalid phase dates.
+      // If the period has already ended (webhook delay / stale Stripe data),
+      // a scheduled phase 1 with end_date in the past would be rejected by
+      // Stripe. Apply the downgrade immediately instead — the user wanted to
+      // downgrade and the period is over, so there is no value left to
+      // preserve. Better than a confusing "period has ended" error in the
+      // last minutes of the cycle.
       if (!periodEnd || periodEnd * 1000 <= Date.now()) {
-        return NextResponse.json(
+        const immediateKey = `plan-change-immediate_${session.user.id}_${plan}_${interval}_${Math.floor(Date.now() / 60_000)}`;
+        await getStripe().subscriptions.update(
+          subscription.stripeSubId,
           {
-            error:
-              "Your subscription period has ended or is invalid. Please refresh and try again.",
+            items: [{ id: currentItem.id, price: newPriceId }],
+            proration_behavior: "none",
           },
-          { status: 400 }
+          { idempotencyKey: immediateKey }
         );
+        invalidateSubscriptionCache(session.user.id);
+        // Audit: customer.subscription.updated webhook will write the DB
+        // tier change separately; we still log here so support has a trail
+        // of the user's intent (clicked downgrade in last minute of cycle).
+        audit
+          .subscriptionDowngrade(session.user.id, currentTier, plan)
+          .catch((err) => log.warn({ err }, "Audit log failed for immediate downgrade"));
+        log.info(
+          { userId: session.user.id, from: currentTier, to: plan, immediate: true },
+          "Plan change applied immediately (period already ended)"
+        );
+        return NextResponse.json({
+          success: true,
+          immediate: true,
+          message:
+            "Your billing period has already ended; the downgrade has been applied immediately.",
+        });
       }
 
       // Compute advisory warnings for features that will become unavailable.

@@ -37,6 +37,19 @@ if (typeof evictionTimer === "object" && "unref" in evictionTimer) {
   evictionTimer.unref();
 }
 
+/**
+ * Statuses that grant tier access:
+ *   - `active` / `trialing`  → fully entitled
+ *   - `past_due`             → grace window (Stripe retries up to ~7 days)
+ *   - `incomplete`           → initial-payment window (3DS / SCA, ~24h)
+ *
+ * `unpaid`, `cancelled`, `paused`, `expired`, `incomplete_expired` do NOT
+ * grant access. The `currentPeriodEnd` check below still kicks in for grace
+ * statuses — once the period has actually ended, tier drops to FREE
+ * regardless of status.
+ */
+const TIER_GRANTING_STATUSES = new Set(["active", "trialing", "past_due", "incomplete"]);
+
 /** Resolve the effective tier from raw subscription data (pure logic, no DB call). */
 export function resolveTier(
   subscription: {
@@ -48,12 +61,12 @@ export function resolveTier(
 ): PlanTier {
   let tier = (subscription?.tier ?? "FREE") as PlanTier;
   if (tier !== "FREE") {
-    const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+    const isEntitled = subscription ? TIER_GRANTING_STATUSES.has(subscription.status) : false;
     const now = new Date();
     const isExpired = subscription?.currentPeriodEnd && subscription.currentPeriodEnd < now;
     // Admin-granted extension overrides Stripe expiry
     const hasManualExtension = subscription?.manualPeriodEnd && subscription.manualPeriodEnd > now;
-    if (!isActive || (isExpired && !hasManualExtension)) {
+    if (!isEntitled || (isExpired && !hasManualExtension)) {
       tier = "FREE";
     }
   }

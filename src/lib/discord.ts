@@ -222,21 +222,38 @@ export async function removeRole(discordUserId: string, roleId: string): Promise
 
 /**
  * Sync Discord roles to match the user's subscription tier.
- * Removes old tier roles and adds the correct one.
+ *
+ * Add-then-remove order so a Discord-API failure between calls cannot leave
+ * the user with NO tier role at all (the previous remove-then-add path was
+ * non-atomic and a partial failure stripped the user of every tier role
+ * without granting the new one).
  */
 export async function syncRolesForTier(discordUserId: string, tier: string): Promise<void> {
   const proRoleId = env.DISCORD_PRO_ROLE_ID;
   const eliteRoleId = env.DISCORD_ELITE_ROLE_ID;
+  const institutionalRoleId = env.DISCORD_INSTITUTIONAL_ROLE_ID;
 
-  // Remove all tier roles first
-  if (proRoleId) await removeRole(discordUserId, proRoleId);
-  if (eliteRoleId) await removeRole(discordUserId, eliteRoleId);
+  // 1. Add the new role first — if this fails the old role still applies.
+  let newRoleId: string | undefined;
+  if (tier === "PRO" && proRoleId) newRoleId = proRoleId;
+  else if (tier === "ELITE" && eliteRoleId) newRoleId = eliteRoleId;
+  else if (tier === "INSTITUTIONAL" && institutionalRoleId) newRoleId = institutionalRoleId;
 
-  // Add the appropriate role
-  if (tier === "PRO" && proRoleId) {
-    await addRole(discordUserId, proRoleId);
-  } else if (tier === "ELITE" && eliteRoleId) {
-    await addRole(discordUserId, eliteRoleId);
+  if (newRoleId) {
+    await addRole(discordUserId, newRoleId);
+  }
+
+  // 2. Remove the OTHER tier roles. If a remove fails the user temporarily
+  // has both roles — visible in Discord but not a security regression — and
+  // the next sync (re-trigger or downgrade flow) cleans it up.
+  if (proRoleId && newRoleId !== proRoleId) {
+    await removeRole(discordUserId, proRoleId);
+  }
+  if (eliteRoleId && newRoleId !== eliteRoleId) {
+    await removeRole(discordUserId, eliteRoleId);
+  }
+  if (institutionalRoleId && newRoleId !== institutionalRoleId) {
+    await removeRole(discordUserId, institutionalRoleId);
   }
 }
 

@@ -74,6 +74,7 @@ const envSchema = z.object({
   DISCORD_GUILD_ID: z.string().optional(),
   DISCORD_PRO_ROLE_ID: z.string().optional(),
   DISCORD_ELITE_ROLE_ID: z.string().optional(),
+  DISCORD_INSTITUTIONAL_ROLE_ID: z.string().optional(),
 
   // Support email (optional - defaults to support@algo-studio.com)
   SUPPORT_EMAIL: z.string().email().optional(),
@@ -387,6 +388,7 @@ function validateEnv() {
       DISCORD_GUILD_ID: undefined,
       DISCORD_PRO_ROLE_ID: undefined,
       DISCORD_ELITE_ROLE_ID: undefined,
+      DISCORD_INSTITUTIONAL_ROLE_ID: undefined,
       ADMIN_EMAIL: undefined,
       TURNSTILE_SECRET_KEY: undefined,
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: undefined,
@@ -465,6 +467,7 @@ function validateEnv() {
         DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
         DISCORD_PRO_ROLE_ID: process.env.DISCORD_PRO_ROLE_ID,
         DISCORD_ELITE_ROLE_ID: process.env.DISCORD_ELITE_ROLE_ID,
+        DISCORD_INSTITUTIONAL_ROLE_ID: process.env.DISCORD_INSTITUTIONAL_ROLE_ID,
         ADMIN_EMAIL: process.env.ADMIN_EMAIL,
         SUPPORT_EMAIL: process.env.SUPPORT_EMAIL,
         TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,

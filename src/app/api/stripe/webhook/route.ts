@@ -469,11 +469,19 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     const userSubscription = rows[0];
     const previousTier = userSubscription.tier;
 
-    // Clear pending downgrade fields if the new tier matches the scheduled target
-    // (meaning the schedule completed and Stripe transitioned the subscription)
-    const shouldClearSchedule =
-      userSubscription.scheduledDowngradeTier === tier || !userSubscription.scheduledDowngradeTier;
-
+    // Schedule-tracking fields (scheduledDowngradeTier, stripeScheduleId)
+    // are CLEARED only by the dedicated handleScheduleCompleted /
+    // handleScheduleCancelledOrReleased handlers, and SET only by the
+    // /api/stripe/change-plan route when it creates a Stripe subscription
+    // schedule. Clearing them here too races against the schedule handlers
+    // — at best double work, at worst overwriting a freshly-set schedule
+    // from a near-simultaneous subscription_schedule.created event.
+    //
+    // Note: between subscription.updated arriving (tier changes) and
+    // subscription_schedule.completed arriving (schedule fields cleared),
+    // the UI can briefly show a "scheduled downgrade" badge for a downgrade
+    // that has already taken effect. Stripe normally delivers both events
+    // within seconds; a longer delay self-resolves on the next webhook.
     await transitionSubscription(
       tx,
       userSubscription.userId,
@@ -489,10 +497,6 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         currentPeriodEnd: period.end,
         hadPaidPlan: true,
         cancelAtPeriodEnd: cancelAtPeriodEndDate,
-        ...(shouldClearSchedule && {
-          scheduledDowngradeTier: null,
-          stripeScheduleId: null,
-        }),
       }
     );
 

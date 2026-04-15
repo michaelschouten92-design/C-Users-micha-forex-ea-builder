@@ -61,9 +61,33 @@ describe("plan-limits", () => {
       );
     });
 
-    it("returns FREE when subscription status is past_due", () => {
+    it("returns PRO when past_due within current period (grace window)", () => {
+      // Stripe retries failed payments for ~7 days. We grant tier access
+      // during that window so a single failed charge doesn't immediately
+      // strip the user of paid features.
       const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       expect(resolveTier({ tier: "PRO", status: "past_due", currentPeriodEnd: futureDate })).toBe(
+        "PRO"
+      );
+    });
+
+    it("returns FREE when past_due AND currentPeriodEnd has expired", () => {
+      const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      expect(resolveTier({ tier: "PRO", status: "past_due", currentPeriodEnd: pastDate })).toBe(
+        "FREE"
+      );
+    });
+
+    it("returns PRO when status is incomplete within current period (SCA window)", () => {
+      const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      expect(resolveTier({ tier: "PRO", status: "incomplete", currentPeriodEnd: futureDate })).toBe(
+        "PRO"
+      );
+    });
+
+    it("returns FREE when status is paused (paused does NOT grant access)", () => {
+      const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      expect(resolveTier({ tier: "PRO", status: "paused", currentPeriodEnd: futureDate })).toBe(
         "FREE"
       );
     });

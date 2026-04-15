@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createApiLogger, extractErrorDetails } from "@/lib/logger";
 import { ErrorCode, apiError } from "@/lib/error-codes";
+import { removeRole } from "@/lib/discord";
+import { env } from "@/lib/env";
 
 // POST /api/discord/unlink - Disconnect Discord from the current user's account
 export async function POST(_request: NextRequest) {
@@ -33,6 +35,23 @@ export async function POST(_request: NextRequest) {
         { error: "Discord is your login method and cannot be disconnected" },
         { status: 400 }
       );
+    }
+
+    // Remove tier roles from the Discord guild before clearing the link.
+    // Otherwise the role lingers on the user's Discord account in our guild
+    // even though they're no longer a paying customer here. Best-effort —
+    // a Discord-API failure must not block the unlink itself.
+    const tierRoleIds = [
+      env.DISCORD_PRO_ROLE_ID,
+      env.DISCORD_ELITE_ROLE_ID,
+      env.DISCORD_INSTITUTIONAL_ROLE_ID,
+    ].filter((id): id is string => Boolean(id));
+    for (const roleId of tierRoleIds) {
+      try {
+        await removeRole(user.discordId, roleId);
+      } catch (err) {
+        log.warn({ err, roleId }, "Discord role removal failed during unlink (continuing)");
+      }
     }
 
     await prisma.user.update({
