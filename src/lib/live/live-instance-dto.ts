@@ -92,10 +92,12 @@ export interface LiveInstanceDTO {
   healthSnapshots?: LiveInstanceHealthSnapshot[];
   deployments?: LiveInstanceDeployment[];
   edgeScore?: {
-    phase: "COLLECTING" | "EARLY" | "FULL";
+    phase: "COLLECTING" | "EARLY" | "FULL" | "AWAITING_HISTORY";
     score: number | null;
     tradesCompleted: number;
     tradesRequired: number;
+    /** Trade count reported by MT5 heartbeat — shown when ahead of ingested trades. */
+    reportedTrades?: number;
   } | null;
 }
 

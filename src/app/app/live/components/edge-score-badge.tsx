@@ -11,6 +11,21 @@ function scoreColor(score: number): string {
 }
 
 export function EdgeScoreBadge({ edgeScore }: { edgeScore: EdgeScore }) {
+  if (edgeScore.phase === "AWAITING_HISTORY") {
+    // Heartbeat reports trades but none have been ingested as events yet —
+    // typical when the Monitor EA was attached after the EA had already been
+    // running. Show the reported count so the user knows activity is real,
+    // and signal that historical detail isn't available.
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#1E293B]/60 text-[9px] text-[#94A3B8] tabular-nums"
+        title="MT5 reports trades, but Monitor EA attached after they closed. Only trades that close while the Monitor is running are tracked in detail."
+      >
+        <span>{edgeScore.reportedTrades ?? 0} trades · history unavailable</span>
+      </span>
+    );
+  }
+
   if (edgeScore.phase === "COLLECTING") {
     const pct = (edgeScore.tradesCompleted / edgeScore.tradesRequired) * 100;
     return (

@@ -150,6 +150,19 @@ function renderDashboard(
       if (!bl || bl.winRate == null || bl.profitFactor == null) return null;
       const agg = tradeAggregates.get(ea.id);
       if (!agg || agg.tradeCount === 0) {
+        // If the EA heartbeat reports trades but no EATrade rows have been
+        // ingested yet, the Monitor was attached mid-stream and missed the
+        // history. Surface this state honestly — "0/10 trades" reads as "EA
+        // isn't working" when the real issue is a backfill gap.
+        if (ea.totalTrades > 0) {
+          return {
+            phase: "AWAITING_HISTORY" as const,
+            score: null,
+            tradesCompleted: 0,
+            tradesRequired: 10,
+            reportedTrades: ea.totalTrades,
+          };
+        }
         return {
           phase: "COLLECTING" as const,
           score: null,
