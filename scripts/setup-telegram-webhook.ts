@@ -10,6 +10,7 @@
  *   TELEGRAM_WEBHOOK_SECRET     — Random secret for verifying inbound updates
  *   NEXT_PUBLIC_APP_URL         — Your app's public URL (e.g. https://algo-studio.com)
  */
+export {}; // force module scope so top-level identifiers don't collide with other scripts
 
 const BOT_TOKEN = process.env.ALGO_TELEGRAM_BOT_TOKEN;
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
