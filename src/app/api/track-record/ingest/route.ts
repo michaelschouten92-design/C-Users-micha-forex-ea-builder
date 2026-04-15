@@ -19,6 +19,7 @@ import { validatePayload } from "@/lib/track-record/payload-schemas";
 import { checkRateLimit } from "@/lib/track-record/rate-limiter";
 import { evaluateHealthIfDue } from "@/lib/strategy-health";
 import { evaluateHealthLifecycleTrigger } from "@/domain/monitoring/health-lifecycle-trigger";
+import { mirrorTradeEventToEATrade } from "@/lib/track-record/mirror-to-eatrade";
 import * as Sentry from "@sentry/nextjs";
 
 /** Strict hex hash: 64 chars (SHA-256 output). */
@@ -403,6 +404,26 @@ export async function POST(request: NextRequest) {
       },
       { isolationLevel: "RepeatableRead" }
     );
+
+    // Mirror trade events into EATrade (denormalized source used by edge-score
+    // + dashboard aggregates). Fire-and-forget — the track-record tx is the
+    // source of truth; if the mirror fails it can be rebuilt via backfill.
+    if (result.status === 200 && (eventType === "TRADE_OPEN" || eventType === "TRADE_CLOSE")) {
+      mirrorTradeEventToEATrade(prisma, {
+        instanceId: effectiveInstanceId,
+        eventType,
+        payload,
+        timestamp,
+      }).catch((err) => {
+        logger.error(
+          { err, instanceId: effectiveInstanceId, eventType },
+          "EATrade mirror failed (non-fatal)"
+        );
+        Sentry.captureException(err, {
+          extra: { instanceId: effectiveInstanceId, eventType, context: "eatrade-mirror" },
+        });
+      });
+    }
 
     // Fire-and-forget: evaluate health after trade closes or snapshot events (outside tx).
     // SNAPSHOT events ensure strategies with long-running positions (days/weeks open)
