@@ -172,6 +172,15 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
   // Build child instance lookup by ID for symbol fallback
   const childById = new Map(children.map((c) => [c.id, c]));
 
+  // Strip internal sentinel placeholders (e.g. "__ORPHAN__") so they never
+  // surface on the public track record. Anything matching __X__ is treated
+  // as missing and falls through to the next fallback / "—".
+  const cleanSymbol = (s: string | null | undefined): string | null => {
+    if (s == null) return null;
+    if (/^__.+__$/.test(s)) return null;
+    return s;
+  };
+
   if (trackStates.length > 0) {
     // Chain-backed: reconstruct closed trades from TRADE_OPEN + TRADE_CLOSE events
     const [openEvents, closeEvents] = await Promise.all([
@@ -256,7 +265,11 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
         profit: Number(p.profit ?? 0),
         closeTime: e.timestamp,
         openTime: open?.timestamp ?? ea?.openTime ?? null,
-        symbol: open?.symbol ?? ea?.symbol ?? childInstance?.symbol ?? null,
+        symbol:
+          cleanSymbol(open?.symbol) ??
+          cleanSymbol(ea?.symbol) ??
+          cleanSymbol(childInstance?.symbol) ??
+          null,
         type: open?.direction ?? ea?.type ?? null,
         lots: open?.lots ?? ea?.lots ?? null,
         openPrice: open?.openPrice ?? ea?.openPrice ?? null,
@@ -279,7 +292,7 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
       profit: t.profit,
       closeTime: t.closeTime,
       openTime: t.openTime,
-      symbol: t.symbol,
+      symbol: cleanSymbol(t.symbol),
       type: t.type,
       lots: t.lots,
       openPrice: t.openPrice,
