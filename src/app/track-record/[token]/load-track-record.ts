@@ -206,20 +206,60 @@ export const loadTrackRecord = cache(async function loadTrackRecord(
       }
     }
 
-    // Join TRADE_CLOSE with TRADE_OPEN on ticket; use child instance symbol as fallback
+    // Enrich from EATrade by (instanceId, ticket) — Monitor EA writes full trade fields
+    // (symbol/type/lots/openPrice/openTime) to EATrade via /api/telemetry/trade, but
+    // often emits no TRADE_OPEN chain event, leaving those fields null on chain-only rows.
+    const closeTickets = closeEvents
+      .map((e) => String((e.payload as Record<string, unknown>).ticket ?? ""))
+      .filter(Boolean);
+
+    const eaTrades = closeTickets.length
+      ? await prisma.eATrade.findMany({
+          where: {
+            instanceId: { in: allInstanceIds },
+            ticket: { in: closeTickets },
+          },
+          select: {
+            instanceId: true,
+            ticket: true,
+            symbol: true,
+            type: true,
+            lots: true,
+            openPrice: true,
+            openTime: true,
+          },
+        })
+      : [];
+
+    const eaTradeByKey = new Map<
+      string,
+      { symbol: string; type: string; lots: number; openPrice: number; openTime: Date }
+    >();
+    for (const t of eaTrades) {
+      eaTradeByKey.set(`${t.instanceId}:${t.ticket}`, {
+        symbol: t.symbol,
+        type: t.type,
+        lots: t.lots,
+        openPrice: t.openPrice,
+        openTime: t.openTime,
+      });
+    }
+
+    // Join TRADE_CLOSE with TRADE_OPEN, EATrade, and child instance — precedence in that order
     allTrades = closeEvents.map((e) => {
       const p = e.payload as Record<string, unknown>;
       const ticket = String(p.ticket ?? "");
       const open = openByTicket.get(ticket);
+      const ea = eaTradeByKey.get(`${e.instanceId}:${ticket}`);
       const childInstance = childById.get(e.instanceId);
       return {
         profit: Number(p.profit ?? 0),
         closeTime: e.timestamp,
-        openTime: open?.timestamp ?? null,
-        symbol: open?.symbol ?? childInstance?.symbol ?? null,
-        type: open?.direction ?? null,
-        lots: open?.lots ?? null,
-        openPrice: open?.openPrice ?? null,
+        openTime: open?.timestamp ?? ea?.openTime ?? null,
+        symbol: open?.symbol ?? ea?.symbol ?? childInstance?.symbol ?? null,
+        type: open?.direction ?? ea?.type ?? null,
+        lots: open?.lots ?? ea?.lots ?? null,
+        openPrice: open?.openPrice ?? ea?.openPrice ?? null,
         closePrice: p.closePrice != null ? Number(p.closePrice) : null,
       };
     });

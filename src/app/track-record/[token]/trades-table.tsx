@@ -58,7 +58,18 @@ export function TradesTable({ trades }: TradesTableProps) {
           <tbody>
             {visible.map((t, i) => {
               const duration = new Date(t.closeTime).getTime() - new Date(t.openTime).getTime();
+              const sideKnown =
+                t.type === "BUY" ||
+                t.type === "DEAL_TYPE_BUY" ||
+                t.type === "SELL" ||
+                t.type === "DEAL_TYPE_SELL";
               const isBuy = t.type === "BUY" || t.type === "DEAL_TYPE_BUY";
+              const sideLabel = !sideKnown ? "—" : isBuy ? "Buy" : "Sell";
+              const sideClass = !sideKnown
+                ? "bg-[#1E293B]/40 text-[#64748B]"
+                : isBuy
+                  ? "bg-[#10B981]/10 text-[#10B981]"
+                  : "bg-[#EF4444]/10 text-[#EF4444]";
               return (
                 <tr
                   key={`${t.closeTime}-${i}`}
@@ -75,12 +86,8 @@ export function TradesTable({ trades }: TradesTableProps) {
                   </td>
                   <td className="px-3 py-2 text-white font-medium">{t.symbol}</td>
                   <td className="px-3 py-2">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                        isBuy ? "bg-[#10B981]/10 text-[#10B981]" : "bg-[#EF4444]/10 text-[#EF4444]"
-                      }`}
-                    >
-                      {isBuy ? "Buy" : "Sell"}
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${sideClass}`}>
+                      {sideLabel}
                     </span>
                   </td>
                   <td className="px-3 py-2 tabular-nums text-[#94A3B8]">{t.lots.toFixed(2)}</td>
