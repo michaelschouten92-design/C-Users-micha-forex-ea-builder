@@ -2022,6 +2022,7 @@ bool SendTradeOpen(ulong dealTicket)
    double lots     = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
    long   dealType = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
    long   magic    = (long)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
+   long   openTime = (long)HistoryDealGetInteger(dealTicket, DEAL_TIME);
    string ticket   = IntegerToString(dealTicket);
 
    string direction = (dealType == DEAL_TYPE_BUY) ? "BUY" : "SELL";
@@ -2036,32 +2037,23 @@ bool SendTradeOpen(ulong dealTicket)
    }
 
    string payloadPairs[];
-   ArrayResize(payloadPairs, 7);
+   ArrayResize(payloadPairs, 9);
    payloadPairs[0] = JStr("direction", direction);
    payloadPairs[1] = JMoney("lots", lots);
    payloadPairs[2] = JInt("magicNumber", (int)magic);
    payloadPairs[3] = JPrice("openPrice", price);
-   payloadPairs[4] = JPrice("sl", sl);
-   payloadPairs[5] = JStr("symbol", symbol);
-   payloadPairs[6] = JStr("ticket", ticket);
-
-   int pairIdx = 7;
-   if(tp != 0)
-   {
-      ArrayResize(payloadPairs, pairIdx + 1);
-      payloadPairs[pairIdx++] = JPrice("tp", tp);
-   }
-   else
-   {
-      ArrayResize(payloadPairs, pairIdx + 1);
-      payloadPairs[pairIdx++] = JPrice("tp", 0);
-   }
+   payloadPairs[4] = JLong("openTime", openTime);
+   payloadPairs[5] = JPrice("sl", sl);
+   payloadPairs[6] = JStr("symbol", symbol);
+   payloadPairs[7] = JStr("ticket", ticket);
+   payloadPairs[8] = JPrice("tp", tp);
 
    string payloadJson = "{"
       + JStr("direction", direction) + ","
       + JMoney("lots", lots) + ","
       + JInt("magicNumber", (int)magic) + ","
       + JPrice("openPrice", price) + ","
+      + JLong("openTime", openTime) + ","
       + JPrice("sl", sl) + ","
       + JStr("symbol", symbol) + ","
       + JStr("ticket", ticket) + ","
@@ -2069,17 +2061,20 @@ bool SendTradeOpen(ulong dealTicket)
       + "}";
 
    // Per-context routing (Milestone C)
-   // Returns false only when context matched but instanceId not yet assigned —
-   // caller must NOT mark deal as known so PollTradeChanges retries after heartbeat.
+   // Returns false only when the event was not durably accepted (not sent and not queued).
+   // Caller must NOT mark deal as known so PollTradeChanges retries on next cycle.
    int ctxIdx = (g_contextCount > 0) ? FindContextForDeal(symbol, magic) : -1;
-   bool accepted = true;
+   bool accepted;
    if(ctxIdx >= 0)
       accepted = SendContextTrackRecordEvent(ctxIdx, "TRADE_OPEN", payloadJson, payloadPairs);
    else if(!g_manifestMode)
-      SendTrackRecordEvent("TRADE_OPEN", payloadJson, payloadPairs);
+      accepted = SendTrackRecordEvent("TRADE_OPEN", payloadJson, payloadPairs);
    else
+   {
       Print("AlgoStudio Monitor: Unmatched TRADE_OPEN (", symbol, " magic=", magic,
-            ") — no context found, skipping");
+            ") — no manifest context match; will retry until manifest covers it");
+      accepted = false;
+   }
 
    Print("AlgoStudio Monitor: TRADE_OPEN ", direction, " ", symbol,
          " ", DoubleToString(lots, 2), " lots @ ", DoubleToString(price, 5));
@@ -2140,18 +2135,21 @@ bool SendTradeClose(ulong dealTicket)
       + "}";
 
    // Per-context routing (Milestone C)
-   // Returns false only when context matched but instanceId not yet assigned —
-   // caller must NOT mark deal as known so PollTradeChanges retries after heartbeat.
+   // Returns false only when the event was not durably accepted (not sent and not queued).
+   // Caller must NOT mark deal as known so PollTradeChanges retries on next cycle.
    string sym = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
    int ctxIdx = (g_contextCount > 0) ? FindContextForDeal(sym, magic) : -1;
-   bool accepted = true;
+   bool accepted;
    if(ctxIdx >= 0)
       accepted = SendContextTrackRecordEvent(ctxIdx, "TRADE_CLOSE", payloadJson, payloadPairs);
    else if(!g_manifestMode)
-      SendTrackRecordEvent("TRADE_CLOSE", payloadJson, payloadPairs);
+      accepted = SendTrackRecordEvent("TRADE_CLOSE", payloadJson, payloadPairs);
    else
+   {
       Print("AlgoStudio Monitor: Unmatched TRADE_CLOSE (", sym, " magic=", magic,
-            ") — no context found, skipping");
+            ") — no manifest context match; will retry until manifest covers it");
+      accepted = false;
+   }
 
    Print("AlgoStudio Monitor: TRADE_CLOSE ticket=", openTicket,
          " profit=", DoubleToString(profit, 2),
